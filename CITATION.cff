@@ -1,7 +1,7 @@
 # YAML 1.2
 ---
 cff-version: "1.1.0"
-title: "nplinker"
+title: "NPLinker Webapp"
 authors:
   -
     given-names: Cunliang
@@ -46,11 +46,12 @@ authors:
     given-names:  Marnix
     family-names:  Medema
 version: "0.1.0"
-repository-code: "https://github.com/NPLinker/nplinker"
+repository-code: "https://github.com/NPLinker/nplinker-webapp"
 keywords:
   - Genome
   - Metabolome
   - Natural Products
   - Data Mining
+  - Webapp
 message: "If you use this software, please cite it using these metadata."
 license: Apache-2.0
