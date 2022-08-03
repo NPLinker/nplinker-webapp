@@ -25,7 +25,7 @@ python -m venv env
 source env/bin/activate
 
 # install dependencies
-pip install -r requirement.txt
+pip install -r requirements.txt
 install-nplinker-deps
 
 # set environment variable
