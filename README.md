@@ -39,6 +39,9 @@ bokeh serve nplinker
 # NPLinker webapp will be served on http://localhost:5006/nplinker
 ```
 
+### For MacBook Pro M1 chip users
+
+After having installed the dependecies, run `which bigscape.py` to find where it is located on your local machine, and replace it with [this script](https://github.com/CunliangGeng/BiG-SCAPE/blob/Fix-multiprocessing-error-on-MacOS/bigscape.py). The issue in this file will be fixed by [this PR](https://github.com/medema-group/BiG-SCAPE/pull/15). 
 
 ## Contributing
-If you want to contribute to the development of nplinker, have a look at the [contribution guidelines](CONTRIBUTING.md) and [README for developers](README.dev.md).
+If you want to contribute to the development of nplinker, have a look at the [contribution guidelines](CONTRIBUTING.md) and [README for developers](README.dev.md). 
