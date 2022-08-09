@@ -4,7 +4,7 @@ import itertools
 import pandas as pd
 
 from bokeh.models import Button, CustomJS, ColumnDataSource
-from bokeh.models.widgets import DataTable, TableColumn
+from bokeh.models.widgets import DataTable, TableColumn, CheckboxButtonGroup
 
 from linker import Linker
 from tables_functions import create_links, get_table_info, NA_ID, NA_TEXT
@@ -252,79 +252,144 @@ class TableSessionData(object):
     def setup(self):
         # currently setting fixed widths here, not ideal, but using auto-sizing seems to
         # place limits on how far you can resize the columns for some reason...
-        self.bgc_cols = [
-            TableColumn(field='bgc_pk', title='ID', width=15),
-            TableColumn(field='name', title='BGC name', width=220),
-            TableColumn(field='product_type', title='Product pred.', width=75),
-            TableColumn(field='is_hybrid', title='Hybrid?', width=40)
-        ]
 
-        self.gcf_cols = [
-            TableColumn(field='gcf_pk', title='ID', width=15),
-            TableColumn(field='gcf_id', title='GCF ID', width=75),
-            TableColumn(field='bigscape_class',
-                        title='BiG-SCAPE class',
-                        width=75),
-            TableColumn(field='nbgcs', title='#bgcs', width=75),
-            TableColumn(field='metcalf_score', title='Metcalf score',
-                        width=75),
-            TableColumn(field='is_pure', title='Pure?', width=40)
+        self.molfam_cols = [
+            TableColumn(field='molfam_pk', title='ID', width=15),
+            TableColumn(field='family_id', title='MolFam ID', width=15),
+            TableColumn(field='nspectra', title='#spectra', width=15)
         ]
 
         self.spec_cols = [
             TableColumn(field='spec_pk', title='ID', width=15),
-            TableColumn(field='spectrum_id', title='Spectrum ID', width=75),
-            TableColumn(field='family', title='Family ID', width=75),
-            TableColumn(field='metcalf_score', title='Metcalf score', width=75)
+            TableColumn(field='spectrum_id', title='Spectrum ID', width=15),
+            TableColumn(field='family', title='Family ID', width=15),
+            TableColumn(field='metcalf_score', title='Metcalf', width=15)
         ]
 
-        self.molfam_cols = [
-            TableColumn(field='molfam_pk', title='ID', width=15),
-            TableColumn(field='family_id', title='MolFam ID', width=75),
-            TableColumn(field='nspectra', title='#spectra', width=75)
+        self.bgc_cols = [
+            TableColumn(field='bgc_pk', title='ID', width=15),
+            TableColumn(field='name', title='BGC name', width=15),
+            TableColumn(field='product_type', title='Product pred.', width=15),
+            TableColumn(field='is_hybrid', title='Hybrid?', width=15)
         ]
 
+        self.gcf_cols = [
+            TableColumn(field='gcf_pk', title='ID', width=15),
+            TableColumn(field='gcf_id', title='GCF ID', width=15),
+            TableColumn(field='bigscape_class',
+                        title='BiG-SCAPE',
+                        width=15),
+            TableColumn(field='nbgcs', title='#bgcs', width=15),
+            TableColumn(field='metcalf_score', title='Metcalf',
+                        width=15),
+            TableColumn(field='is_pure', title='Pure?', width=15)
+        ]
+
+        self.molfam_ds = ColumnDataSource(self.data.molfam_df)
+        self.spec_ds = ColumnDataSource(self.data.spec_df)
         self.bgc_ds = ColumnDataSource(self.data.bgc_df)
         self.gcf_ds = ColumnDataSource(self.data.gcf_df)
-        self.spec_ds = ColumnDataSource(self.data.spec_df)
-        self.molfam_ds = ColumnDataSource(self.data.molfam_df)
 
-        self.bgc_dt = DataTable(source=self.bgc_ds,
-                                columns=self.bgc_cols,
-                                name='table_bgcs',
-                                sizing_mode='scale_width',
-                                width=300,
-                                fit_columns=False,
-                                index_width=15)
-        self.gcf_dt = DataTable(source=self.gcf_ds,
-                                columns=self.gcf_cols,
-                                name='table_gcfs',
-                                sizing_mode='scale_width',
-                                width=300,
-                                fit_columns=False,
-                                index_width=15)
-        self.spec_dt = DataTable(source=self.spec_ds,
-                                 columns=self.spec_cols,
-                                 name='table_spectra',
-                                 sizing_mode='scale_width',
-                                 width=300,
-                                 fit_columns=False,
-                                 index_width=15)
+        self.molfam_checkbox = CheckboxButtonGroup(
+            labels=[col.title for col in self.molfam_cols],
+            active=[0, 1],
+            name='molfam_checkbox')
+
+        self.spec_checkbox = CheckboxButtonGroup(
+            labels=[col.title for col in self.spec_cols],
+            active=[0, 1],
+            name='spec_checkbox')
+
+        self.bgc_checkbox = CheckboxButtonGroup(
+            labels=[col.title for col in self.bgc_cols],
+            active=[0, 1],
+            name='bgc_checkbox')
+
+        self.gcf_checkbox = CheckboxButtonGroup(
+            labels=[col.title for col in self.gcf_cols],
+            active=[0, 1],
+            name='gcf_checkbox')
+        
+        def molfam_checkbox_callback(attr, old, new):
+            # update visibility of columns
+            active_labels = [self.molfam_checkbox.labels[i] for i in new]
+            self.molfam_dt.columns = [col for col in self.molfam_cols if col.title in active_labels]
+
+        def spec_checkbox_callback(attr, old, new):
+            # update visibility of columns
+            active_labels = [self.spec_checkbox.labels[i] for i in new]
+            self.spec_dt.columns = [col for col in self.spec_cols if col.title in active_labels]
+
+        def bgc_checkbox_callback(attr, old, new):
+            # update visibility of columns
+            active_labels = [self.bgc_checkbox.labels[i] for i in new]
+            self.bgc_dt.columns = [col for col in self.bgc_cols if col.title in active_labels]
+
+        def gcf_checkbox_callback(attr, old, new):
+            # update visibility of columns
+            active_labels = [self.gcf_checkbox.labels[i] for i in new]
+            self.gcf_dt.columns = [col for col in self.gcf_cols if col.title in active_labels]
+
+        self.molfam_checkbox.on_change('active', molfam_checkbox_callback)
+        self.spec_checkbox.on_change('active', spec_checkbox_callback)
+        self.bgc_checkbox.on_change('active', bgc_checkbox_callback)
+        self.gcf_checkbox.on_change('active', gcf_checkbox_callback)
+
+        active_labels_molfam = [self.molfam_checkbox.labels[i] for i in self.molfam_checkbox.active]
         self.molfam_dt = DataTable(source=self.molfam_ds,
-                                   columns=self.molfam_cols,
+                                   columns=[
+                                    col for col in self.molfam_cols if col.title in active_labels_molfam],
                                    name='table_molfams',
                                    sizing_mode='scale_width',
-                                   width=300,
-                                   fit_columns=False,
+                                   #width=300,
+                                   fit_columns=True,
                                    index_width=15)
+
+        active_labels_spec = [self.spec_checkbox.labels[i] for i in self.spec_checkbox.active]
+        self.spec_dt = DataTable(source=self.spec_ds,
+                                 columns=[
+                                    col for col in self.spec_cols if col.title in active_labels_spec],
+                                 name='table_spectra',
+                                 sizing_mode='scale_width',
+                                 #width=300,
+                                 fit_columns=True,
+                                 index_width=15)
+
+        active_labels_bgc = [self.bgc_checkbox.labels[i] for i in self.bgc_checkbox.active]
+        self.bgc_dt = DataTable(source=self.bgc_ds,
+                                columns=[
+                                    col for col in self.bgc_cols if col.title in active_labels_bgc],
+                                name='table_bgcs',
+                                sizing_mode='scale_width',
+                                #width=300,
+                                fit_columns=True,
+                                index_width=15)
+
+        active_labels_gcf = [self.gcf_checkbox.labels[i] for i in self.gcf_checkbox.active]
+        self.gcf_dt = DataTable(source=self.gcf_ds,
+                                columns=[
+                                    col for col in self.gcf_cols if col.title in active_labels_gcf],
+                                name='table_gcfs',
+                                sizing_mode='scale_width',
+                                #width=300,
+                                fit_columns=True,
+                                index_width=15)
 
         # start building a list of widgets that the main module will add to the
         # bokeh document object
         self.widgets = []
-        self.widgets.append(self.bgc_dt)
-        self.widgets.append(self.gcf_dt)
-        self.widgets.append(self.spec_dt)
+
         self.widgets.append(self.molfam_dt)
+        self.widgets.append(self.molfam_checkbox)
+
+        self.widgets.append(self.spec_dt)
+        self.widgets.append(self.spec_checkbox)
+
+        self.widgets.append(self.bgc_dt)
+        self.widgets.append(self.bgc_checkbox)
+
+        self.widgets.append(self.gcf_dt)
+        self.widgets.append(self.gcf_checkbox)
 
         data_sources = {
             'molfam_table': self.molfam_ds,
@@ -553,7 +618,7 @@ class TableSessionData(object):
         self.tables_reset_button = Button(label='Clear selections',
                                           button_type='danger')
         self.tables_reset_button.js_on_click(
-            CustomJS(args=dict(), code=reset_selection_code))
+            CustomJS(args={}, code=reset_selection_code))
         self.tables_reset_button.on_click(reset_tables_callback)
         self.widgets.append(
             wrap_popover(self.tables_reset_button,

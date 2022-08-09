@@ -64,6 +64,7 @@ def on_server_loaded(server_context):
     print('==================================')
     print('NPLinker server loading completed!')
     print('==================================')
+    print('NPLinker webapp is served on http://localhost:5006/nplinker')
 
 
 def on_session_created(session_context):
