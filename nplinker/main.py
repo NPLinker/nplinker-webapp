@@ -1468,12 +1468,16 @@ class NPLinkerBokeh(object):
         # header text
         self.header_text = Div(
             text=
-            '<strong>NPLinker web app</strong> (loaded BGCs={}, GCFs={}, Spectra={}, MolFams={})'
-            .format(len(self.nh.nplinker.bgcs), len(self.nh.nplinker.gcfs),
-                    len(self.nh.nplinker.spectra),
-                    len(self.nh.nplinker.molfams)),
+            '<p><strong>NPLinker web app</strong></p><p>Loaded {} MolFams, {} Spectra, {} BGCs, and {} GCFs.</p>'
+            .format(
+                len(self.nh.nplinker.molfams),
+                len(self.nh.nplinker.spectra),
+                len(self.nh.nplinker.bgcs),
+                len(self.nh.nplinker.gcfs)),
             name='header_text',
-            sizing_mode='scale_width')
+            #sizing_mode='stretch_both',
+            #aspect_ratio='auto'
+            width_policy='max')
         widgets.append(self.header_text)
 
         self.search_input = TextInput(value='',

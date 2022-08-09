@@ -2,8 +2,7 @@ loglevel = "DEBUG"
 logfile = ""
 repro_file = ""
 [dataset]
-#root = "/mnt/archive/nplinker_data/current/carnegie_mibig_27112019"
-root = "/mnt/archive/nplinker_data/current/crusemann_26112019"
+root = "platform:MSV000079284"
 bigscape_cutoff = 30
 [dataset.overrides]
 [scoring]

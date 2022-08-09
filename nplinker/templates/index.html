@@ -164,6 +164,26 @@
                     {{ embed(roots.metcalf_info) }}
                 </div>
             </div>
+
+            <div class="row" style="margin-top: 50px;">
+                <div class="col-md-3">
+                    <strong>Molecular Families</strong>
+                    {{ embed(roots.molfam_checkbox) }}
+                </div>
+                <div class="col-md-3">
+                    <strong>Spectra</strong>
+                    {{ embed(roots.spec_checkbox) }}
+                </div>
+                <div class="col-md-3">
+                    <strong>Biosynthetic Gene Clusters</strong>
+                    {{ embed(roots.bgc_checkbox) }}
+                </div>
+                <div class="col-md-3">
+                    <strong>Gene Cluster Families</strong>
+                    {{ embed(roots.gcf_checkbox) }}
+                </div>
+            </div>
+
             <div class="row">
                 <div class="col-lg-3 met-table" id="molfam_table">
                     {{ embed(roots.table_molfams) }}
