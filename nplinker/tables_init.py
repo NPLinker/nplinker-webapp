@@ -254,33 +254,33 @@ class TableSessionData(object):
         # place limits on how far you can resize the columns for some reason...
 
         self.molfam_cols = [
-            TableColumn(field='molfam_pk', title='ID', width=15),
+            #TableColumn(field='molfam_pk', title='ID', width=15),
             TableColumn(field='family_id', title='MolFam ID', width=15),
             TableColumn(field='nspectra', title='#spectra', width=15)
         ]
 
         self.spec_cols = [
-            TableColumn(field='spec_pk', title='ID', width=15),
+            #TableColumn(field='spec_pk', title='ID', width=15),
             TableColumn(field='spectrum_id', title='Spectrum ID', width=15),
             TableColumn(field='family', title='Family ID', width=15),
-            TableColumn(field='metcalf_score', title='Metcalf', width=15)
+            TableColumn(field='metcalf_score', title='Metcalf score', width=15)
         ]
 
         self.bgc_cols = [
-            TableColumn(field='bgc_pk', title='ID', width=15),
+            #TableColumn(field='bgc_pk', title='ID', width=15),
             TableColumn(field='name', title='BGC name', width=15),
             TableColumn(field='product_type', title='Product pred.', width=15),
             TableColumn(field='is_hybrid', title='Hybrid?', width=15)
         ]
 
         self.gcf_cols = [
-            TableColumn(field='gcf_pk', title='ID', width=15),
+            #TableColumn(field='gcf_pk', title='ID', width=15),
             TableColumn(field='gcf_id', title='GCF ID', width=15),
             TableColumn(field='bigscape_class',
                         title='BiG-SCAPE',
                         width=15),
             TableColumn(field='nbgcs', title='#bgcs', width=15),
-            TableColumn(field='metcalf_score', title='Metcalf',
+            TableColumn(field='metcalf_score', title='Metcalf score',
                         width=15),
             TableColumn(field='is_pure', title='Pure?', width=15)
         ]
@@ -302,12 +302,12 @@ class TableSessionData(object):
 
         self.bgc_checkbox = CheckboxButtonGroup(
             labels=[col.title for col in self.bgc_cols],
-            active=[0, 1],
+            active=[0],
             name='bgc_checkbox')
 
         self.gcf_checkbox = CheckboxButtonGroup(
             labels=[col.title for col in self.gcf_cols],
-            active=[0, 1],
+            active=[0, 2],
             name='gcf_checkbox')
         
         def molfam_checkbox_callback(attr, old, new):
