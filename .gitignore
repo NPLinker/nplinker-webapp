@@ -1,6 +1,7 @@
 # ide
 .idea
 .eclipse
+.vscode/
 
 .mypy_cache
 
