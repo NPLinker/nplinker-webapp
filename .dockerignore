@@ -1,9 +1,0 @@
-.bumpversion.cfg
-.editorconfig
-.git
-.github
-.gitignore
-.mlc-config.json
-.prospector.yml
-.vscode
-run_nplinker_docker.sh

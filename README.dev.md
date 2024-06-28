@@ -3,13 +3,19 @@
 If you're looking for user documentation, go [here](README.md).
 
 ## Code editor
-We use [Visual Studio Code (VS Code)](https://code.visualstudio.com/) as code editor.
-The VS Code settings for this project can be found in [.vscode](.vscode).
-The settings will be automatically loaded and applied when you open the project with VS Code.
-See [the guide](https://code.visualstudio.com/docs/getstarted/settings) for more info about workspace settings of VS Code.
 
+The VS Code Profile for this project is [vscode/nplinker.code-profile](vscode/nplinker.code-profile), 
+which contains the settings, extensions and snippets for the project. To use the profile, you must
+first import it by clicking the following menus: `Code` -> `Settings` -> `Profiles` -> `Import Profile...`. 
+Then select the file [vscode/nplinker.code-profile](vscode/nplinker.code-profile) to import the profile.
+VS Code will take a while to install the extensions and apply the settings. Want more info? See 
+[vscode profiles guide](https://code.visualstudio.com/docs/editor/profiles).
+
+If you want to add more settings, you can update the workspace settings, see [the guide](https://code.visualstudio.com/docs/getstarted/settings) for more info.
 
 ## Setup
+
+We use Python 3.10 for development environment.
 
 ```shell
 # Create a virtual environment, e.g. with
@@ -21,76 +27,80 @@ source venv/bin/activate
 # make sure to have a recent version of pip and setuptools
 python3 -m pip install --upgrade pip setuptools
 
-# install webapp dev dependencies
+# install webapp dependencies
 pip install -r requirements.dev.txt
 
-# install nplinker non-pypi dependecies
-install-nplinker-deps
+#TBD
 ```
 
-Afterwards check that the install directory is present in the `PATH` environment variable.
+## Running the tests
+
+```shell
+pytest
+# or
+pytest tests
+```
+
+### Test coverage
+
+In addition to just running the tests to see if they pass, they can be used for coverage statistics, i.e. to determine how much of the webapp's code is actually executed during tests.
+In an activated virtual environment with the development tools installed, inside the webapp's directory, run:
+
+```shell
+coverage run
+```
+
+This runs tests and stores the result in a `.coverage` file.
+To see the results on the command line, run
+
+```shell
+coverage report
+```
+
+`coverage` can also generate output in HTML and other formats; see `coverage help` for more information.
 
 ## Linting and formatting
 
-
-We use [prospector](https://pypi.org/project/prospector/) for linting, [isort](https://pycqa.github.io/isort/) to sort imports, [autoflake](https://github.com/PyCQA/autoflake) to remove unused imports, and [yapf](https://github.com/google/yapf) for formatting, i.e. fixing readability of your code style.
+We use [ruff](https://docs.astral.sh/ruff/) for linting, sorting imports and formatting code. The configurations of `ruff` are set in [ruff.toml](ruff.toml) file.
 
 Running the linters and formatters requires an activated virtual environment with the development tools installed.
 
 ```shell
-# linting
-prospector --profile .prospector.yml
+# Lint all files in the current directory.
+ruff check .
 
-# check import style for the project
-isort --check .
+# Lint all files in the current directory, and fix any fixable errors.
+ruff check . --fix
 
-# check import style and show any proposed changes as a diff
-isort --check --diff .
+# Format all files in the current directory
+ruff format .
 
-# sort imports for the project
-isort .
-
-# remove unused imports for the project
-# WARNING: python keyword `pass` will also be removed automatically
-autoflake --in-place --remove-all-unused-imports  -r .
-
-# format python style for the project
-yapf -r -i .
-
-# format python styple for specific python file
-yapf -i filename.py
+# Format a single python file
+ruff format filename.py
 ```
 
-**Note:** We have set linter and formatter in VS Code [settings](.vscode),
-so if you're using VS Code, you can also use its shortcut to do linting, sorting and formatting.
-Besides, docstring style is also set, you can use [autoDocString](https://marketplace.visualstudio.com/items?itemName=njpwerner.autodocstring) to automatically generate docstrings.
+## Static typing
 
+We use [inline type annotation](https://typing.readthedocs.io/en/latest/source/libraries.html#how-to-provide-type-annotations) for static typing rather than stub files (i.e. `.pyi` files).
 
-## Versioning
+By default, we use `from __future__ import annotations` at module level to stop evaluating annotations at function definition time (see [PEP 563](https://peps.python.org/pep-0563/)), which would solve most of compatibility issues between different Python versions. Make sure you're aware of the [caveats](https://mypy.readthedocs.io/en/stable/runtime_troubles.html#future-annotations-import-pep-563).
 
-Bumping the version across all files is done with [bumpversion](https://github.com/c4urself/bump2version), e.g.
+We use [Mypy](http://mypy-lang.org/) as static type checker:
 
-```shell
-bumpversion major
-bumpversion minor
-bumpversion patch
-
-bumpversion --current-version 0.1.0 --new-version 0.2.0 fakepart
 ```
+# install mypy
+pip install mypy
+
+# run mypy
+mypy path-to-source-code
+```
+
+Mypy configurations are set in [mypy.ini](mypy.ini) file.
+
+For more info about static typing and mypy, see:
+- [Static typing with Python](https://typing.readthedocs.io/en/latest/index.html#)
+- [Mypy doc](https://mypy.readthedocs.io/en/stable/)
 
 ## Making a release
 
-This section describes how to make a release in 3 parts:
-
-1. preparation
-2. making a release on GitHub
-
-### (1/2) Preparation
-
-1. Update the <CHANGELOG.md> (don't forget to update links at bottom of page)
-2. Verify that the information in `CITATION.cff` is correct, and that `.zenodo.json` contains equivalent data
-3. Make sure the [version has been updated](#versioning).
-
-### (2/2) GitHub
-
-Make a [release on GitHub](https://github.com/NPLinker/webapp/releases/new). If your repository uses the GitHub-Zenodo integration this will also trigger Zenodo into making a snapshot of your repository and sticking a DOI on it.
+TBD

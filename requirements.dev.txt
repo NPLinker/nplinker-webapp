@@ -1,6 +1,7 @@
 -r requirements.txt
 autoflake
-bump2version
 isort
-prospector[with_pyroma]
+ruff
+mypy
 yapf
+pytest

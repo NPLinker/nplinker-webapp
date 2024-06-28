@@ -1,0 +1,82 @@
+# Exclude a variety of commonly ignored directories.
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".ipynb_checkpoints",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pyenv",
+    ".pytest_cache",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    ".vscode",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "site-packages",
+    "venv",
+]
+
+target-version = "py310"
+line-length = 100
+
+[lint]
+select = [
+    "D", # pydocstyle
+    "E", # pycodestyle (error)
+    "W", # pycodestyle (warning)
+    "F", # Pyflakes
+    "I", # isort
+    "N", # pep8-naming
+]
+ignore = [
+    "E501", # Line too long
+    "D100", # Missing module docstring
+    "D104", # Missing public package docstring
+    "D105", # Missing docstring in magic method
+    "D107", # Missing `__init__` docstring
+    # The following list excludes rules irrelevant to the Google style
+    "D203",
+    "D204",
+    "D213",
+    "D215",
+    "D400",
+    "D401",
+    "D404",
+    "D406",
+    "D407",
+    "D408",
+    "D409",
+    "D413",
+]
+
+# Allow autofix for all enabled rules (when `--fix`) is provided.
+fixable = ["A", "B", "C", "D", "E", "F", "I"]
+ignore-init-module-imports = true
+
+[lint.per-file-ignores]
+# Ignore docstrings in all test files
+"tests/**py" = ["D"]
+
+[lint.isort]
+known-first-party = ["nplinker"]
+force-single-line = true
+lines-after-imports = 2
+no-lines-before = [
+    "future",
+    "standard-library",
+    "third-party",
+    "first-party",
+    "local-folder",
+]
