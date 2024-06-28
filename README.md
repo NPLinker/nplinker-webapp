@@ -1,47 +1,31 @@
 # NPLinker Web Application
 
-NPLinker web application (webapp) enables you to visualize NPLinker predictions in an interactive way.
+This is the [NPLinker](https://github.com/NPLinker/nplinker/tree/dev) web application, developed with [Plotly Dash](https://dash.plotly.com/), which enables you to visualize NPLinker predictions in an interactive way.
 
-
-## Run with docker
-
-The simplest option for most users will be to run NPLinker webapp using docker, removing the need to install Python and other dependencies. If you are a Windows user, it's also the only way to run NPLinker.
-
-To install docker, see [Docker guide](https://docs.docker.com/get-docker/).
-
-After installing docker, see the [NPLinker wiki page](https://github.com/sdrogers/nplinker/wiki/WebappInstallation) for detailed installation and usage instructions.
-
-## Run without docker
-
-You can also run NPLinker webapp on Linux and MacOS in a Python environment:
-
-```
-# clone this repo
+## Installation
+   
+```bash
+# Clone the repository
 git clone https://github.com/NPLinker/nplinker-webapp.git
+# Navigate to the project directory
 cd nplinker-webapp
-
-# create a virtual environment
-python -m venv env
-source env/bin/activate
-
-# install dependencies
+# Create and activate a virtual environment
+python -m venv venv
+source venv/bin/activate
+# Install the required packages
 pip install -r requirements.txt
-install-nplinker-deps
-
-# set environment variable
-# nplinker.toml is your nplinker config file
-export NPLINKER_CONFIG="PATH_OF_YOUR_nplniker.toml"
-# for example: export NPLINKER_CONFIG="/home/nplinker/nplinker.toml"
-
-# start webapp
-bokeh serve nplinker
-
-# NPLinker webapp will be served on http://localhost:5006/nplinker
 ```
 
-### For MacBook Pro M1 chip users
+## Usage 
 
-After having installed the dependecies, run `which bigscape.py` to find where it is located on your local machine, and replace it with [this script](https://github.com/CunliangGeng/BiG-SCAPE/blob/Fix-multiprocessing-error-on-MacOS/bigscape.py). The issue in this file will be fixed by [this PR](https://github.com/medema-group/BiG-SCAPE/pull/15). 
+Run the application:
+
+```bash
+python app.py
+```
+
+Open your web browser and go to `http://127.0.0.1:8050/`.
 
 ## Contributing
+
 If you want to contribute to the development of nplinker, have a look at the [contribution guidelines](CONTRIBUTING.md) and [README for developers](README.dev.md). 

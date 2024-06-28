@@ -1,4 +1,4 @@
-name: Check code style
+name: Check format and static typing
 
 on:
   push:
@@ -6,32 +6,43 @@ on:
       - main
     paths:
       - '**.py'
+      - '.github/workflows/lint.yml'
   pull_request:
     branches:
       - main
     paths:
       - '**.py'
+      - '.github/workflows/lint.yml'
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
 
 jobs:
-
-  lint:
+  format-check:
+    name: Check code format
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - name: Set up Python 3.10
-        uses: actions/setup-python@v3
+      - uses: actions/checkout@v4
+      - name: Install ruff and mypy
+        run: |
+          pip install ruff mypy typing_extensions types-Deprecated types-beautifulsoup4 types-jsonschema pandas-stubs
+      - name: Get all changed python files
+        id: changed-python-files
+        uses: tj-actions/changed-files@v44
         with:
-          python-version: '3.10'
-      - name: Python info
-        shell: bash -l {0}
+          files: |
+             **.py
+      - name: Check format using ruff
+        if: steps.changed-python-files.outputs.any_changed == 'true'
+        env:
+          ALL_CHANGED_FILES: ${{ steps.changed-python-files.outputs.all_changed_files }}
         run: |
-          which python3
-          python3 --version
-      - name: Upgrade pip and install dependencies
+          ruff check ${ALL_CHANGED_FILES}
+      - name: Check static typing using mypy
+        if: steps.changed-python-files.outputs.any_changed == 'true'
+        env:
+          ALL_CHANGED_FILES: ${{ steps.changed-python-files.outputs.all_changed_files }}
         run: |
-          python3 -m pip install --upgrade pip setuptools
-          pip install "prospector[with_pyroma]" isort
-      - name: Check style against standards using prospector
-        run: prospector
-      - name: Check import order
-        run: isort --check-only . --diff
+          mypy ${ALL_CHANGED_FILES}
