@@ -12,7 +12,7 @@ on:
       - main
     paths:
       - '**.py'
-      - '.github/workflows/format-typing-check.yml'
+      - '.github/workflows/lint.yml'
     types:
       - opened
       - reopened
