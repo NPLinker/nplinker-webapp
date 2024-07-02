@@ -1,3 +1,5 @@
 nplinker==2.0.0a2
 dash
-pandas
+dash-bootstrap-components
+dash_bootstrap_templates
+numpy
