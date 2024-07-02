@@ -1,0 +1,5 @@
+.nav-item .nav-link.active {
+    background-color: #007bff !important; /* Bootstrap primary color */
+    color: white !important;             /* Text color */
+    font-size: 20px !important;          /* Font size */
+}
