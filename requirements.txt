@@ -2,4 +2,6 @@ nplinker==2.0.0a2
 dash
 dash-bootstrap-components
 dash_bootstrap_templates
+dash_uploader==0.7.0a1
 numpy
+packaging==21.3.0
