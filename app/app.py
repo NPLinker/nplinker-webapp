@@ -29,9 +29,11 @@ navbar = dbc.Row(
                     )
                 ),
                 dbc.NavItem(dbc.NavLink("Doc", href="https://nplinker.github.io/nplinker/latest/")),
-                dbc.NavItem(dbc.NavLink("About", href="https://github.com/nplinker/nplinker")),
+                dbc.NavItem(
+                    dbc.NavLink("About", href="https://github.com/NPLinker/nplinker-webapp")
+                ),
             ],
-            brand="NPLinker Dashboard",
+            brand="NPLinker Webapp",
             brand_href="https://github.com/NPLinker/nplinker-webapp",
             color="primary",
             className="p-4 mb-2",
