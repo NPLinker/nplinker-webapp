@@ -1,5 +1,12 @@
-.nav-item .nav-link.active {
-    background-color: #007bff !important; /* Bootstrap primary color */
-    color: white !important;             /* Text color */
-    font-size: 20px !important;          /* Font size */
+:root {
+    --bs-primary: #FF6E42; /* Replace with your desired primary color */
+}
+
+.navbar {
+    background-color: var(--bs-primary) !important;
+}
+
+.btn-primary {
+    background-color: var(--bs-primary) !important;
+    border-color: var(--bs-primary) !important;
 }
