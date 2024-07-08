@@ -1,76 +1,99 @@
-import base64
-import datetime
-import io
+import os
 import pickle
+import tempfile
+import uuid
 import dash_bootstrap_components as dbc
+import dash_uploader as du
 from dash import Dash
 from dash import Input
 from dash import Output
-from dash import State
 from dash import clientside_callback
-from dash import dcc
 from dash import html
 
 
 dbc_css = "https://cdn.jsdelivr.net/gh/AnnMarieW/dash-bootstrap-templates/dbc.min.css"
 app = Dash(__name__, external_stylesheets=[dbc.themes.UNITED, dbc_css, dbc.icons.FONT_AWESOME])
 
+# ------------------ Nav Bar ------------------ #
+color_mode_switch = html.Span(
+    [
+        dbc.Label(className="fa fa-moon", html_for="color-mode-switch"),
+        dbc.Switch(
+            id="color-mode-switch",
+            value=False,
+            className="d-inline-block ms-1",
+            persistence=True,
+        ),
+        dbc.Label(className="fa fa-sun", html_for="color-mode-switch"),
+    ],
+    className="p-2",
+)
+
 # Define the navigation bar
 navbar = dbc.Row(
     dbc.Col(
         dbc.NavbarSimple(
             children=[
-                dbc.NavItem(
-                    dcc.Upload(
-                        id="upload-data",
-                        children=dbc.Button("Import Data"),
-                        style={"margin-top": "0.1rem"},
-                        multiple=False,
-                    )
-                ),
                 dbc.NavItem(dbc.NavLink("Doc", href="https://nplinker.github.io/nplinker/latest/")),
                 dbc.NavItem(
-                    dbc.NavLink("About", href="https://github.com/NPLinker/nplinker-webapp")
+                    dbc.NavLink("About", href="https://github.com/NPLinker/nplinker-webapp"),
+                ),
+                dbc.NavItem(
+                    color_mode_switch,
+                    className="mt-1 p-1",
                 ),
             ],
             brand="NPLinker Webapp",
             brand_href="https://github.com/NPLinker/nplinker-webapp",
             color="primary",
-            className="p-4 mb-2",
+            className="p-3 mb-2",
             dark=True,
         ),
     ),
-    className="mb-2",
 )
 
-color_mode_switch = html.Span(
-    [
-        dbc.Label(className="fa fa-moon", html_for="color-mode-switch"),
-        dbc.Switch(
-            id="color-mode-switch", value=False, className="d-inline-block ms-1", persistence=True
+# ------------------ Uploader ------------------ #
+# Configure the upload folder
+TEMP_DIR = tempfile.mkdtemp()
+du.configure_upload(app, TEMP_DIR)
+
+uploader = dbc.Row(
+    dbc.Col(
+        html.Div(
+            [
+                du.Upload(
+                    id="dash-uploader",
+                    text="Import Data",
+                    text_completed="Uploaded: ",
+                    filetypes=["pkl"],
+                    upload_id=uuid.uuid1(),  # Unique session id
+                    cancel_button=True,
+                    max_files=1,
+                ),
+            ],
         ),
-        dbc.Label(className="fa fa-sun", html_for="color-mode-switch"),
-    ],
-    className="p-4 position-absolute end-0 mt-2",
+        className="p-5 ml-5 mr-5",
+    ),
 )
 
-# Define the content area with tabs
+# ------------------ Tabs ------------------ #
+# gm tab content
 gm_content = dbc.Row(
     dbc.Col(
         dbc.Card(
-            dbc.CardBody([dbc.Row(html.Div(id="output-data-upload"))]),
+            dbc.CardBody([html.Div(children="No file uploaded", id="dash-uploader-output")]),
         )
     )
 )
-
+# mg tab content
 mg_content = dbc.Row(
     dbc.Col(
         dbc.Card(
-            dbc.CardBody([html.Div("Tab 2 Content", className="p-4 card-text")]),
+            dbc.CardBody([html.Div(children="No file uploaded")]),
         )
-    )
+    ),
 )
-
+# tabs
 tabs = dbc.Row(
     dbc.Col(
         dbc.Tabs(
@@ -88,10 +111,10 @@ tabs = dbc.Row(
             ],
         ),
     ),
-    className="p-4",
+    className="p-5",
 )
 
-app.layout = dbc.Container([navbar, color_mode_switch, tabs], fluid=True, className="p-0")
+app.layout = dbc.Container([navbar, uploader, tabs], fluid=True, className="p-0")
 
 clientside_callback(
     """
@@ -105,45 +128,18 @@ clientside_callback(
 )
 
 
-# Function to parse the contents of the uploaded file
-def parse_contents(contents, filename):  # noqa: D103
-    try:
-        if not contents:
-            return html.Div(["No contents uploaded."])
-        _, content_string = contents.split(",")
-        decoded = base64.b64decode(content_string)
-        if filename.endswith(".pkl"):
-            data = pickle.load(io.BytesIO(decoded))
-            bgcs, gcfs, spectra, mfs, strains, links = data
-        else:
-            return html.Div(["Unsupported file format."])
-    except Exception as e:
-        return html.Div([f"There was an error processing this file: {e}"])
-
-    return html.Div(
-        [
-            html.H5(filename),
-            html.H6(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
-            html.Hr(),  # horizontal line
-            html.Div("Raw Content"),
-            html.Pre(
-                contents[:200] + "...", style={"whiteSpace": "pre-wrap", "wordBreak": "break-all"}
-            ),
-        ]
-    )
-
-
-@app.callback(
-    Output("output-data-upload", "children"),
-    Input("upload-data", "contents"),
-    State("upload-data", "filename"),
+@du.callback(
+    id="dash-uploader",
+    output=Output("dash-uploader-output", "children"),
 )
-def update_output(contents, filename):  # noqa: D103
-    if contents is not None:
-        children = parse_contents(contents, filename)
-        return children
-    return html.Div(["No file uploaded."])
+def upload_data(status: du.UploadStatus):  # noqa: D103
+    with open(status.latest_file, "rb") as f:
+        pickle.load(f)
+    return f"Successfully uploaded file `{os.path.basename(status.latest_file)}` of size {round(status.uploaded_size_mb, 2)} MB."
 
+
+# TODO: create small test file
+# TODO: add tests
 
 if __name__ == "__main__":
     app.run_server(debug=True)
