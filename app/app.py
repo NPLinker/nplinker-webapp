@@ -1,8 +1,14 @@
+import base64
+import datetime
+import io
+import pickle
 import dash_bootstrap_components as dbc
 from dash import Dash
 from dash import Input
 from dash import Output
+from dash import State
 from dash import clientside_callback
+from dash import dcc
 from dash import html
 
 
@@ -15,8 +21,13 @@ navbar = dbc.Row(
         dbc.NavbarSimple(
             children=[
                 dbc.NavItem(
-                    dbc.NavLink("Import Data", href="#")
-                ),  # TODO: Add the import data button
+                    dcc.Upload(
+                        id="upload-data",
+                        children=dbc.Button("Import Data"),
+                        style={"margin-top": "0.1rem"},
+                        multiple=False,
+                    )
+                ),
                 dbc.NavItem(dbc.NavLink("Doc", href="https://nplinker.github.io/nplinker/latest/")),
                 dbc.NavItem(dbc.NavLink("About", href="https://github.com/nplinker/nplinker")),
             ],
@@ -45,7 +56,7 @@ color_mode_switch = html.Span(
 gm_content = dbc.Row(
     dbc.Col(
         dbc.Card(
-            dbc.CardBody([html.Div("Tab 1 Content", className="p-4 card-text")]),
+            dbc.CardBody([dbc.Row(html.Div(id="output-data-upload"))]),
         )
     )
 )
@@ -90,6 +101,46 @@ clientside_callback(
     Output("color-mode-switch", "id"),
     Input("color-mode-switch", "value"),
 )
+
+
+# Function to parse the contents of the uploaded file
+def parse_contents(contents, filename):  # noqa: D103
+    try:
+        if not contents:
+            return html.Div(["No contents uploaded."])
+        _, content_string = contents.split(",")
+        decoded = base64.b64decode(content_string)
+        if filename.endswith(".pkl"):
+            data = pickle.load(io.BytesIO(decoded))
+            bgcs, gcfs, spectra, mfs, strains, links = data
+        else:
+            return html.Div(["Unsupported file format."])
+    except Exception as e:
+        return html.Div([f"There was an error processing this file: {e}"])
+
+    return html.Div(
+        [
+            html.H5(filename),
+            html.H6(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
+            html.Hr(),  # horizontal line
+            html.Div("Raw Content"),
+            html.Pre(
+                contents[:200] + "...", style={"whiteSpace": "pre-wrap", "wordBreak": "break-all"}
+            ),
+        ]
+    )
+
+
+@app.callback(
+    Output("output-data-upload", "children"),
+    Input("upload-data", "contents"),
+    State("upload-data", "filename"),
+)
+def update_output(contents, filename):  # noqa: D103
+    if contents is not None:
+        children = parse_contents(contents, filename)
+        return children
+    return html.Div(["No file uploaded."])
 
 
 if __name__ == "__main__":
