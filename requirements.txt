@@ -1,4 +1,4 @@
-nplinker==2.0.0a2
+nplinker==2.0.0a3
 dash
 dash-bootstrap-components
 dash_bootstrap_templates
