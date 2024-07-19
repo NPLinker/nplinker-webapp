@@ -176,7 +176,7 @@ def disable_tabs(file_name):  # noqa: D103
     [Output("file-content-gm", "children"), Output("file-content-mg", "children")],
     [Input("file-store", "data")],
 )
-def display_file_contents(file_path):
+def display_file_contents(file_path):  # noqa: D103
     if file_path is not None:
         with open(file_path, "rb") as f:
             data = pickle.load(f)
