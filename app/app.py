@@ -160,10 +160,14 @@ def upload_data(status: du.UploadStatus):  # noqa: D103
 
 @app.callback(
     [Output("gm-tab", "disabled"), Output("mg-tab", "disabled")],
-    [Input("dash-uploader-output", "children")],
+    [Input("file-store", "data")],
     prevent_initial_call=True,
 )
-def enable_tabs(string):  # noqa: D103
+def disable_tabs(file_name):  # noqa: D103
+    if file_name is None:
+        # Disable the tabs
+        return True, True
+    # Enable the tabs
     return False, False
 
 
@@ -181,8 +185,6 @@ def display_file_contents(file_path):
         return content, content  # Display same content in both tabs
     return "No data available", "No data available"
 
-
-# TODO: add tests
 
 if __name__ == "__main__":
     app.run_server(debug=True)

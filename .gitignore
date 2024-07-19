@@ -5,6 +5,9 @@
 
 .mypy_cache
 
+# Pycache files
+__pycache__/
+
 # Mac
 .DS_Store
 
