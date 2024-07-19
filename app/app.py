@@ -8,6 +8,7 @@ from dash import Dash
 from dash import Input
 from dash import Output
 from dash import clientside_callback
+from dash import dcc
 from dash import html
 
 
@@ -78,6 +79,7 @@ uploader = html.Div(
                 className="d-flex justify-content-center",
             )
         ),
+        dcc.Store(id="file-store"),  # Store to keep the file contents
     ],
     className="p-5 ml-5 mr-5",
 )
@@ -87,7 +89,7 @@ uploader = html.Div(
 gm_content = dbc.Row(
     dbc.Col(
         dbc.Card(
-            dbc.CardBody([html.Div()]),
+            dbc.CardBody([html.Div(id="file-content-gm")]),
         )
     )
 )
@@ -95,7 +97,7 @@ gm_content = dbc.Row(
 mg_content = dbc.Row(
     dbc.Col(
         dbc.Card(
-            dbc.CardBody([html.Div()]),
+            dbc.CardBody([html.Div(id="file-content-mg")]),
         )
     ),
 )
@@ -142,12 +144,18 @@ clientside_callback(
 
 @du.callback(
     id="dash-uploader",
-    output=Output("dash-uploader-output", "children"),
+    output=[Output("dash-uploader-output", "children"), Output("file-store", "data")],
 )
 def upload_data(status: du.UploadStatus):  # noqa: D103
-    with open(status.latest_file, "rb") as f:
-        pickle.load(f)
-    return f"Successfully uploaded file `{os.path.basename(status.latest_file)}` of size {round(status.uploaded_size_mb, 2)} MB."
+    if status.is_completed:
+        latest_file = status.latest_file
+        with open(status.latest_file, "rb") as f:
+            pickle.load(f)
+        return (
+            f"Successfully uploaded file `{os.path.basename(latest_file)}` of size {round(status.uploaded_size_mb, 2)} MB.",
+            str(latest_file),
+        )
+    return "No file uploaded", None
 
 
 @app.callback(
@@ -157,6 +165,21 @@ def upload_data(status: du.UploadStatus):  # noqa: D103
 )
 def enable_tabs(string):  # noqa: D103
     return False, False
+
+
+# Define another callback to access the stored file path and read the file
+@app.callback(
+    [Output("file-content-gm", "children"), Output("file-content-mg", "children")],
+    [Input("file-store", "data")],
+)
+def display_file_contents(file_path):
+    if file_path is not None:
+        with open(file_path, "rb") as f:
+            data = pickle.load(f)
+        # Process and display the data as needed
+        content = f"File contents: {data[0][:2]}"
+        return content, content  # Display same content in both tabs
+    return "No data available", "No data available"
 
 
 # TODO: add tests
