@@ -57,10 +57,10 @@ navbar = dbc.Row(
 TEMP_DIR = tempfile.mkdtemp()
 du.configure_upload(app, TEMP_DIR)
 
-uploader = dbc.Row(
-    dbc.Col(
-        html.Div(
-            [
+uploader = html.Div(
+    [
+        dbc.Row(
+            dbc.Col(
                 du.Upload(
                     id="dash-uploader",
                     text="Import Data",
@@ -70,10 +70,16 @@ uploader = dbc.Row(
                     cancel_button=True,
                     max_files=1,
                 ),
-            ],
+            )
         ),
-        className="p-5 ml-5 mr-5",
-    ),
+        dbc.Row(
+            dbc.Col(
+                html.Div(children="No file uploaded", id="dash-uploader-output", className="p-4"),
+                className="d-flex justify-content-center",
+            )
+        ),
+    ],
+    className="p-5 ml-5 mr-5",
 )
 
 # ------------------ Tabs ------------------ #
@@ -81,7 +87,7 @@ uploader = dbc.Row(
 gm_content = dbc.Row(
     dbc.Col(
         dbc.Card(
-            dbc.CardBody([html.Div(children="No file uploaded", id="dash-uploader-output")]),
+            dbc.CardBody([html.Div()]),
         )
     )
 )
@@ -89,7 +95,7 @@ gm_content = dbc.Row(
 mg_content = dbc.Row(
     dbc.Col(
         dbc.Card(
-            dbc.CardBody([html.Div(children="No file uploaded")]),
+            dbc.CardBody([html.Div()]),
         )
     ),
 )
@@ -102,11 +108,17 @@ tabs = dbc.Row(
                     gm_content,
                     label="Genomics -> Metabolomics",
                     activeTabClassName="fw-bold",
+                    disabled=True,
+                    id="gm-tab",
+                    className="disabled-tab",
                 ),
                 dbc.Tab(
                     mg_content,
                     label="Metabolomics -> Genomics",
                     activeTabClassName="fw-bold",
+                    disabled=True,
+                    id="mg-tab",
+                    className="disabled-tab",
                 ),
             ],
         ),
@@ -136,6 +148,15 @@ def upload_data(status: du.UploadStatus):  # noqa: D103
     with open(status.latest_file, "rb") as f:
         pickle.load(f)
     return f"Successfully uploaded file `{os.path.basename(status.latest_file)}` of size {round(status.uploaded_size_mb, 2)} MB."
+
+
+@app.callback(
+    [Output("gm-tab", "disabled"), Output("mg-tab", "disabled")],
+    [Input("dash-uploader-output", "children")],
+    prevent_initial_call=True,
+)
+def enable_tabs(string):  # noqa: D103
+    return False, False
 
 
 # TODO: add tests

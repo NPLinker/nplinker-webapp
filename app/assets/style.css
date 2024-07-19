@@ -6,7 +6,6 @@
     background-color: var(--bs-primary) !important;
 }
 
-.btn-primary {
-    background-color: var(--bs-primary) !important;
-    border-color: var(--bs-primary) !important;
+.nav-tabs .nav-item .nav-link.disabled {
+    color: #888888 !important;  /* Set your desired color here */
 }
