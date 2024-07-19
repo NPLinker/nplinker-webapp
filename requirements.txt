@@ -3,4 +3,4 @@ dash
 dash-bootstrap-components
 dash_bootstrap_templates
 numpy
-dash-uploader
+dash-uploader==0.7.0a1
