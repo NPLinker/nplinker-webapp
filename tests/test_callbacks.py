@@ -1,4 +1,3 @@
-import os
 from dash_uploader import UploadStatus
 from app.app import disable_tabs
 from app.app import upload_data
