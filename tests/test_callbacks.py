@@ -1,6 +1,6 @@
 from dash_uploader import UploadStatus
-from app.app import disable_tabs
-from app.app import upload_data
+from app.callbacks import disable_tabs
+from app.callbacks import upload_data
 from . import DATA_DIR
 
 

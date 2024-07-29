@@ -1,15 +1,10 @@
-import tempfile
 import uuid
 import dash_bootstrap_components as dbc
 import dash_uploader as du
-from callbacks import register_callbacks
-from dash import Dash
+from callbacks import app
 from dash import dcc
 from dash import html
 
-
-dbc_css = "https://cdn.jsdelivr.net/gh/AnnMarieW/dash-bootstrap-templates/dbc.min.css"
-app = Dash(__name__, external_stylesheets=[dbc.themes.UNITED, dbc_css, dbc.icons.FONT_AWESOME])
 
 # ------------------ Nav Bar ------------------ #
 color_mode_switch = html.Span(
@@ -49,9 +44,6 @@ navbar = dbc.Row(
 )
 
 # ------------------ Uploader ------------------ #
-# Configure the upload folder
-TEMP_DIR = tempfile.mkdtemp()
-du.configure_upload(app, TEMP_DIR)
 
 uploader = html.Div(
     [
@@ -125,9 +117,6 @@ tabs = dbc.Row(
 
 # ------------------ App Layout ------------------ #
 app.layout = dbc.Container([navbar, uploader, tabs], fluid=True, className="p-0")
-
-# Register callbacks
-register_callbacks(app)
 
 if __name__ == "__main__":
     app.run_server(debug=True)
