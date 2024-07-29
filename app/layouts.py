@@ -115,5 +115,5 @@ tabs = dbc.Row(
 )
 
 
-def create_layout():
-    return dbc.Container([navbar, uploader, tabs], fluid=True, className="p-0")
+def create_layout():  # noqa: D103
+    return dbc.Container([navbar, uploader, tabs], fluid=True, className="p-0 dbc")
