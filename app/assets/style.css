@@ -1,0 +1,11 @@
+:root {
+    --bs-primary: #FF6E42; /* Replace with your desired primary color */
+}
+
+.navbar {
+    background-color: var(--bs-primary) !important;
+}
+
+.nav-tabs .nav-item .nav-link.disabled {
+    color: #888888 !important;  /* Set your desired color here */
+}

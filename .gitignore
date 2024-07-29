@@ -5,6 +5,13 @@
 
 .mypy_cache
 
+# Pycache files
+__pycache__/
+app/__pycache__/
+
+# Other cache files
+*_cache
+
 # Mac
 .DS_Store
 
@@ -35,3 +42,4 @@ env.bak/
 venv.bak/
 
 nplinker_quickstart/
+uploads/
