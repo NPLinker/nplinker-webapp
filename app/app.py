@@ -45,7 +45,6 @@ navbar = dbc.Row(
                 ),
             ],
             brand="NPLinker Webapp",
-            brand_href="https://github.com/NPLinker/nplinker-webapp",
             color="primary",
             className="p-3 mb-2",
             dark=True,
@@ -66,7 +65,7 @@ uploader = html.Div(
                     id="dash-uploader",
                     text="Import Data",
                     text_completed="Uploaded: ",
-                    filetypes=["pkl"],
+                    filetypes=["pkl", "pickle"],
                     upload_id=uuid.uuid1(),  # Unique session id
                     cancel_button=True,
                     max_files=1,
@@ -128,8 +127,10 @@ tabs = dbc.Row(
     className="p-5",
 )
 
+# ------------------ App Layout ------------------ #
 app.layout = dbc.Container([navbar, uploader, tabs], fluid=True, className="p-0")
 
+# ------------------ Callbacks------------------ #
 clientside_callback(
     """
     (switchOn) => {
@@ -152,7 +153,7 @@ def upload_data(status: du.UploadStatus):  # noqa: D103
         with open(status.latest_file, "rb") as f:
             pickle.load(f)
         return (
-            f"Successfully uploaded file `{os.path.basename(latest_file)}` of size {round(status.uploaded_size_mb, 2)} MB.",
+            f"Successfully uploaded: {os.path.basename(latest_file)} [{round(status.uploaded_size_mb, 2)} MB]",
             str(latest_file),
         )
     return "No file uploaded", None
