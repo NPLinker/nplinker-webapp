@@ -15,7 +15,7 @@ def test_upload_data():
     upload_string, path_string = upload_data(status)
 
     # Check the result
-    assert upload_string == f"Successfully uploaded: {os.path.basename(MOCK_FILE_PATH)} [5.39 MB]"
+    assert upload_string == f"Successfully uploaded: {MOCK_FILE_PATH.name} [5.39 MB]"
     assert path_string == str(MOCK_FILE_PATH)
 
 
