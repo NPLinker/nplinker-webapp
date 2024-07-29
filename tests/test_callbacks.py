@@ -6,7 +6,7 @@ from app.app import upload_data
 from . import DATA_DIR
 
 
-MOCK_FILE_PATH = Path(DATA_DIR, "mock_obj_data.pkl")
+MOCK_FILE_PATH = DATA_DIR / "mock_obj_data.pkl"
 
 
 def test_upload_data():
