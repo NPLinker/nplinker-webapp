@@ -19,7 +19,6 @@ color_mode_switch = html.Span(
     ],
     className="p-2",
 )
-
 navbar = dbc.Row(
     dbc.Col(
         dbc.NavbarSimple(
