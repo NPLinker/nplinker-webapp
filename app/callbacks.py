@@ -7,6 +7,7 @@ import dash_uploader as du
 from dash import Dash
 from dash import Input
 from dash import Output
+from dash import State
 from dash import clientside_callback
 
 
@@ -47,11 +48,12 @@ def upload_data(status: du.UploadStatus):  # noqa: D103
 @app.callback(
     [
         Output("gm-tab", "disabled"),
-        Output("mg-tab", "disabled"),
+        Output("gm-filter-button", "disabled"),
         Output("gcf-ids-dropdown-menu", "disabled"),
         Output("gcf-ids-dropdown-input", "disabled"),
         Output("gcf-bigscape-dropdown-menu", "disabled"),
         Output("gcf-bigscape-dropdown-input", "disabled"),
+        Output("mg-tab", "disabled"),
     ],
     [Input("file-store", "data")],
     prevent_initial_call=True,
@@ -59,9 +61,9 @@ def upload_data(status: du.UploadStatus):  # noqa: D103
 def disable_tabs(file_name):  # noqa: D103
     if file_name is None:
         # Disable the tabs
-        return True, True, True, True, True, True
+        return True, True, True, True, True, True, True
     # Enable the tabs
-    return False, False, False, False, False, False
+    return False, False, False, False, False, False, False
 
 
 # Define another callback to access the stored file path and read the file
@@ -80,6 +82,17 @@ def display_file_contents(file_path):  # noqa: D103
 
 
 @app.callback(
+    Output("gm-filter-collapse", "is_open"),
+    [Input("gm-filter-button", "n_clicks")],
+    [State("gm-filter-collapse", "is_open")],
+)
+def toggle_gm_filter_collapse(n, is_open):  # noqa: D103
+    if n:
+        return not is_open
+    return is_open
+
+
+@app.callback(
     Output("gcf-ids-dropdown-input", "value"),
     Output("gcf-bigscape-dropdown-input", "value"),
     [
@@ -89,7 +102,7 @@ def display_file_contents(file_path):  # noqa: D103
         Input("gcf-bigscape-dropdown-clear", "n_clicks"),
     ],
 )
-def filter_gm(gcf_ids, gcf_ids_clear, gcf_bigscape, gcf_bigscape_clear):
+def gm_filter(gcf_ids, gcf_ids_clear, gcf_bigscape, gcf_bigscape_clear):  # noqa: D103
     ctx = dash.callback_context
 
     if not ctx.triggered:

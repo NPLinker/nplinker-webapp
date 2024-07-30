@@ -78,12 +78,17 @@ gcf_ids_dropdown_menu_items = [
 gcf_ids_input_group = dbc.InputGroup(
     [
         dbc.DropdownMenu(
-            gcf_ids_dropdown_menu_items, id="gcf-ids-dropdown-menu", label="GCF ID", disabled=True
+            gcf_ids_dropdown_menu_items,
+            id="gcf-ids-dropdown-menu",
+            label="GCF ID",
+            disabled=True,
+            toggleClassName="custom-dropdown-toggle",
         ),
         dbc.Input(
             id="gcf-ids-dropdown-input", placeholder="Enter one or more GCF IDs", disabled=True
         ),
-    ]
+    ],
+    className="mt-3 mb-3",
 )
 # gcfs bigscape class dropdown menu items
 gcf_bigscape_dropdown_menu_items = [
@@ -96,27 +101,32 @@ gcf_bigscape_input_group = dbc.InputGroup(
             id="gcf-bigscape-dropdown-menu",
             label="BiG-SCAPE Class",
             disabled=True,
+            toggleClassName="custom-dropdown-toggle",
         ),
         dbc.Input(
             id="gcf-bigscape-dropdown-input",
             placeholder="Enter one or more GCF BiG-SCAPE classes",
             disabled=True,
         ),
-    ]
+    ],
+    className="mt-3 mb-3",
+)
+# gm filter card
+gm_filter_button = dbc.Button(
+    "Genomics filter", id="gm-filter-button", disabled=True, className="filter-button"
+)
+gm_filter_body = dbc.CardBody(
+    [
+        gcf_ids_input_group,
+        gcf_bigscape_input_group,
+    ],
+)
+gm_filter_collapse = dbc.Card(
+    [gm_filter_button, dbc.Collapse(gm_filter_body, id="gm-filter-collapse", is_open=False)],
+    className="mt-5 mb-3",
 )
 # gm tab content
-gm_content = dbc.Row(
-    dbc.Col(
-        dbc.Card(
-            dbc.CardBody(
-                [
-                    gcf_ids_input_group,
-                    gcf_bigscape_input_group,
-                ]
-            ),
-        )
-    )
-)
+gm_content = dbc.Row(dbc.Col(gm_filter_collapse, width=10, className="mx-auto"))
 # mg tab content
 mg_content = dbc.Row(
     dbc.Col(

@@ -9,3 +9,27 @@
 .nav-tabs .nav-item .nav-link.disabled {
     color: #888888 !important;  /* Set your desired color here */
 }
+
+.filter-button {
+    background-color: #FF6E42 !important; /* Change to your primary color */
+    border-color: #FF6E42 !important; /* Ensure the border color matches */
+    color: white !important; /* Ensure text color is readable */
+}
+
+.filter-button:focus, 
+.filter-button:active {
+    outline: none !important; /* Remove the default outline */
+    box-shadow: 0 0 0 0.2rem rgba(255, 110, 66, 0.5) !important; /* Add a custom focus shadow */
+}
+
+.custom-dropdown-toggle {
+    background-color: #FF6E42 !important; /* Primary color */
+    border-color: #FF6E42 !important; /* Match border color */
+    color: white !important; /* Ensure text color is readable */
+}
+
+.custom-dropdown-toggle:focus, 
+.custom-dropdown-toggle:active {
+    outline: none !important; /* Remove default outline */
+    box-shadow: 0 0 0 0.2rem rgba(255, 110, 66, 0.5) !important; /* Custom focus shadow */
+}
