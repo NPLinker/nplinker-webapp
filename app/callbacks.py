@@ -1,9 +1,11 @@
 import os
 import pickle
 import tempfile
+from collections import defaultdict
 import dash
 import dash_bootstrap_components as dbc
 import dash_uploader as du
+import plotly.graph_objects as go
 from dash import Dash
 from dash import Input
 from dash import Output
@@ -68,17 +70,44 @@ def disable_tabs(file_name):  # noqa: D103
 
 # Define another callback to access the stored file path and read the file
 @app.callback(
+    Output("gm-graph", "figure"),
+    Output("gm-graph", "style"),
     Output("file-content-mg", "children"),
     [Input("file-store", "data")],
 )
-def display_file_contents(file_path):  # noqa: D103
+def gm_plot(file_path):  # noqa: D103
     if file_path is not None:
         with open(file_path, "rb") as f:
             data = pickle.load(f)
         # Process and display the data as needed
-        content = f"File contents: {data[0][:2]}"
-        return content  # Display same content in both tabs
-    return "No data available"
+        _, gcfs, _, _, _, _ = data
+        n_bgcs = {}
+        for gcf in gcfs:
+            n_bgcs[gcf.id] = len(gcf.bgcs)
+
+        keys_by_value = defaultdict(list)
+
+        for key, value in n_bgcs.items():
+            keys_by_value[value].append(key)
+
+        x_values = list(keys_by_value.keys())
+        x_values.sort()
+        y_values = [len(keys_by_value[x]) for x in x_values]
+        hover_texts = [", ".join(keys_by_value[x]) for x in x_values]
+
+        # Create the bar plot
+        fig = go.Figure(
+            data=[
+                go.Bar(
+                    x=x_values, y=y_values, text=hover_texts, hoverinfo="text", textposition="none"
+                )
+            ]
+        )
+
+        # Update layout
+        fig.update_layout(xaxis_title="# BGCs", yaxis_title="# GCFs", xaxis=dict(type="category"))
+        return fig, {"display": "block"}, "uploaded!!"
+    return {}, {"display": "none"}, "No data available"
 
 
 @app.callback(
