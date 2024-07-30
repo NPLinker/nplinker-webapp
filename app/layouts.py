@@ -71,11 +71,49 @@ uploader = html.Div(
 
 
 # ------------------ Tabs ------------------ #
+# gcfs ids dropdown menu items
+gcf_ids_dropdown_menu_items = [
+    dbc.DropdownMenuItem("Clear", id="gcf-ids-dropdown-clear"),
+]
+gcf_ids_input_group = dbc.InputGroup(
+    [
+        dbc.DropdownMenu(
+            gcf_ids_dropdown_menu_items, id="gcf-ids-dropdown-menu", label="GCF ID", disabled=True
+        ),
+        dbc.Input(
+            id="gcf-ids-dropdown-input", placeholder="Enter one or more GCF IDs", disabled=True
+        ),
+    ]
+)
+# gcfs bigscape class dropdown menu items
+gcf_bigscape_dropdown_menu_items = [
+    dbc.DropdownMenuItem("Clear", id="gcf-bigscape-dropdown-clear"),
+]
+gcf_bigscape_input_group = dbc.InputGroup(
+    [
+        dbc.DropdownMenu(
+            gcf_bigscape_dropdown_menu_items,
+            id="gcf-bigscape-dropdown-menu",
+            label="BiG-SCAPE Class",
+            disabled=True,
+        ),
+        dbc.Input(
+            id="gcf-bigscape-dropdown-input",
+            placeholder="Enter one or more GCF BiG-SCAPE classes",
+            disabled=True,
+        ),
+    ]
+)
 # gm tab content
 gm_content = dbc.Row(
     dbc.Col(
         dbc.Card(
-            dbc.CardBody([html.Div(id="file-content-gm")]),
+            dbc.CardBody(
+                [
+                    gcf_ids_input_group,
+                    gcf_bigscape_input_group,
+                ]
+            ),
         )
     )
 )

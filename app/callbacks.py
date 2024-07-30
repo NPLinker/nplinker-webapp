@@ -1,6 +1,7 @@
 import os
 import pickle
 import tempfile
+import dash
 import dash_bootstrap_components as dbc
 import dash_uploader as du
 from dash import Dash
@@ -44,21 +45,28 @@ def upload_data(status: du.UploadStatus):  # noqa: D103
 
 
 @app.callback(
-    [Output("gm-tab", "disabled"), Output("mg-tab", "disabled")],
+    [
+        Output("gm-tab", "disabled"),
+        Output("mg-tab", "disabled"),
+        Output("gcf-ids-dropdown-menu", "disabled"),
+        Output("gcf-ids-dropdown-input", "disabled"),
+        Output("gcf-bigscape-dropdown-menu", "disabled"),
+        Output("gcf-bigscape-dropdown-input", "disabled"),
+    ],
     [Input("file-store", "data")],
     prevent_initial_call=True,
 )
 def disable_tabs(file_name):  # noqa: D103
     if file_name is None:
         # Disable the tabs
-        return True, True
+        return True, True, True, True, True, True
     # Enable the tabs
-    return False, False
+    return False, False, False, False, False, False
 
 
 # Define another callback to access the stored file path and read the file
 @app.callback(
-    [Output("file-content-gm", "children"), Output("file-content-mg", "children")],
+    Output("file-content-mg", "children"),
     [Input("file-store", "data")],
 )
 def display_file_contents(file_path):  # noqa: D103
@@ -67,5 +75,33 @@ def display_file_contents(file_path):  # noqa: D103
             data = pickle.load(f)
         # Process and display the data as needed
         content = f"File contents: {data[0][:2]}"
-        return content, content  # Display same content in both tabs
-    return "No data available", "No data available"
+        return content  # Display same content in both tabs
+    return "No data available"
+
+
+@app.callback(
+    Output("gcf-ids-dropdown-input", "value"),
+    Output("gcf-bigscape-dropdown-input", "value"),
+    [
+        Input("gcf-ids-dropdown-input", "value"),
+        Input("gcf-ids-dropdown-clear", "n_clicks"),
+        Input("gcf-bigscape-dropdown-input", "value"),
+        Input("gcf-bigscape-dropdown-clear", "n_clicks"),
+    ],
+)
+def filter_gm(gcf_ids, gcf_ids_clear, gcf_bigscape, gcf_bigscape_clear):
+    ctx = dash.callback_context
+
+    if not ctx.triggered:
+        return "", ""
+    else:
+        button_id = ctx.triggered[0]["prop_id"].split(".")[0]
+
+    if button_id == "gcf-ids-dropdown-clear":
+        return "", gcf_bigscape
+    elif button_id == "gcf-ids-dropdown-input":
+        return gcf_ids, gcf_bigscape
+    elif button_id == "gcf-bigscape-dropdown-clear":
+        return gcf_ids, ""
+    elif button_id == "gcf-bigscape-dropdown-input":
+        return gcf_ids, gcf_bigscape
