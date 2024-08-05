@@ -51,10 +51,6 @@ def upload_data(status: du.UploadStatus):  # noqa: D103
     [
         Output("gm-tab", "disabled"),
         Output("gm-accordion-control", "disabled"),
-        Output("gcf-ids-dropdown-menu", "disabled"),
-        Output("gcf-ids-dropdown-input", "disabled"),
-        Output("gcf-bigscape-dropdown-menu", "disabled"),
-        Output("gcf-bigscape-dropdown-input", "disabled"),
         Output("mg-tab", "disabled"),
     ],
     [Input("file-store", "data")],
@@ -63,9 +59,9 @@ def upload_data(status: du.UploadStatus):  # noqa: D103
 def disable_tabs(file_name):  # noqa: D103
     if file_name is None:
         # Disable the tabs
-        return True, True, True, True, True, True, True
+        return True, True, True
     # Enable the tabs
-    return False, False, False, False, False, False, False
+    return False, False, False
 
 
 # Define another callback to access the stored file path and read the file
@@ -84,28 +80,20 @@ def display_file_contents(file_path):  # noqa: D103
 
 
 @app.callback(
-    Output("gcf-ids-dropdown-input", "value"),
-    Output("gcf-bigscape-dropdown-input", "value"),
-    [
-        Input("gcf-ids-dropdown-input", "value"),
-        Input("gcf-ids-dropdown-clear", "n_clicks"),
-        Input("gcf-bigscape-dropdown-input", "value"),
-        Input("gcf-bigscape-dropdown-clear", "n_clicks"),
-    ],
+    Output("gm-dropdown-input", "placeholder"),
+    Output("gm-dropdown-input", "value"),
+    [Input("gm-dropdown-menu", "value"), Input("gm-dropdown-input", "value")],
+    allow_duplicate=True,
 )
-def gm_filter(gcf_ids, gcf_ids_clear, gcf_bigscape, gcf_bigscape_clear):  # noqa: D103
+def update_placeholder(selected_dropdown, input_value):  # noqa: D103
+    if selected_dropdown == "GCF_ID":
+        placeholder = "Enter one or more GCF IDs"
+    elif selected_dropdown == "BSC_CLASS":
+        placeholder = "Enter one or more GCF BiG-SCAPE classes"
+
+    # Clear the text input when dropdown selection changes
     ctx = dash.callback_context
+    if ctx.triggered and ctx.triggered[0]["prop_id"] == "gm-dropdown-menu.value":
+        input_value = ""
 
-    if not ctx.triggered:
-        return "", ""
-    else:
-        button_id = ctx.triggered[0]["prop_id"].split(".")[0]
-
-    if button_id == "gcf-ids-dropdown-clear":
-        return "", gcf_bigscape
-    elif button_id == "gcf-ids-dropdown-input":
-        return gcf_ids, gcf_bigscape
-    elif button_id == "gcf-bigscape-dropdown-clear":
-        return gcf_ids, ""
-    elif button_id == "gcf-bigscape-dropdown-input":
-        return gcf_ids, gcf_bigscape
+    return placeholder, input_value

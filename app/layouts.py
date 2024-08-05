@@ -71,53 +71,42 @@ uploader = html.Div(
 
 
 # ------------------ Tabs ------------------ #
-# gcfs ids dropdown menu items
-gcf_ids_dropdown_menu_items = [
-    dbc.DropdownMenuItem("Clear", id="gcf-ids-dropdown-clear"),
-]
-gcf_ids_input_group = dbc.InputGroup(
+# dropdown menu items
+gm_input_group = dmc.Grid(
     [
-        dbc.DropdownMenu(
-            gcf_ids_dropdown_menu_items,
-            id="gcf-ids-dropdown-menu",
-            label="GCF ID",
-            disabled=True,
-            toggleClassName="custom-dropdown-toggle",
+        dmc.GridCol(
+            dbc.Button(
+                [html.I(className="fas fa-plus")],  # FontAwesome plus icon
+                id="add-button",
+                className="btn-primary",
+            ),
+            span=1,
         ),
-        dbc.Input(
-            id="gcf-ids-dropdown-input", placeholder="Enter one or more GCF IDs", disabled=True
+        dmc.GridCol(
+            dcc.Dropdown(
+                options=[
+                    {"label": "GCF ID", "value": "GCF_ID"},
+                    {"label": "BiG-SCAPE Class", "value": "BSC_CLASS"},
+                ],
+                value="GCF_ID",
+                placeholder="Enter one or more GCF IDs",
+                id="gm-dropdown-menu",
+                clearable=False,
+            ),
+            span=6,
+        ),
+        dmc.GridCol(
+            dmc.TextInput(
+                id="gm-dropdown-input",
+                placeholder="",
+                className="custom-textinput ",
+            ),
+            span=5,
         ),
     ],
-    className="mt-3 mb-3",
-)
-# gcfs bigscape class dropdown menu items
-gcf_bigscape_dropdown_menu_items = [
-    dbc.DropdownMenuItem("Clear", id="gcf-bigscape-dropdown-clear"),
-]
-gcf_bigscape_input_group = dbc.InputGroup(
-    [
-        dbc.DropdownMenu(
-            gcf_bigscape_dropdown_menu_items,
-            id="gcf-bigscape-dropdown-menu",
-            label="BiG-SCAPE Class",
-            disabled=True,
-            toggleClassName="custom-dropdown-toggle",
-        ),
-        dbc.Input(
-            id="gcf-bigscape-dropdown-input",
-            placeholder="Enter one or more GCF BiG-SCAPE classes",
-            disabled=True,
-        ),
-    ],
-    className="mt-3 mb-3",
+    gutter="md",
 )
 # gm accordion (filter) card
-gm_accordion_body = dbc.CardBody(
-    [
-        gcf_ids_input_group,
-        gcf_bigscape_input_group,
-    ],
-)
 gm_accordion = dmc.Accordion(
     [
         dmc.AccordionItem(
@@ -126,10 +115,9 @@ gm_accordion = dmc.Accordion(
                     "Genomics filter",
                     disabled=True,
                     id="gm-accordion-control",
+                    className="mt-5 mb-3",
                 ),
-                dmc.AccordionPanel(
-                    [gm_accordion_body],
-                ),
+                dmc.AccordionPanel(gm_input_group),
             ],
             value="gm-accordion",
         ),
@@ -157,7 +145,6 @@ tabs = dbc.Row(
                     activeTabClassName="fw-bold",
                     disabled=True,
                     id="gm-tab",
-                    className="disabled-tab",
                 ),
                 dbc.Tab(
                     mg_content,
@@ -165,7 +152,6 @@ tabs = dbc.Row(
                     activeTabClassName="fw-bold",
                     disabled=True,
                     id="mg-tab",
-                    className="disabled-tab",
                 ),
             ],
         ),
