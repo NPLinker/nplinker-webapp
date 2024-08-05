@@ -7,8 +7,10 @@ import dash_uploader as du
 from dash import Dash
 from dash import Input
 from dash import Output
-from dash import State
 from dash import clientside_callback
+
+
+dash._dash_renderer._set_react_version("18.2.0")
 
 
 dbc_css = "https://cdn.jsdelivr.net/gh/AnnMarieW/dash-bootstrap-templates/dbc.min.css"
@@ -48,7 +50,7 @@ def upload_data(status: du.UploadStatus):  # noqa: D103
 @app.callback(
     [
         Output("gm-tab", "disabled"),
-        Output("gm-filter-button", "disabled"),
+        Output("gm-accordion-control", "disabled"),
         Output("gcf-ids-dropdown-menu", "disabled"),
         Output("gcf-ids-dropdown-input", "disabled"),
         Output("gcf-bigscape-dropdown-menu", "disabled"),
@@ -79,17 +81,6 @@ def display_file_contents(file_path):  # noqa: D103
         content = f"File contents: {data[0][:2]}"
         return content  # Display same content in both tabs
     return "No data available"
-
-
-@app.callback(
-    Output("gm-filter-collapse", "is_open"),
-    [Input("gm-filter-button", "n_clicks")],
-    [State("gm-filter-collapse", "is_open")],
-)
-def toggle_gm_filter_collapse(n, is_open):  # noqa: D103
-    if n:
-        return not is_open
-    return is_open
 
 
 @app.callback(

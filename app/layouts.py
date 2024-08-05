@@ -1,5 +1,6 @@
 import uuid
 import dash_bootstrap_components as dbc
+import dash_mantine_components as dmc
 import dash_uploader as du
 from dash import dcc
 from dash import html
@@ -110,22 +111,33 @@ gcf_bigscape_input_group = dbc.InputGroup(
     ],
     className="mt-3 mb-3",
 )
-# gm filter card
-gm_filter_button = dbc.Button(
-    "Genomics filter", id="gm-filter-button", disabled=True, className="filter-button"
-)
-gm_filter_body = dbc.CardBody(
+# gm accordion (filter) card
+gm_accordion_body = dbc.CardBody(
     [
         gcf_ids_input_group,
         gcf_bigscape_input_group,
     ],
 )
-gm_filter_collapse = dbc.Card(
-    [gm_filter_button, dbc.Collapse(gm_filter_body, id="gm-filter-collapse", is_open=False)],
+gm_accordion = dmc.Accordion(
+    [
+        dmc.AccordionItem(
+            [
+                dmc.AccordionControl(
+                    "Genomics filter",
+                    disabled=True,
+                    id="gm-accordion-control",
+                ),
+                dmc.AccordionPanel(
+                    [gm_accordion_body],
+                ),
+            ],
+            value="gm-accordion",
+        ),
+    ],
     className="mt-5 mb-3",
 )
 # gm tab content
-gm_content = dbc.Row(dbc.Col(gm_filter_collapse, width=10, className="mx-auto"))
+gm_content = dbc.Row(dbc.Col(gm_accordion, width=10, className="mx-auto"))
 # mg tab content
 mg_content = dbc.Row(
     dbc.Col(
@@ -163,4 +175,6 @@ tabs = dbc.Row(
 
 
 def create_layout():  # noqa: D103
-    return dbc.Container([navbar, uploader, tabs], fluid=True, className="p-0 dbc")
+    return dmc.MantineProvider(
+        [dbc.Container([navbar, uploader, tabs], fluid=True, className="p-0 dbc")]
+    )
