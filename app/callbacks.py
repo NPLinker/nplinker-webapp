@@ -6,6 +6,7 @@ import dash
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 import dash_uploader as du
+from dash import ALL
 from dash import MATCH
 from dash import Dash
 from dash import Input
@@ -86,61 +87,64 @@ def display_file_contents(file_path):  # noqa: D103
 
 
 @app.callback(
-    Output("block-store", "data"), Input("add-button", "n_clicks"), State("block-store", "data")
+    Output("block-store", "data"),
+    Input({"type": "gm-add-button", "index": ALL}, "n_clicks"),
+    State("block-store", "data"),
 )
 def add_block(n_clicks, blocks_data):  # noqa: D103
-    if n_clicks is None:
+    if not any(n_clicks):
         raise dash.exceptions.PreventUpdate
 
     # Create a unique ID for the new block
     new_block_id = str(uuid.uuid4())
-
     blocks_data.append(new_block_id)
     return blocks_data
 
 
 @app.callback(Output("blocks-container", "children"), Input("block-store", "data"))
 def display_blocks(blocks_data):  # noqa: D103
-    blocks = []
-
-    for block_id in blocks_data:
-        blocks.append(
-            dmc.Grid(
-                id={"type": "gm-block", "index": block_id},
-                children=[
-                    dmc.GridCol(
-                        dbc.Button(
-                            [html.I(className="fas fa-plus")],
-                            className="btn-primary",
-                        ),
-                        span=1,
+    # Start with one block in the layout and then add additional blocks dynamically
+    blocks = [
+        dmc.Grid(
+            id={"type": "gm-block", "index": block_id},
+            children=[
+                dmc.GridCol(
+                    dbc.Button(
+                        [html.I(className="fas fa-plus")],
+                        id={"type": "gm-add-button", "index": block_id},
+                        className="btn-primary",
+                        style={
+                            "display": "block" if i == len(blocks_data) - 1 else "none"
+                        },  # Show button only on the latest block
                     ),
-                    dmc.GridCol(
-                        dcc.Dropdown(
-                            options=[
-                                {"label": "GCF ID", "value": "GCF_ID"},
-                                {"label": "BiG-SCAPE Class", "value": "BSC_CLASS"},
-                            ],
-                            value="GCF_ID",
-                            placeholder="Enter one or more GCF IDs",
-                            id={"type": "gm-dropdown-menu", "index": block_id},
-                            clearable=False,
-                        ),
-                        span=6,
+                    span=1,
+                ),
+                dmc.GridCol(
+                    dcc.Dropdown(
+                        options=[
+                            {"label": "GCF ID", "value": "GCF_ID"},
+                            {"label": "BiG-SCAPE Class", "value": "BSC_CLASS"},
+                        ],
+                        value="GCF_ID",
+                        placeholder="Enter one or more GCF IDs",
+                        id={"type": "gm-dropdown-menu", "index": block_id},
+                        clearable=False,
                     ),
-                    dmc.GridCol(
-                        dmc.TextInput(
-                            id={"type": "gm-dropdown-input", "index": block_id},
-                            placeholder="",
-                            className="custom-textinput",
-                        ),
-                        span=5,
+                    span=6,
+                ),
+                dmc.GridCol(
+                    dmc.TextInput(
+                        id={"type": "gm-dropdown-input", "index": block_id},
+                        placeholder="",
+                        className="custom-textinput",
                     ),
-                ],
-                gutter="md",
-            )
+                    span=5,
+                ),
+            ],
+            gutter="md",
         )
-
+        for i, block_id in enumerate(blocks_data)
+    ]
     return blocks
 
 

@@ -74,12 +74,46 @@ uploader = html.Div(
 # dropdown menu items
 gm_input_group = html.Div(
     [
-        dcc.Store(id="block-store", data=[]),
-        html.Div(id="blocks-container"),
-        dbc.Button(
-            [html.I(className="fas fa-plus")],  # FontAwesome plus icon
-            id="add-button",
-            className="btn-primary",
+        dcc.Store(id="block-store", data=[str(uuid.uuid4())]),  # Start with one block
+        html.Div(
+            id="blocks-container",
+            children=[
+                dmc.Grid(
+                    id={"type": "gm-block", "index": str(uuid.uuid4())},  # Start with one block
+                    children=[
+                        dmc.GridCol(
+                            dbc.Button(
+                                [html.I(className="fas fa-plus")],
+                                id={"type": "gm-add-button", "index": str(uuid.uuid4())},
+                                className="btn-primary",
+                            ),
+                            span=1,
+                        ),
+                        dmc.GridCol(
+                            dcc.Dropdown(
+                                options=[
+                                    {"label": "GCF ID", "value": "GCF_ID"},
+                                    {"label": "BiG-SCAPE Class", "value": "BSC_CLASS"},
+                                ],
+                                value="GCF_ID",
+                                placeholder="Enter one or more GCF IDs",
+                                id={"type": "gm-dropdown-menu", "index": str(uuid.uuid4())},
+                                clearable=False,
+                            ),
+                            span=6,
+                        ),
+                        dmc.GridCol(
+                            dmc.TextInput(
+                                id={"type": "gm-dropdown-input", "index": str(uuid.uuid4())},
+                                placeholder="",
+                                className="custom-textinput",
+                            ),
+                            span=5,
+                        ),
+                    ],
+                    gutter="md",
+                )
+            ],
         ),
     ]
 )
