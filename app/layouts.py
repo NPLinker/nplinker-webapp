@@ -72,39 +72,16 @@ uploader = html.Div(
 
 # ------------------ Tabs ------------------ #
 # dropdown menu items
-gm_input_group = dmc.Grid(
+gm_input_group = html.Div(
     [
-        dmc.GridCol(
-            dbc.Button(
-                [html.I(className="fas fa-plus")],  # FontAwesome plus icon
-                id="add-button",
-                className="btn-primary",
-            ),
-            span=1,
+        dcc.Store(id="block-store", data=[]),
+        html.Div(id="blocks-container"),
+        dbc.Button(
+            [html.I(className="fas fa-plus")],  # FontAwesome plus icon
+            id="add-button",
+            className="btn-primary",
         ),
-        dmc.GridCol(
-            dcc.Dropdown(
-                options=[
-                    {"label": "GCF ID", "value": "GCF_ID"},
-                    {"label": "BiG-SCAPE Class", "value": "BSC_CLASS"},
-                ],
-                value="GCF_ID",
-                placeholder="Enter one or more GCF IDs",
-                id="gm-dropdown-menu",
-                clearable=False,
-            ),
-            span=6,
-        ),
-        dmc.GridCol(
-            dmc.TextInput(
-                id="gm-dropdown-input",
-                placeholder="",
-                className="custom-textinput ",
-            ),
-            span=5,
-        ),
-    ],
-    gutter="md",
+    ]
 )
 # gm accordion (filter) card
 gm_accordion = dmc.Accordion(

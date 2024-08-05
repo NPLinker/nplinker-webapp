@@ -1,13 +1,19 @@
 import os
 import pickle
 import tempfile
+import uuid
 import dash
 import dash_bootstrap_components as dbc
+import dash_mantine_components as dmc
 import dash_uploader as du
+from dash import MATCH
 from dash import Dash
 from dash import Input
 from dash import Output
+from dash import State
 from dash import clientside_callback
+from dash import dcc
+from dash import html
 
 
 dash._dash_renderer._set_react_version("18.2.0")
@@ -80,20 +86,72 @@ def display_file_contents(file_path):  # noqa: D103
 
 
 @app.callback(
-    Output("gm-dropdown-input", "placeholder"),
-    Output("gm-dropdown-input", "value"),
-    [Input("gm-dropdown-menu", "value"), Input("gm-dropdown-input", "value")],
-    allow_duplicate=True,
+    Output("block-store", "data"), Input("add-button", "n_clicks"), State("block-store", "data")
 )
-def update_placeholder(selected_dropdown, input_value):  # noqa: D103
-    if selected_dropdown == "GCF_ID":
-        placeholder = "Enter one or more GCF IDs"
-    elif selected_dropdown == "BSC_CLASS":
-        placeholder = "Enter one or more GCF BiG-SCAPE classes"
+def add_block(n_clicks, blocks_data):  # noqa: D103
+    if n_clicks is None:
+        raise dash.exceptions.PreventUpdate
 
-    # Clear the text input when dropdown selection changes
-    ctx = dash.callback_context
-    if ctx.triggered and ctx.triggered[0]["prop_id"] == "gm-dropdown-menu.value":
-        input_value = ""
+    # Create a unique ID for the new block
+    new_block_id = str(uuid.uuid4())
 
-    return placeholder, input_value
+    blocks_data.append(new_block_id)
+    return blocks_data
+
+
+@app.callback(Output("blocks-container", "children"), Input("block-store", "data"))
+def display_blocks(blocks_data):  # noqa: D103
+    blocks = []
+
+    for block_id in blocks_data:
+        blocks.append(
+            dmc.Grid(
+                id={"type": "gm-block", "index": block_id},
+                children=[
+                    dmc.GridCol(
+                        dbc.Button(
+                            [html.I(className="fas fa-plus")],
+                            className="btn-primary",
+                        ),
+                        span=1,
+                    ),
+                    dmc.GridCol(
+                        dcc.Dropdown(
+                            options=[
+                                {"label": "GCF ID", "value": "GCF_ID"},
+                                {"label": "BiG-SCAPE Class", "value": "BSC_CLASS"},
+                            ],
+                            value="GCF_ID",
+                            placeholder="Enter one or more GCF IDs",
+                            id={"type": "gm-dropdown-menu", "index": block_id},
+                            clearable=False,
+                        ),
+                        span=6,
+                    ),
+                    dmc.GridCol(
+                        dmc.TextInput(
+                            id={"type": "gm-dropdown-input", "index": block_id},
+                            placeholder="",
+                            className="custom-textinput",
+                        ),
+                        span=5,
+                    ),
+                ],
+                gutter="md",
+            )
+        )
+
+    return blocks
+
+
+@app.callback(
+    Output({"type": "gm-dropdown-input", "index": MATCH}, "placeholder"),
+    Output({"type": "gm-dropdown-input", "index": MATCH}, "value"),
+    Input({"type": "gm-dropdown-menu", "index": MATCH}, "value"),
+)
+def update_placeholder(selected_value):  # noqa: D103
+    if selected_value == "GCF_ID":
+        return "Enter one or more GCF IDs", ""
+    elif selected_value == "BSC_CLASS":
+        return "Enter one or more GCF BiG-SCAPE classes", ""
+    return "", ""
