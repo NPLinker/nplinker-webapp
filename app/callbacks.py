@@ -87,22 +87,25 @@ def display_file_contents(file_path):  # noqa: D103
 
 
 @app.callback(
-    Output("block-store", "data"),
+    Output("blocks-id", "data"),
     Input({"type": "gm-add-button", "index": ALL}, "n_clicks"),
-    State("block-store", "data"),
+    State("blocks-id", "data"),
 )
-def add_block(n_clicks, blocks_data):  # noqa: D103
+def add_block(n_clicks, blocks_id):  # noqa: D103
     if not any(n_clicks):
         raise dash.exceptions.PreventUpdate
-
     # Create a unique ID for the new block
     new_block_id = str(uuid.uuid4())
-    blocks_data.append(new_block_id)
-    return blocks_data
+    blocks_id.append(new_block_id)
+    return blocks_id
 
 
-@app.callback(Output("blocks-container", "children"), Input("block-store", "data"))
-def display_blocks(blocks_data):  # noqa: D103
+@app.callback(
+    Output("blocks-container", "children"),
+    Input("blocks-id", "data"),
+    Input("blocks-container", "children"),
+)
+def display_blocks(blocks_id, blocks):  # noqa: D103
     # Start with one block in the layout and then add additional blocks dynamically
     blocks = [
         dmc.Grid(
@@ -114,7 +117,7 @@ def display_blocks(blocks_data):  # noqa: D103
                         id={"type": "gm-add-button", "index": block_id},
                         className="btn-primary",
                         style={
-                            "display": "block" if i == len(blocks_data) - 1 else "none"
+                            "display": "block" if i == len(blocks_id) - 1 else "none"
                         },  # Show button only on the latest block
                     ),
                     span=1,
@@ -126,7 +129,6 @@ def display_blocks(blocks_data):  # noqa: D103
                             {"label": "BiG-SCAPE Class", "value": "BSC_CLASS"},
                         ],
                         value="GCF_ID",
-                        placeholder="Enter one or more GCF IDs",
                         id={"type": "gm-dropdown-menu", "index": block_id},
                         clearable=False,
                     ),
@@ -143,7 +145,7 @@ def display_blocks(blocks_data):  # noqa: D103
             ],
             gutter="md",
         )
-        for i, block_id in enumerate(blocks_data)
+        for i, block_id in enumerate(blocks_id)
     ]
     return blocks
 
@@ -155,7 +157,7 @@ def display_blocks(blocks_data):  # noqa: D103
 )
 def update_placeholder(selected_value):  # noqa: D103
     if selected_value == "GCF_ID":
-        return "Enter one or more GCF IDs", ""
+        return "1, 2, 3, ...", ""
     elif selected_value == "BSC_CLASS":
         return "Enter one or more GCF BiG-SCAPE classes", ""
     return "", ""

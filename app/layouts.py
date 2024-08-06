@@ -74,7 +74,7 @@ uploader = html.Div(
 # dropdown menu items
 gm_input_group = html.Div(
     [
-        dcc.Store(id="block-store", data=[str(uuid.uuid4())]),  # Start with one block
+        dcc.Store(id="blocks-id", data=[str(uuid.uuid4())]),  # Start with one block
         html.Div(
             id="blocks-container",
             children=[
@@ -96,7 +96,6 @@ gm_input_group = html.Div(
                                     {"label": "BiG-SCAPE Class", "value": "BSC_CLASS"},
                                 ],
                                 value="GCF_ID",
-                                placeholder="Enter one or more GCF IDs",
                                 id={"type": "gm-dropdown-menu", "index": str(uuid.uuid4())},
                                 clearable=False,
                             ),
@@ -105,7 +104,7 @@ gm_input_group = html.Div(
                         dmc.GridCol(
                             dmc.TextInput(
                                 id={"type": "gm-dropdown-input", "index": str(uuid.uuid4())},
-                                placeholder="",
+                                placeholder="1, 2, 3, ...",
                                 className="custom-textinput",
                             ),
                             span=5,
