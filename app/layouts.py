@@ -72,19 +72,20 @@ uploader = html.Div(
 
 # ------------------ Tabs ------------------ #
 # dropdown menu items
+initial_block_id = str(uuid.uuid4())
 gm_input_group = html.Div(
     [
-        dcc.Store(id="blocks-id", data=[str(uuid.uuid4())]),  # Start with one block
+        dcc.Store(id="blocks-id", data=[initial_block_id]),  # Start with one block
         html.Div(
             id="blocks-container",
             children=[
                 dmc.Grid(
-                    id={"type": "gm-block", "index": str(uuid.uuid4())},  # Start with one block
+                    id={"type": "gm-block", "index": initial_block_id},  # Start with one block
                     children=[
                         dmc.GridCol(
                             dbc.Button(
                                 [html.I(className="fas fa-plus")],
-                                id={"type": "gm-add-button", "index": str(uuid.uuid4())},
+                                id={"type": "gm-add-button", "index": initial_block_id},
                                 className="btn-primary",
                             ),
                             span=1,
@@ -96,14 +97,14 @@ gm_input_group = html.Div(
                                     {"label": "BiG-SCAPE Class", "value": "BSC_CLASS"},
                                 ],
                                 value="GCF_ID",
-                                id={"type": "gm-dropdown-menu", "index": str(uuid.uuid4())},
+                                id={"type": "gm-dropdown-menu", "index": initial_block_id},
                                 clearable=False,
                             ),
                             span=6,
                         ),
                         dmc.GridCol(
                             dmc.TextInput(
-                                id={"type": "gm-dropdown-input", "index": str(uuid.uuid4())},
+                                id={"type": "gm-dropdown-input", "index": initial_block_id},
                                 placeholder="1, 2, 3, ...",
                                 className="custom-textinput",
                             ),
