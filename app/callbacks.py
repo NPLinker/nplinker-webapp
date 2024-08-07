@@ -124,7 +124,7 @@ def display_blocks(blocks_id, existing_blocks):  # noqa: D103
                 dcc.Dropdown(
                     options=[
                         {"label": "GCF ID", "value": "GCF_ID"},
-                        {"label": "BiG-SCAPE Class", "value": "BSC_CLASS"},
+                        {"label": "BGC Class", "value": "BGC_CLASS"},
                     ],
                     value="GCF_ID",
                     id={"type": "gm-dropdown-menu", "index": new_block_id},
@@ -133,11 +133,28 @@ def display_blocks(blocks_id, existing_blocks):  # noqa: D103
                 span=6,
             ),
             dmc.GridCol(
-                dmc.TextInput(
-                    id={"type": "gm-dropdown-input", "index": new_block_id},
-                    placeholder="1, 2, 3, ...",
-                    className="custom-textinput",
-                ),
+                [
+                    dmc.TextInput(
+                        id={"type": "gm-dropdown-ids-text-input", "index": new_block_id},
+                        placeholder="1, 2, 3, ...",
+                        className="custom-textinput",
+                    ),
+                    dcc.Dropdown(
+                        id={"type": "gm-dropdown-bgc-class-dropdown", "index": new_block_id},
+                        options=[
+                            {"label": "NRP", "value": "NRP"},
+                            {"label": "Polyketide", "value": "POLYKETIDE"},
+                            {"label": "RiPP", "value": "RIPP"},
+                            {"label": "Terpene", "value": "TERPENE"},
+                            {"label": "Saccharide", "value": "SAACCHARIDE"},
+                            {"label": "Alkaloid", "value": "ALKALOID"},
+                            {"label": "Other", "value": "OTHER"},
+                            {"label": "Unknown", "value": "UNKNOWN"},
+                        ],
+                        multi=True,
+                        style={"display": "none"},
+                    ),
+                ],
                 span=5,
             ),
         ],
@@ -153,8 +170,12 @@ def display_blocks(blocks_id, existing_blocks):  # noqa: D103
 
 
 @app.callback(
-    Output({"type": "gm-dropdown-input", "index": MATCH}, "placeholder"),
-    Output({"type": "gm-dropdown-input", "index": MATCH}, "value"),
+    Output({"type": "gm-dropdown-ids-text-input", "index": MATCH}, "style"),
+    Output({"type": "gm-dropdown-bgc-class-dropdown", "index": MATCH}, "style"),
+    Output({"type": "gm-dropdown-ids-text-input", "index": MATCH}, "placeholder"),
+    Output({"type": "gm-dropdown-bgc-class-dropdown", "index": MATCH}, "placeholder"),
+    Output({"type": "gm-dropdown-ids-text-input", "index": MATCH}, "value"),
+    Output({"type": "gm-dropdown-bgc-class-dropdown", "index": MATCH}, "value"),
     Input({"type": "gm-dropdown-menu", "index": MATCH}, "value"),
 )
 def update_placeholder(selected_value):  # noqa: D103
@@ -162,6 +183,13 @@ def update_placeholder(selected_value):  # noqa: D103
         # Callback was not triggered by user interaction, don't change anything
         raise dash.exceptions.PreventUpdate
     if selected_value == "GCF_ID":
-        return "1, 2, 3, ...", ""
-    elif selected_value == "BSC_CLASS":
-        return "Enter one or more GCF BiG-SCAPE classes", ""
+        return {"display": "block"}, {"display": "none"}, "1, 2, 3, ...", "", "", []
+    elif selected_value == "BGC_CLASS":
+        return (
+            {"display": "none"},
+            {"display": "block"},
+            "",
+            "Select one or more BGC classes",
+            "",
+            [],
+        )

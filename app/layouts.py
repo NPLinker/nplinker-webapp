@@ -94,7 +94,7 @@ gm_input_group = html.Div(
                             dcc.Dropdown(
                                 options=[
                                     {"label": "GCF ID", "value": "GCF_ID"},
-                                    {"label": "BiG-SCAPE Class", "value": "BSC_CLASS"},
+                                    {"label": "BGC Class", "value": "BGC_CLASS"},
                                 ],
                                 value="GCF_ID",
                                 id={"type": "gm-dropdown-menu", "index": initial_block_id},
@@ -103,11 +103,35 @@ gm_input_group = html.Div(
                             span=6,
                         ),
                         dmc.GridCol(
-                            dmc.TextInput(
-                                id={"type": "gm-dropdown-input", "index": initial_block_id},
-                                placeholder="1, 2, 3, ...",
-                                className="custom-textinput",
-                            ),
+                            [
+                                dmc.TextInput(
+                                    id={
+                                        "type": "gm-dropdown-ids-text-input",
+                                        "index": initial_block_id,
+                                    },
+                                    placeholder="1, 2, 3, ...",
+                                    className="custom-textinput",
+                                ),
+                                dcc.Dropdown(
+                                    id={
+                                        "type": "gm-dropdown-bgc-class-dropdown",
+                                        "index": initial_block_id,
+                                    },
+                                    options=[
+                                        {"label": "NRP", "value": "NRP"},
+                                        {"label": "Polyketide", "value": "POLYKETIDE"},
+                                        {"label": "RiPP", "value": "RIPP"},
+                                        {"label": "Terpene", "value": "TERPENE"},
+                                        {"label": "Saccharide", "value": "SAACCHARIDE"},
+                                        {"label": "Alkaloid", "value": "ALKALOID"},
+                                        {"label": "Other", "value": "OTHER"},
+                                        {"label": "Unknown", "value": "UNKNOWN"},
+                                    ],
+                                    placeholder="Select one or more BGC classes",
+                                    multi=True,
+                                    style={"display": "none"},
+                                ),
+                            ],
                             span=5,
                         ),
                     ],
