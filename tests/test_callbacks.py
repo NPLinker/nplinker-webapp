@@ -1,10 +1,9 @@
-from contextvars import copy_context
+import uuid
+import dash
 import pytest
-from dash._callback_context import context_value
-from dash._utils import AttributeDict
 from dash_uploader import UploadStatus
+from app.callbacks import add_block
 from app.callbacks import disable_tabs
-from app.callbacks import gm_filter
 from app.callbacks import upload_data
 from . import DATA_DIR
 
@@ -36,48 +35,30 @@ def test_disable_tabs():
     assert result[1] is False  # MG tab should be enabled
 
 
+@pytest.fixture
+def mock_uuid(monkeypatch):
+    def mock_uuid4():
+        return "test-uuid"
+
+    monkeypatch.setattr(uuid, "uuid4", mock_uuid4)
+
+
 @pytest.mark.parametrize(
-    "gcf_ids, gcf_bigscape, triggered_prop_id, expected_result",
+    "n_clicks, initial_blocks, expected_result",
     [
+        ([], ["block1"], pytest.raises(dash.exceptions.PreventUpdate)),  # no buttons clicked
+        ([1], ["block1", "block2"], ["block1", "block2", "test-uuid"]),  # one button clicked once
         (
-            "10, 34, 56",
-            "",
-            "gcf-ids-dropdown-input.value",
-            ("10, 34, 56", ""),
-        ),  # gcf-ids-dropdown-input triggered
-        (
-            "",
-            "class1",
-            "gcf-bigscape-dropdown-input.value",
-            ("", "class1"),
-        ),  # gcf-bigscape-dropdown-input triggered
-        (
-            "10, 34, 56",
-            "class1",
-            "gcf-ids-dropdown-clear.n_clicks",
-            ("", "class1"),
-        ),  # gcf-ids-dropdown-clear triggered
-        (
-            "10, 34, 56",
-            "class1",
-            "gcf-bigscape-dropdown-clear.n_clicks",
-            ("10, 34, 56", ""),
-        ),  # gcf-bigscape-dropdown-clear triggered
-        ("", "", "no_triggering_context", ("", "")),  # No triggering context
+            [1, 1, 1],
+            ["block1", "block2"],
+            ["block1", "block2", "test-uuid"],
+        ),  # three buttons, each clicked once
     ],
 )
-def test_gm_filter(gcf_ids, gcf_bigscape, triggered_prop_id, expected_result):
-    def run_callback():
-        gcf_ids_clear = None
-        gcf_bigscape_clear = None
-        if triggered_prop_id == "no_triggering_context":
-            context_value.set(AttributeDict(**{"triggered_inputs": []}))
-        else:
-            context_value.set(
-                AttributeDict(**{"triggered_inputs": [{"prop_id": triggered_prop_id}]})
-            )
-        return gm_filter(gcf_ids, gcf_ids_clear, gcf_bigscape, gcf_bigscape_clear)
-
-    ctx = copy_context()
-    output = ctx.run(run_callback)
-    assert output == expected_result
+def test_add_block(mock_uuid, n_clicks, initial_blocks, expected_result):
+    if isinstance(expected_result, list):
+        result = add_block(n_clicks, initial_blocks)
+        assert result == expected_result
+    else:
+        with expected_result:
+            add_block(n_clicks, initial_blocks)
