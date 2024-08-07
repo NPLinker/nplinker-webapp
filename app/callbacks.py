@@ -12,6 +12,7 @@ from dash import Dash
 from dash import Input
 from dash import Output
 from dash import State
+from dash import callback_context as ctx
 from dash import clientside_callback
 from dash import dcc
 from dash import html
@@ -103,51 +104,52 @@ def add_block(n_clicks, blocks_id):  # noqa: D103
 @app.callback(
     Output("blocks-container", "children"),
     Input("blocks-id", "data"),
-    Input("blocks-container", "children"),
+    State("blocks-container", "children"),
 )
-def display_blocks(blocks_id, blocks):  # noqa: D103
-    # Start with one block in the layout and then add additional blocks dynamically
-    blocks = [
-        dmc.Grid(
-            id={"type": "gm-block", "index": block_id},
-            children=[
-                dmc.GridCol(
-                    dbc.Button(
-                        [html.I(className="fas fa-plus")],
-                        id={"type": "gm-add-button", "index": block_id},
-                        className="btn-primary",
-                        style={
-                            "display": "block" if i == len(blocks_id) - 1 else "none"
-                        },  # Show button only on the latest block
-                    ),
-                    span=1,
+def display_blocks(blocks_id, existing_blocks):  # noqa: D103
+    new_block_id = blocks_id[-1]
+
+    new_block = dmc.Grid(
+        id={"type": "gm-block", "index": new_block_id},
+        children=[
+            dmc.GridCol(
+                dbc.Button(
+                    [html.I(className="fas fa-plus")],
+                    id={"type": "gm-add-button", "index": new_block_id},
+                    className="btn-primary",
                 ),
-                dmc.GridCol(
-                    dcc.Dropdown(
-                        options=[
-                            {"label": "GCF ID", "value": "GCF_ID"},
-                            {"label": "BiG-SCAPE Class", "value": "BSC_CLASS"},
-                        ],
-                        value="GCF_ID",
-                        id={"type": "gm-dropdown-menu", "index": block_id},
-                        clearable=False,
-                    ),
-                    span=6,
+                span=1,
+            ),
+            dmc.GridCol(
+                dcc.Dropdown(
+                    options=[
+                        {"label": "GCF ID", "value": "GCF_ID"},
+                        {"label": "BiG-SCAPE Class", "value": "BSC_CLASS"},
+                    ],
+                    value="GCF_ID",
+                    id={"type": "gm-dropdown-menu", "index": new_block_id},
+                    clearable=False,
                 ),
-                dmc.GridCol(
-                    dmc.TextInput(
-                        id={"type": "gm-dropdown-input", "index": block_id},
-                        placeholder="",
-                        className="custom-textinput",
-                    ),
-                    span=5,
+                span=6,
+            ),
+            dmc.GridCol(
+                dmc.TextInput(
+                    id={"type": "gm-dropdown-input", "index": new_block_id},
+                    placeholder="1, 2, 3, ...",
+                    className="custom-textinput",
                 ),
-            ],
-            gutter="md",
-        )
-        for i, block_id in enumerate(blocks_id)
-    ]
-    return blocks
+                span=5,
+            ),
+        ],
+        gutter="md",
+    )
+
+    # Hide the add button on the previous last block
+    existing_blocks[-1]["props"]["children"][0]["props"]["children"]["props"]["style"] = {
+        "display": "none"
+    }
+
+    return existing_blocks + [new_block]
 
 
 @app.callback(
@@ -156,8 +158,10 @@ def display_blocks(blocks_id, blocks):  # noqa: D103
     Input({"type": "gm-dropdown-menu", "index": MATCH}, "value"),
 )
 def update_placeholder(selected_value):  # noqa: D103
+    if not ctx.triggered:
+        # Callback was not triggered by user interaction, don't change anything
+        raise dash.exceptions.PreventUpdate
     if selected_value == "GCF_ID":
         return "1, 2, 3, ...", ""
     elif selected_value == "BSC_CLASS":
         return "Enter one or more GCF BiG-SCAPE classes", ""
-    return "", ""
