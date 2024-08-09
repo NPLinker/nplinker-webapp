@@ -247,3 +247,6 @@ def update_placeholder(
             "",
             [],
         )
+    else:
+        # This case should never occur due to the Literal type, but it satisfies mypy
+        return {"display": "none"}, {"display": "none"}, "", "", "", []
