@@ -2,6 +2,10 @@ import uuid
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 import dash_uploader as du
+from config import GM_DROPDOWN_BGC_CLASS_OPTIONS
+from config import GM_DROPDOWN_BGC_CLASS_PLACEHOLDER
+from config import GM_DROPDOWN_MENU_OPTIONS
+from config import GM_TEXT_INPUT_IDS_PLACEHOLDER
 from dash import dcc
 from dash import html
 
@@ -92,10 +96,7 @@ gm_input_group = html.Div(
                         ),
                         dmc.GridCol(
                             dcc.Dropdown(
-                                options=[
-                                    {"label": "GCF ID", "value": "GCF_ID"},
-                                    {"label": "BGC Class", "value": "BGC_CLASS"},
-                                ],
+                                options=GM_DROPDOWN_MENU_OPTIONS,
                                 value="GCF_ID",
                                 id={"type": "gm-dropdown-menu", "index": initial_block_id},
                                 clearable=False,
@@ -109,7 +110,7 @@ gm_input_group = html.Div(
                                         "type": "gm-dropdown-ids-text-input",
                                         "index": initial_block_id,
                                     },
-                                    placeholder="1, 2, 3, ...",
+                                    placeholder=GM_TEXT_INPUT_IDS_PLACEHOLDER,
                                     className="custom-textinput",
                                 ),
                                 dcc.Dropdown(
@@ -117,17 +118,8 @@ gm_input_group = html.Div(
                                         "type": "gm-dropdown-bgc-class-dropdown",
                                         "index": initial_block_id,
                                     },
-                                    options=[
-                                        {"label": "NRP", "value": "NRP"},
-                                        {"label": "Polyketide", "value": "POLYKETIDE"},
-                                        {"label": "RiPP", "value": "RIPP"},
-                                        {"label": "Terpene", "value": "TERPENE"},
-                                        {"label": "Saccharide", "value": "SAACCHARIDE"},
-                                        {"label": "Alkaloid", "value": "ALKALOID"},
-                                        {"label": "Other", "value": "OTHER"},
-                                        {"label": "Unknown", "value": "UNKNOWN"},
-                                    ],
-                                    placeholder="Select one or more BGC classes",
+                                    options=GM_DROPDOWN_BGC_CLASS_OPTIONS,
+                                    placeholder=GM_DROPDOWN_BGC_CLASS_PLACEHOLDER,
                                     multi=True,
                                     style={"display": "none"},
                                 ),

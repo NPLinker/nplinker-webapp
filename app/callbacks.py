@@ -6,6 +6,10 @@ import dash
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 import dash_uploader as du
+from config import GM_DROPDOWN_BGC_CLASS_OPTIONS
+from config import GM_DROPDOWN_BGC_CLASS_PLACEHOLDER
+from config import GM_DROPDOWN_MENU_OPTIONS
+from config import GM_TEXT_INPUT_IDS_PLACEHOLDER
 from dash import ALL
 from dash import MATCH
 from dash import Dash
@@ -122,10 +126,7 @@ def display_blocks(blocks_id, existing_blocks):  # noqa: D103
             ),
             dmc.GridCol(
                 dcc.Dropdown(
-                    options=[
-                        {"label": "GCF ID", "value": "GCF_ID"},
-                        {"label": "BGC Class", "value": "BGC_CLASS"},
-                    ],
+                    options=GM_DROPDOWN_MENU_OPTIONS,
                     value="GCF_ID",
                     id={"type": "gm-dropdown-menu", "index": new_block_id},
                     clearable=False,
@@ -136,21 +137,12 @@ def display_blocks(blocks_id, existing_blocks):  # noqa: D103
                 [
                     dmc.TextInput(
                         id={"type": "gm-dropdown-ids-text-input", "index": new_block_id},
-                        placeholder="1, 2, 3, ...",
+                        placeholder=GM_TEXT_INPUT_IDS_PLACEHOLDER,
                         className="custom-textinput",
                     ),
                     dcc.Dropdown(
                         id={"type": "gm-dropdown-bgc-class-dropdown", "index": new_block_id},
-                        options=[
-                            {"label": "NRP", "value": "NRP"},
-                            {"label": "Polyketide", "value": "POLYKETIDE"},
-                            {"label": "RiPP", "value": "RIPP"},
-                            {"label": "Terpene", "value": "TERPENE"},
-                            {"label": "Saccharide", "value": "SAACCHARIDE"},
-                            {"label": "Alkaloid", "value": "ALKALOID"},
-                            {"label": "Other", "value": "OTHER"},
-                            {"label": "Unknown", "value": "UNKNOWN"},
-                        ],
+                        options=GM_DROPDOWN_BGC_CLASS_OPTIONS,
                         multi=True,
                         style={"display": "none"},
                     ),
@@ -183,13 +175,13 @@ def update_placeholder(selected_value):  # noqa: D103
         # Callback was not triggered by user interaction, don't change anything
         raise dash.exceptions.PreventUpdate
     if selected_value == "GCF_ID":
-        return {"display": "block"}, {"display": "none"}, "1, 2, 3, ...", "", "", []
+        return {"display": "block"}, {"display": "none"}, GM_TEXT_INPUT_IDS_PLACEHOLDER, "", "", []
     elif selected_value == "BGC_CLASS":
         return (
             {"display": "none"},
             {"display": "block"},
             "",
-            "Select one or more BGC classes",
+            GM_DROPDOWN_BGC_CLASS_PLACEHOLDER,
             "",
             [],
         )
