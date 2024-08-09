@@ -1,7 +1,6 @@
 import os
 import pickle
 import tempfile
-from collections import defaultdict
 import dash
 import dash_bootstrap_components as dbc
 import dash_uploader as du
@@ -83,17 +82,16 @@ def gm_plot(file_path):  # noqa: D103
         _, gcfs, _, _, _, _ = data
         n_bgcs = {}
         for gcf in gcfs:
-            n_bgcs[gcf.id] = len(gcf.bgcs)
+            n = len(gcf.bgcs)
+            if n not in n_bgcs:
+                n_bgcs[n] = [gcf.id]
+            else:
+                n_bgcs[n].append(gcf.id)
 
-        keys_by_value = defaultdict(list)
-
-        for key, value in n_bgcs.items():
-            keys_by_value[value].append(key)
-
-        x_values = list(keys_by_value.keys())
+        x_values = list(n_bgcs.keys())
         x_values.sort()
-        y_values = [len(keys_by_value[x]) for x in x_values]
-        hover_texts = [", ".join(keys_by_value[x]) for x in x_values]
+        y_values = [len(n_bgcs[x]) for x in x_values]
+        hover_texts = [", ".join(n_bgcs[x]) for x in x_values]
 
         # Adjust bar width based on number of data points
         if len(x_values) <= 5:
