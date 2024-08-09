@@ -50,12 +50,18 @@ clientside_callback(
 def upload_data(status: du.UploadStatus):  # noqa: D103
     if status.is_completed:
         latest_file = status.latest_file
-        with open(status.latest_file, "rb") as f:
-            pickle.load(f)
-        return (
-            f"Successfully uploaded: {os.path.basename(latest_file)} [{round(status.uploaded_size_mb, 2)} MB]",
-            str(latest_file),
-        )
+        try:
+            with open(status.latest_file, "rb") as f:
+                pickle.load(f)
+            return (
+                f"Successfully uploaded: {os.path.basename(latest_file)} [{round(status.uploaded_size_mb, 2)} MB]",
+                str(latest_file),
+            )
+        except (pickle.UnpicklingError, EOFError, AttributeError):
+            return f"Error: {os.path.basename(latest_file)} is not a valid pickle file.", None
+        except Exception as e:
+            # Handle any other unexpected errors
+            return f"Error uploading file: {str(e)}", None
     return "No file uploaded", None
 
 
