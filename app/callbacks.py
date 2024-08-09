@@ -2,6 +2,8 @@ import os
 import pickle
 import tempfile
 import uuid
+from typing import Any
+from typing import Optional
 import dash
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
@@ -47,7 +49,15 @@ clientside_callback(
     id="dash-uploader",
     output=[Output("dash-uploader-output", "children"), Output("file-store", "data")],
 )
-def upload_data(status: du.UploadStatus):  # noqa: D103
+def upload_data(status: du.UploadStatus) -> tuple[str, Optional[str]]:
+    """Handle file upload and validate pickle files.
+
+    Args:
+        status: The upload status object.
+
+    Returns:
+        A tuple containing a message string and the file path (if successful).
+    """
     if status.is_completed:
         latest_file = status.latest_file
         try:
@@ -74,7 +84,15 @@ def upload_data(status: du.UploadStatus):  # noqa: D103
     [Input("file-store", "data")],
     prevent_initial_call=True,
 )
-def disable_tabs(file_name):  # noqa: D103
+def disable_tabs(file_name: Optional[str]) -> tuple[bool, bool, bool]:
+    """Enable or disable tabs based on whether a file has been uploaded.
+
+    Args:
+        file_name: The name of the uploaded file.
+
+    Returns:
+        A tuple of boolean values indicating whether each tab should be disabled.
+    """
     if file_name is None:
         # Disable the tabs
         return True, True, True
@@ -87,7 +105,15 @@ def disable_tabs(file_name):  # noqa: D103
     Output("file-content-mg", "children"),
     [Input("file-store", "data")],
 )
-def display_file_contents(file_path):  # noqa: D103
+def display_file_contents(file_path: Optional[str]) -> str:
+    """Read and display the contents of the uploaded file.
+
+    Args:
+        file_path: The path to the uploaded file.
+
+    Returns:
+        A string representation of the file contents.
+    """
     if file_path is not None:
         with open(file_path, "rb") as f:
             data = pickle.load(f)
@@ -102,7 +128,16 @@ def display_file_contents(file_path):  # noqa: D103
     Input({"type": "gm-add-button", "index": ALL}, "n_clicks"),
     State("blocks-id", "data"),
 )
-def add_block(n_clicks, blocks_id):  # noqa: D103
+def add_block(n_clicks: list[int], blocks_id: list[str]) -> list[str]:
+    """Add a new block to the layout when the add button is clicked.
+
+    Args:
+        n_clicks: List of number of clicks for each add button.
+        blocks_id: Current list of block IDs.
+
+    Returns:
+        Updated list of block IDs.
+    """
     if not any(n_clicks):
         raise dash.exceptions.PreventUpdate
     # Create a unique ID for the new block
@@ -116,7 +151,18 @@ def add_block(n_clicks, blocks_id):  # noqa: D103
     Input("blocks-id", "data"),
     State("blocks-container", "children"),
 )
-def display_blocks(blocks_id, existing_blocks):  # noqa: D103
+def display_blocks(
+    blocks_id: list[str], existing_blocks: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    """Update the display of blocks based on the current block IDs.
+
+    Args:
+        blocks_id: List of block IDs.
+        existing_blocks: Current list of block components.
+
+    Returns:
+        Updated list of block components.
+    """
     new_block_id = blocks_id[-1]
 
     new_block = dmc.Grid(
@@ -176,7 +222,17 @@ def display_blocks(blocks_id, existing_blocks):  # noqa: D103
     Output({"type": "gm-dropdown-bgc-class-dropdown", "index": MATCH}, "value"),
     Input({"type": "gm-dropdown-menu", "index": MATCH}, "value"),
 )
-def update_placeholder(selected_value):  # noqa: D103
+def update_placeholder(
+    selected_value: str,
+) -> tuple[dict[str, str], dict[str, str], str, str, str, list[Any]]:
+    """Update the visibility and placeholders of input fields based on the selected dropdown value.
+
+    Args:
+        selected_value: The value selected in the dropdown menu.
+
+    Returns:
+        A tuple containing style, placeholder, and value updates for the input fields.
+    """
     if not ctx.triggered:
         # Callback was not triggered by user interaction, don't change anything
         raise dash.exceptions.PreventUpdate
