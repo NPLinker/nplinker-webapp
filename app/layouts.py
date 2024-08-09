@@ -1,8 +1,13 @@
 import uuid
 import dash_bootstrap_components as dbc
+import dash_mantine_components as dmc
 import dash_uploader as du
 from dash import dcc
 from dash import html
+from .config import GM_DROPDOWN_BGC_CLASS_OPTIONS
+from .config import GM_DROPDOWN_BGC_CLASS_PLACEHOLDER
+from .config import GM_DROPDOWN_MENU_OPTIONS
+from .config import GM_TEXT_INPUT_IDS_PLACEHOLDER
 
 
 # ------------------ Nav Bar ------------------ #
@@ -70,69 +75,86 @@ uploader = html.Div(
 
 
 # ------------------ Tabs ------------------ #
-# gcfs ids dropdown menu items
-gcf_ids_dropdown_menu_items = [
-    dbc.DropdownMenuItem("Clear", id="gcf-ids-dropdown-clear"),
-]
-gcf_ids_input_group = dbc.InputGroup(
+# dropdown menu items
+initial_block_id = str(uuid.uuid4())
+gm_input_group = html.Div(
     [
-        dbc.DropdownMenu(
-            gcf_ids_dropdown_menu_items,
-            id="gcf-ids-dropdown-menu",
-            label="GCF ID",
-            disabled=True,
-            toggleClassName="custom-dropdown-toggle",
+        dcc.Store(id="blocks-id", data=[initial_block_id]),  # Start with one block
+        html.Div(
+            id="blocks-container",
+            children=[
+                dmc.Grid(
+                    id={"type": "gm-block", "index": initial_block_id},  # Start with one block
+                    children=[
+                        dmc.GridCol(
+                            dbc.Button(
+                                [html.I(className="fas fa-plus")],
+                                id={"type": "gm-add-button", "index": initial_block_id},
+                                className="btn-primary",
+                            ),
+                            span=1,
+                        ),
+                        dmc.GridCol(
+                            dcc.Dropdown(
+                                options=GM_DROPDOWN_MENU_OPTIONS,
+                                value="GCF_ID",
+                                id={"type": "gm-dropdown-menu", "index": initial_block_id},
+                                clearable=False,
+                            ),
+                            span=6,
+                        ),
+                        dmc.GridCol(
+                            [
+                                dmc.TextInput(
+                                    id={
+                                        "type": "gm-dropdown-ids-text-input",
+                                        "index": initial_block_id,
+                                    },
+                                    placeholder=GM_TEXT_INPUT_IDS_PLACEHOLDER,
+                                    className="custom-textinput",
+                                ),
+                                dcc.Dropdown(
+                                    id={
+                                        "type": "gm-dropdown-bgc-class-dropdown",
+                                        "index": initial_block_id,
+                                    },
+                                    options=GM_DROPDOWN_BGC_CLASS_OPTIONS,
+                                    placeholder=GM_DROPDOWN_BGC_CLASS_PLACEHOLDER,
+                                    multi=True,
+                                    style={"display": "none"},
+                                ),
+                            ],
+                            span=5,
+                        ),
+                    ],
+                    gutter="md",
+                )
+            ],
         ),
-        dbc.Input(
-            id="gcf-ids-dropdown-input", placeholder="Enter one or more GCF IDs", disabled=True
+    ]
+)
+# gm accordion (filter) card
+gm_accordion = dmc.Accordion(
+    [
+        dmc.AccordionItem(
+            [
+                dmc.AccordionControl(
+                    "Genomics filter",
+                    disabled=True,
+                    id="gm-accordion-control",
+                    className="mt-5 mb-3",
+                ),
+                dmc.AccordionPanel(gm_input_group),
+            ],
+            value="gm-accordion",
         ),
     ],
-    className="mt-3 mb-3",
-)
-# gcfs bigscape class dropdown menu items
-gcf_bigscape_dropdown_menu_items = [
-    dbc.DropdownMenuItem("Clear", id="gcf-bigscape-dropdown-clear"),
-]
-gcf_bigscape_input_group = dbc.InputGroup(
-    [
-        dbc.DropdownMenu(
-            gcf_bigscape_dropdown_menu_items,
-            id="gcf-bigscape-dropdown-menu",
-            label="BiG-SCAPE Class",
-            disabled=True,
-            toggleClassName="custom-dropdown-toggle",
-        ),
-        dbc.Input(
-            id="gcf-bigscape-dropdown-input",
-            placeholder="Enter one or more GCF BiG-SCAPE classes",
-            disabled=True,
-        ),
-    ],
-    className="mt-3 mb-3",
-)
-# gm filter card
-gm_filter_button = dbc.Button(
-    "Genomics filter", id="gm-filter-button", disabled=True, className="filter-button"
-)
-gm_filter_body = dbc.CardBody(
-    [
-        gcf_ids_input_group,
-        gcf_bigscape_input_group,
-    ],
-)
-gm_filter_collapse = dbc.Card(
-    [gm_filter_button, dbc.Collapse(gm_filter_body, id="gm-filter-collapse", is_open=False)],
     className="mt-5 mb-3",
 )
 # gm graph
 gm_graph = dcc.Graph(id="gm-graph", className="mt-5 mb-3", style={"display": "none"})
 # gm tab content
-gm_content = dbc.Row(
-    [
-        dbc.Col(gm_filter_collapse, width=10, className="mx-auto"),
-        dbc.Col(gm_graph, width=10, className="mx-auto"),
-    ]
-)
+gm_content = dbc.Row(dbc.Col(gm_accordion, width=10, className="mx-auto"))
 # mg tab content
 mg_content = dbc.Row(
     dbc.Col(
@@ -152,7 +174,6 @@ tabs = dbc.Row(
                     activeTabClassName="fw-bold",
                     disabled=True,
                     id="gm-tab",
-                    className="disabled-tab",
                 ),
                 dbc.Tab(
                     mg_content,
@@ -160,7 +181,6 @@ tabs = dbc.Row(
                     activeTabClassName="fw-bold",
                     disabled=True,
                     id="mg-tab",
-                    className="disabled-tab",
                 ),
             ],
         ),
@@ -170,4 +190,6 @@ tabs = dbc.Row(
 
 
 def create_layout():  # noqa: D103
-    return dbc.Container([navbar, uploader, tabs], fluid=True, className="p-0 dbc")
+    return dmc.MantineProvider(
+        [dbc.Container([navbar, uploader, tabs], fluid=True, className="p-0 dbc")]
+    )

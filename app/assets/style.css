@@ -10,26 +10,27 @@
     color: #888888 !important;  /* Set your desired color here */
 }
 
-.filter-button {
-    background-color: #FF6E42 !important; /* Change to your primary color */
-    border-color: #FF6E42 !important; /* Ensure the border color matches */
-    color: white !important; /* Ensure text color is readable */
+.btn-primary {
+    /* Use theme color or styles explicitly */
+    background-color: #FF6E42 !important; /* Primary color in the UNITED theme */
+    border-color: #f19e85 !important;
 }
 
-.filter-button:focus, 
-.filter-button:active {
-    outline: none !important; /* Remove the default outline */
-    box-shadow: 0 0 0 0.2rem rgba(255, 110, 66, 0.5) !important; /* Add a custom focus shadow */
+.btn-primary:hover {
+    background-color: #e0400f !important; /* Hover color */
+    border-color: #f19e85 !important;
 }
 
-.custom-dropdown-toggle {
-    background-color: #FF6E42 !important; /* Primary color */
-    border-color: #FF6E42 !important; /* Match border color */
-    color: white !important; /* Ensure text color is readable */
+.btn-primary:active {
+    background-color: #e0400f !important;
+    border-color: #f19e85 !important;
 }
 
-.custom-dropdown-toggle:focus, 
-.custom-dropdown-toggle:active {
-    outline: none !important; /* Remove default outline */
-    box-shadow: 0 0 0 0.2rem rgba(255, 110, 66, 0.5) !important; /* Custom focus shadow */
+.btn-primary:focus {
+    box-shadow: 0 0 0 0.2rem #e0400f !important; /* Focus outline color */
+    border-color: #f19e85 !important; /* Focus border color */
+}
+
+.custom-textinput .mantine-TextInput-input:focus {
+    border-color: #FF6E42 !important; /* Customize border color */
 }
