@@ -91,7 +91,7 @@ def gm_plot(file_path):  # noqa: D103
         x_values = list(n_bgcs.keys())
         x_values.sort()
         y_values = [len(n_bgcs[x]) for x in x_values]
-        hover_texts = [", ".join(n_bgcs[x]) for x in x_values]
+        hover_texts = [f"GCF IDs: {', '.join(n_bgcs[x])}" for x in x_values]
 
         # Adjust bar width based on number of data points
         if len(x_values) <= 5:
