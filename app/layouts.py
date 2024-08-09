@@ -2,12 +2,12 @@ import uuid
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 import dash_uploader as du
-from config import GM_DROPDOWN_BGC_CLASS_OPTIONS
-from config import GM_DROPDOWN_BGC_CLASS_PLACEHOLDER
-from config import GM_DROPDOWN_MENU_OPTIONS
-from config import GM_TEXT_INPUT_IDS_PLACEHOLDER
 from dash import dcc
 from dash import html
+from .config import GM_DROPDOWN_BGC_CLASS_OPTIONS
+from .config import GM_DROPDOWN_BGC_CLASS_PLACEHOLDER
+from .config import GM_DROPDOWN_MENU_OPTIONS
+from .config import GM_TEXT_INPUT_IDS_PLACEHOLDER
 
 
 # ------------------ Nav Bar ------------------ #
