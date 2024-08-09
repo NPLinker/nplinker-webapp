@@ -95,17 +95,32 @@ def gm_plot(file_path):  # noqa: D103
         y_values = [len(keys_by_value[x]) for x in x_values]
         hover_texts = [", ".join(keys_by_value[x]) for x in x_values]
 
+        # Adjust bar width based on number of data points
+        if len(x_values) <= 5:
+            bar_width = 0.4
+        else:
+            bar_width = None
+
         # Create the bar plot
         fig = go.Figure(
             data=[
                 go.Bar(
-                    x=x_values, y=y_values, text=hover_texts, hoverinfo="text", textposition="none"
+                    x=x_values,
+                    y=y_values,
+                    text=hover_texts,
+                    hoverinfo="text",
+                    textposition="none",
+                    width=bar_width,  # Set the bar width
                 )
             ]
         )
 
         # Update layout
-        fig.update_layout(xaxis_title="# BGCs", yaxis_title="# GCFs", xaxis=dict(type="category"))
+        fig.update_layout(
+            xaxis_title="# BGCs",
+            yaxis_title="# GCFs",
+            xaxis=dict(type="category"),
+        )
         return fig, {"display": "block"}, "uploaded!!"
     return {}, {"display": "none"}, "No data available"
 
