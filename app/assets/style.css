@@ -9,3 +9,28 @@
 .nav-tabs .nav-item .nav-link.disabled {
     color: #888888 !important;  /* Set your desired color here */
 }
+
+.btn-primary {
+    /* Use theme color or styles explicitly */
+    background-color: #FF6E42 !important; /* Primary color in the UNITED theme */
+    border-color: #f19e85 !important;
+}
+
+.btn-primary:hover {
+    background-color: #e0400f !important; /* Hover color */
+    border-color: #f19e85 !important;
+}
+
+.btn-primary:active {
+    background-color: #e0400f !important;
+    border-color: #f19e85 !important;
+}
+
+.btn-primary:focus {
+    box-shadow: 0 0 0 0.2rem #e0400f !important; /* Focus outline color */
+    border-color: #f19e85 !important; /* Focus border color */
+}
+
+.custom-textinput .mantine-TextInput-input:focus {
+    border-color: #FF6E42 !important; /* Customize border color */
+}
