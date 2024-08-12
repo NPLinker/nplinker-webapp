@@ -15,5 +15,3 @@ GM_DROPDOWN_BGC_CLASS_OPTIONS = [
     {"label": "Other", "value": "OTHER"},
     {"label": "Unknown", "value": "UNKNOWN"},
 ]
-
-GM_DROPDOWN_BGC_CLASS_PLACEHOLDER = "Select one or more BGC classes"

@@ -3,7 +3,6 @@ import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 import dash_uploader as du
 from config import GM_DROPDOWN_BGC_CLASS_OPTIONS
-from config import GM_DROPDOWN_BGC_CLASS_PLACEHOLDER
 from config import GM_DROPDOWN_MENU_OPTIONS
 from config import GM_TEXT_INPUT_IDS_PLACEHOLDER
 from dash import dcc
@@ -119,7 +118,7 @@ gm_input_group = html.Div(
                                         "index": initial_block_id,
                                     },
                                     options=GM_DROPDOWN_BGC_CLASS_OPTIONS,
-                                    placeholder=GM_DROPDOWN_BGC_CLASS_PLACEHOLDER,
+                                    placeholder="Select one or more BGC classes",
                                     multi=True,
                                     style={"display": "none"},
                                 ),

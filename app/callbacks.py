@@ -3,13 +3,11 @@ import pickle
 import tempfile
 import uuid
 from typing import Any
-from typing import Optional
 import dash
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 import dash_uploader as du
 from config import GM_DROPDOWN_BGC_CLASS_OPTIONS
-from config import GM_DROPDOWN_BGC_CLASS_PLACEHOLDER
 from config import GM_DROPDOWN_MENU_OPTIONS
 from config import GM_TEXT_INPUT_IDS_PLACEHOLDER
 from dash import ALL
@@ -49,7 +47,7 @@ clientside_callback(
     id="dash-uploader",
     output=[Output("dash-uploader-output", "children"), Output("file-store", "data")],
 )
-def upload_data(status: du.UploadStatus) -> tuple[str, Optional[str]]:
+def upload_data(status: du.UploadStatus) -> tuple[str, str | None]:
     """Handle file upload and validate pickle files.
 
     Args:
@@ -84,8 +82,17 @@ def upload_data(status: du.UploadStatus) -> tuple[str, Optional[str]]:
     [Input("file-store", "data")],
     prevent_initial_call=True,
 )
-def disable_tabs(file_name: Optional[str]) -> tuple[bool, bool, bool]:
-    """Enable or disable tabs based on whether a file has been uploaded.
+def disable_tabs(file_name: str | None) -> tuple[bool, bool, bool]:
+    """Disable the tabs when no file is uploaded.
+
+    This function controls the accessibility of the following UI elements:
+    1. The "Genomics -> Metabolomics" tab
+    2. The "Genomics filter" accordion control within the GM tab
+    3. The "Metabolomics -> Genomics" tab
+
+    When no file is uploaded, all these elements are disabled to prevent user interaction.
+    Once a file is successfully uploaded, these elements become enabled, allowing the user
+    to interact with the application's features.
 
     Args:
         file_name: The name of the uploaded file.
@@ -105,7 +112,7 @@ def disable_tabs(file_name: Optional[str]) -> tuple[bool, bool, bool]:
     Output("file-content-mg", "children"),
     [Input("file-store", "data")],
 )
-def display_file_contents(file_path: Optional[str]) -> str:
+def display_file_contents(file_path: str | None) -> str:
     """Read and display the contents of the uploaded file.
 
     Args:
@@ -154,7 +161,7 @@ def add_block(n_clicks: list[int], blocks_id: list[str]) -> list[str]:
 def display_blocks(
     blocks_id: list[str], existing_blocks: list[dict[str, Any]]
 ) -> list[dict[str, Any]]:
-    """Update the display of blocks based on the current block IDs.
+    """Display the blocks for the input block IDs.
 
     Args:
         blocks_id: List of block IDs.
@@ -225,7 +232,7 @@ def display_blocks(
 def update_placeholder(
     selected_value: str,
 ) -> tuple[dict[str, str], dict[str, str], str, str, str, list[Any]]:
-    """Update the visibility and placeholders of input fields based on the selected dropdown value.
+    """Update the placeholder text and style of input fields based on the dropdown selection.
 
     Args:
         selected_value: The value selected in the dropdown menu.
@@ -243,7 +250,7 @@ def update_placeholder(
             {"display": "none"},
             {"display": "block"},
             "",
-            GM_DROPDOWN_BGC_CLASS_PLACEHOLDER,
+            "Select one or more BGC classes",
             "",
             [],
         )
