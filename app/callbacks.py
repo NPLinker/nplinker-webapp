@@ -8,6 +8,10 @@ import dash
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 import dash_uploader as du
+from config import GM_DROPDOWN_BGC_CLASS_OPTIONS
+from config import GM_DROPDOWN_BGC_CLASS_PLACEHOLDER
+from config import GM_DROPDOWN_MENU_OPTIONS
+from config import GM_TEXT_INPUT_IDS_PLACEHOLDER
 from dash import ALL
 from dash import MATCH
 from dash import Dash
@@ -18,10 +22,6 @@ from dash import callback_context as ctx
 from dash import clientside_callback
 from dash import dcc
 from dash import html
-from .config import GM_DROPDOWN_BGC_CLASS_OPTIONS
-from .config import GM_DROPDOWN_BGC_CLASS_PLACEHOLDER
-from .config import GM_DROPDOWN_MENU_OPTIONS
-from .config import GM_TEXT_INPUT_IDS_PLACEHOLDER
 
 
 dash._dash_renderer._set_react_version("18.2.0")
