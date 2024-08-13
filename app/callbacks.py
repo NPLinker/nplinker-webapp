@@ -3,12 +3,13 @@ import pickle
 import tempfile
 import uuid
 from typing import Any
-from typing import Optional
 import dash
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 import dash_uploader as du
 import plotly.graph_objects as go
+from config import GM_DROPDOWN_BGC_CLASS_OPTIONS
+from config import GM_DROPDOWN_MENU_OPTIONS
 from dash import ALL
 from dash import MATCH
 from dash import Dash
@@ -19,10 +20,6 @@ from dash import callback_context as ctx
 from dash import clientside_callback
 from dash import dcc
 from dash import html
-from .config import GM_DROPDOWN_BGC_CLASS_OPTIONS
-from .config import GM_DROPDOWN_BGC_CLASS_PLACEHOLDER
-from .config import GM_DROPDOWN_MENU_OPTIONS
-from .config import GM_TEXT_INPUT_IDS_PLACEHOLDER
 
 
 dash._dash_renderer._set_react_version("18.2.0")
@@ -50,7 +47,7 @@ clientside_callback(
     id="dash-uploader",
     output=[Output("dash-uploader-output", "children"), Output("file-store", "data")],
 )
-def upload_data(status: du.UploadStatus) -> tuple[str, Optional[str]]:
+def upload_data(status: du.UploadStatus) -> tuple[str, str | None]:
     """Handle file upload and validate pickle files.
 
     Args:
@@ -85,8 +82,17 @@ def upload_data(status: du.UploadStatus) -> tuple[str, Optional[str]]:
     [Input("file-store", "data")],
     prevent_initial_call=True,
 )
-def disable_tabs(file_name: Optional[str]) -> tuple[bool, bool, bool]:
-    """Enable or disable tabs based on whether a file has been uploaded.
+def disable_tabs(file_name: str | None) -> tuple[bool, bool, bool]:
+    """Disable the tabs when no file is uploaded.
+
+    This function controls the accessibility of the following UI elements:
+    1. The "Genomics -> Metabolomics" tab
+    2. The "Genomics filter" accordion control within the GM tab
+    3. The "Metabolomics -> Genomics" tab
+
+    When no file is uploaded, all these elements are disabled to prevent user interaction.
+    Once a file is successfully uploaded, these elements become enabled, allowing the user
+    to interact with the application's features.
 
     Args:
         file_name: The name of the uploaded file.
@@ -101,22 +107,13 @@ def disable_tabs(file_name: Optional[str]) -> tuple[bool, bool, bool]:
     return False, False, False
 
 
-# Define another callback to access the stored file path and read the file
 @app.callback(
     Output("gm-graph", "figure"),
     Output("gm-graph", "style"),
     Output("file-content-mg", "children"),
     [Input("file-store", "data")],
 )
-def display_file_contents(file_path: Optional[str]) -> str:
-    """Read and display the contents of the uploaded file.
-
-    Args:
-        file_path: The path to the uploaded file.
-
-    Returns:
-        A string representation of the file contents.
-    """
+def gm_plot(file_path):  # noqa: D103
     if file_path is not None:
         with open(file_path, "rb") as f:
             data = pickle.load(f)
@@ -129,18 +126,15 @@ def display_file_contents(file_path: Optional[str]) -> str:
                 n_bgcs[n] = [gcf.id]
             else:
                 n_bgcs[n].append(gcf.id)
-
         x_values = list(n_bgcs.keys())
         x_values.sort()
         y_values = [len(n_bgcs[x]) for x in x_values]
         hover_texts = [f"GCF IDs: {', '.join(n_bgcs[x])}" for x in x_values]
-
         # Adjust bar width based on number of data points
         if len(x_values) <= 5:
             bar_width = 0.4
         else:
             bar_width = None
-
         # Create the bar plot
         fig = go.Figure(
             data=[
@@ -154,7 +148,6 @@ def display_file_contents(file_path: Optional[str]) -> str:
                 )
             ]
         )
-
         # Update layout
         fig.update_layout(
             xaxis_title="# BGCs",
@@ -196,7 +189,7 @@ def add_block(n_clicks: list[int], blocks_id: list[str]) -> list[str]:
 def display_blocks(
     blocks_id: list[str], existing_blocks: list[dict[str, Any]]
 ) -> list[dict[str, Any]]:
-    """Update the display of blocks based on the current block IDs.
+    """Display the blocks for the input block IDs.
 
     Args:
         blocks_id: List of block IDs.
@@ -231,7 +224,7 @@ def display_blocks(
                 [
                     dmc.TextInput(
                         id={"type": "gm-dropdown-ids-text-input", "index": new_block_id},
-                        placeholder=GM_TEXT_INPUT_IDS_PLACEHOLDER,
+                        placeholder="1, 2, 3, ...",
                         className="custom-textinput",
                     ),
                     dcc.Dropdown(
@@ -267,7 +260,7 @@ def display_blocks(
 def update_placeholder(
     selected_value: str,
 ) -> tuple[dict[str, str], dict[str, str], str, str, str, list[Any]]:
-    """Update the visibility and placeholders of input fields based on the selected dropdown value.
+    """Update the placeholder text and style of input fields based on the dropdown selection.
 
     Args:
         selected_value: The value selected in the dropdown menu.
@@ -279,13 +272,13 @@ def update_placeholder(
         # Callback was not triggered by user interaction, don't change anything
         raise dash.exceptions.PreventUpdate
     if selected_value == "GCF_ID":
-        return {"display": "block"}, {"display": "none"}, GM_TEXT_INPUT_IDS_PLACEHOLDER, "", "", []
+        return {"display": "block"}, {"display": "none"}, "1, 2, 3, ...", "", "", []
     elif selected_value == "BGC_CLASS":
         return (
             {"display": "none"},
             {"display": "block"},
             "",
-            GM_DROPDOWN_BGC_CLASS_PLACEHOLDER,
+            "Select one or more BGC classes",
             "",
             [],
         )

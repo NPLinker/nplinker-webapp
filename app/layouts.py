@@ -2,12 +2,10 @@ import uuid
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 import dash_uploader as du
+from config import GM_DROPDOWN_BGC_CLASS_OPTIONS
+from config import GM_DROPDOWN_MENU_OPTIONS
 from dash import dcc
 from dash import html
-from .config import GM_DROPDOWN_BGC_CLASS_OPTIONS
-from .config import GM_DROPDOWN_BGC_CLASS_PLACEHOLDER
-from .config import GM_DROPDOWN_MENU_OPTIONS
-from .config import GM_TEXT_INPUT_IDS_PLACEHOLDER
 
 
 # ------------------ Nav Bar ------------------ #
@@ -110,7 +108,7 @@ gm_input_group = html.Div(
                                         "type": "gm-dropdown-ids-text-input",
                                         "index": initial_block_id,
                                     },
-                                    placeholder=GM_TEXT_INPUT_IDS_PLACEHOLDER,
+                                    placeholder="1, 2, 3, ...",
                                     className="custom-textinput",
                                 ),
                                 dcc.Dropdown(
@@ -119,7 +117,7 @@ gm_input_group = html.Div(
                                         "index": initial_block_id,
                                     },
                                     options=GM_DROPDOWN_BGC_CLASS_OPTIONS,
-                                    placeholder=GM_DROPDOWN_BGC_CLASS_PLACEHOLDER,
+                                    placeholder="Select one or more BGC classes",
                                     multi=True,
                                     style={"display": "none"},
                                 ),
@@ -154,7 +152,12 @@ gm_accordion = dmc.Accordion(
 # gm graph
 gm_graph = dcc.Graph(id="gm-graph", className="mt-5 mb-3", style={"display": "none"})
 # gm tab content
-gm_content = dbc.Row(dbc.Col(gm_accordion, width=10, className="mx-auto"))
+gm_content = dbc.Row(
+    [
+        dbc.Col(gm_accordion, width=10, className="mx-auto"),
+        dbc.Col(gm_graph, width=10, className="mx-auto"),
+    ]
+)
 # mg tab content
 mg_content = dbc.Row(
     dbc.Col(
