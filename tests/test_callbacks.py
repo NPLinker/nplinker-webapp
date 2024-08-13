@@ -1,6 +1,10 @@
+import uuid
+import dash
+import pytest
 from dash_uploader import UploadStatus
-from app.app import disable_tabs
-from app.app import upload_data
+from app.callbacks import add_block
+from app.callbacks import disable_tabs
+from app.callbacks import upload_data
 from . import DATA_DIR
 
 
@@ -29,3 +33,32 @@ def test_disable_tabs():
     result = disable_tabs(MOCK_FILE_PATH)
     assert result[0] is False  # GM tab should be enabled
     assert result[1] is False  # MG tab should be enabled
+
+
+@pytest.fixture
+def mock_uuid(monkeypatch):
+    def mock_uuid4():
+        return "test-uuid"
+
+    monkeypatch.setattr(uuid, "uuid4", mock_uuid4)
+
+
+@pytest.mark.parametrize(
+    "n_clicks, initial_blocks, expected_result",
+    [
+        ([], ["block1"], pytest.raises(dash.exceptions.PreventUpdate)),  # no buttons clicked
+        ([1], ["block1", "block2"], ["block1", "block2", "test-uuid"]),  # one button clicked once
+        (
+            [1, 1, 1],
+            ["block1", "block2"],
+            ["block1", "block2", "test-uuid"],
+        ),  # three buttons, each clicked once
+    ],
+)
+def test_add_block(mock_uuid, n_clicks, initial_blocks, expected_result):
+    if isinstance(expected_result, list):
+        result = add_block(n_clicks, initial_blocks)
+        assert result == expected_result
+    else:
+        with expected_result:
+            add_block(n_clicks, initial_blocks)
