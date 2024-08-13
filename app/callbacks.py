@@ -109,7 +109,7 @@ def disable_tabs_and_reset_blocks(
     return False, False, False, initial_block_id, new_blocks
 
 
-def create_initial_block(block_id: str):
+def create_initial_block(block_id: str) -> dmc.Grid:
     """Create the initial block component with the given ID.
 
     Args:
@@ -238,9 +238,7 @@ def add_block(n_clicks: list[int], blocks_id: list[str]) -> list[str]:
     Input("blocks-id", "data"),
     State("blocks-container", "children"),
 )
-def display_blocks(
-    blocks_id: list[str], existing_blocks: list[dict[str, Any]]
-) -> list[dict[str, Any]]:
+def display_blocks(blocks_id: list[str], existing_blocks: list[dmc.Grid]) -> list[dmc.Grid]:
     """Display the blocks for the input block IDs.
 
     Args:
