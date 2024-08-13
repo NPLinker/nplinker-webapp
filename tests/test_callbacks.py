@@ -3,7 +3,7 @@ import dash
 import pytest
 from dash_uploader import UploadStatus
 from app.callbacks import add_block
-from app.callbacks import disable_tabs
+from app.callbacks import disable_tabs_and_reset_blocks
 from app.callbacks import upload_data
 from . import DATA_DIR
 
@@ -25,14 +25,20 @@ def test_upload_data():
 
 def test_disable_tabs():
     # Test with None as input
-    result = disable_tabs(None)
+    result = disable_tabs_and_reset_blocks(None)
     assert result[0] is True  # GM tab should be disabled
-    assert result[1] is True  # MG tab should be disabled
+    assert result[1] is True  # GM accordion should be disabled
+    assert result[2] is True  # MG tab should be disabled
+    assert result[3] == []  # No blocks should be displayed
+    assert result[4] == []  # No blocks should be displayed
 
     # Test with a string as input
-    result = disable_tabs(MOCK_FILE_PATH)
+    result = disable_tabs_and_reset_blocks(MOCK_FILE_PATH)
     assert result[0] is False  # GM tab should be enabled
-    assert result[1] is False  # MG tab should be enabled
+    assert result[1] is False  # GM accordion should be enabled
+    assert result[2] is False  # MG tab should be enabled
+    assert len(result[3]) == 1  # One block should be displayed
+    assert len(result[4]) == 1  # One block should be displayed
 
 
 @pytest.fixture
