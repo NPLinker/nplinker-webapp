@@ -7,6 +7,7 @@ import dash
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 import dash_uploader as du
+import plotly.graph_objects as go
 from config import GM_DROPDOWN_BGC_CLASS_OPTIONS
 from config import GM_DROPDOWN_MENU_OPTIONS
 from dash import ALL
@@ -106,27 +107,55 @@ def disable_tabs(file_name: str | None) -> tuple[bool, bool, bool]:
     return False, False, False
 
 
-# Define another callback to access the stored file path and read the file
 @app.callback(
+    Output("gm-graph", "figure"),
+    Output("gm-graph", "style"),
     Output("file-content-mg", "children"),
     [Input("file-store", "data")],
 )
-def display_file_contents(file_path: str | None) -> str:
-    """Read and display the contents of the uploaded file.
-
-    Args:
-        file_path: The path to the uploaded file.
-
-    Returns:
-        A string representation of the file contents.
-    """
+def gm_plot(file_path):  # noqa: D103
     if file_path is not None:
         with open(file_path, "rb") as f:
             data = pickle.load(f)
         # Process and display the data as needed
-        content = f"File contents: {data[0][:2]}"
-        return content  # Display same content in both tabs
-    return "No data available"
+        _, gcfs, _, _, _, _ = data
+        n_bgcs = {}
+        for gcf in gcfs:
+            n = len(gcf.bgcs)
+            if n not in n_bgcs:
+                n_bgcs[n] = [gcf.id]
+            else:
+                n_bgcs[n].append(gcf.id)
+        x_values = list(n_bgcs.keys())
+        x_values.sort()
+        y_values = [len(n_bgcs[x]) for x in x_values]
+        hover_texts = [f"GCF IDs: {', '.join(n_bgcs[x])}" for x in x_values]
+        # Adjust bar width based on number of data points
+        if len(x_values) <= 5:
+            bar_width = 0.4
+        else:
+            bar_width = None
+        # Create the bar plot
+        fig = go.Figure(
+            data=[
+                go.Bar(
+                    x=x_values,
+                    y=y_values,
+                    text=hover_texts,
+                    hoverinfo="text",
+                    textposition="none",
+                    width=bar_width,  # Set the bar width
+                )
+            ]
+        )
+        # Update layout
+        fig.update_layout(
+            xaxis_title="# BGCs",
+            yaxis_title="# GCFs",
+            xaxis=dict(type="category"),
+        )
+        return fig, {"display": "block"}, "uploaded!!"
+    return {}, {"display": "none"}, "No data available"
 
 
 @app.callback(

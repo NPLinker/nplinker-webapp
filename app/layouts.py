@@ -149,8 +149,15 @@ gm_accordion = dmc.Accordion(
     ],
     className="mt-5 mb-3",
 )
+# gm graph
+gm_graph = dcc.Graph(id="gm-graph", className="mt-5 mb-3", style={"display": "none"})
 # gm tab content
-gm_content = dbc.Row(dbc.Col(gm_accordion, width=10, className="mx-auto"))
+gm_content = dbc.Row(
+    [
+        dbc.Col(gm_accordion, width=10, className="mx-auto"),
+        dbc.Col(gm_graph, width=10, className="mx-auto"),
+    ]
+)
 # mg tab content
 mg_content = dbc.Row(
     dbc.Col(
