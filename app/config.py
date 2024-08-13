@@ -3,8 +3,6 @@ GM_DROPDOWN_MENU_OPTIONS = [
     {"label": "BGC Class", "value": "BGC_CLASS"},
 ]
 
-GM_TEXT_INPUT_IDS_PLACEHOLDER = "1, 2, 3, ..."
-
 GM_DROPDOWN_BGC_CLASS_OPTIONS = [
     {"label": "Alkaloid", "value": "ALKALOID"},
     {"label": "NRP", "value": "NRP"},

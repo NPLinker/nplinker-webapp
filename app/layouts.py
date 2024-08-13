@@ -4,7 +4,6 @@ import dash_mantine_components as dmc
 import dash_uploader as du
 from config import GM_DROPDOWN_BGC_CLASS_OPTIONS
 from config import GM_DROPDOWN_MENU_OPTIONS
-from config import GM_TEXT_INPUT_IDS_PLACEHOLDER
 from dash import dcc
 from dash import html
 
@@ -109,7 +108,7 @@ gm_input_group = html.Div(
                                         "type": "gm-dropdown-ids-text-input",
                                         "index": initial_block_id,
                                     },
-                                    placeholder=GM_TEXT_INPUT_IDS_PLACEHOLDER,
+                                    placeholder="1, 2, 3, ...",
                                     className="custom-textinput",
                                 ),
                                 dcc.Dropdown(

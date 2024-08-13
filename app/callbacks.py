@@ -9,7 +9,6 @@ import dash_mantine_components as dmc
 import dash_uploader as du
 from config import GM_DROPDOWN_BGC_CLASS_OPTIONS
 from config import GM_DROPDOWN_MENU_OPTIONS
-from config import GM_TEXT_INPUT_IDS_PLACEHOLDER
 from dash import ALL
 from dash import MATCH
 from dash import Dash
@@ -196,7 +195,7 @@ def display_blocks(
                 [
                     dmc.TextInput(
                         id={"type": "gm-dropdown-ids-text-input", "index": new_block_id},
-                        placeholder=GM_TEXT_INPUT_IDS_PLACEHOLDER,
+                        placeholder="1, 2, 3, ...",
                         className="custom-textinput",
                     ),
                     dcc.Dropdown(
@@ -244,7 +243,7 @@ def update_placeholder(
         # Callback was not triggered by user interaction, don't change anything
         raise dash.exceptions.PreventUpdate
     if selected_value == "GCF_ID":
-        return {"display": "block"}, {"display": "none"}, GM_TEXT_INPUT_IDS_PLACEHOLDER, "", "", []
+        return {"display": "block"}, {"display": "none"}, "1, 2, 3, ...", "", "", []
     elif selected_value == "BGC_CLASS":
         return (
             {"display": "none"},
