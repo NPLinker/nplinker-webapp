@@ -78,33 +78,85 @@ def upload_data(status: du.UploadStatus) -> tuple[str, str | None]:
         Output("gm-tab", "disabled"),
         Output("gm-accordion-control", "disabled"),
         Output("mg-tab", "disabled"),
+        Output("blocks-id", "data", allow_duplicate=True),
+        Output("blocks-container", "children", allow_duplicate=True),
     ],
     [Input("file-store", "data")],
     prevent_initial_call=True,
 )
-def disable_tabs(file_name: str | None) -> tuple[bool, bool, bool]:
-    """Disable the tabs when no file is uploaded.
-
-    This function controls the accessibility of the following UI elements:
-    1. The "Genomics -> Metabolomics" tab
-    2. The "Genomics filter" accordion control within the GM tab
-    3. The "Metabolomics -> Genomics" tab
-
-    When no file is uploaded, all these elements are disabled to prevent user interaction.
-    Once a file is successfully uploaded, these elements become enabled, allowing the user
-    to interact with the application's features.
+def disable_tabs_and_reset_blocks(
+    file_name: str | None,
+) -> tuple[bool, bool, bool, list[str], list[dict[str, Any]]]:
+    """Manage tab states and reset blocks based on file upload status.
 
     Args:
-        file_name: The name of the uploaded file.
+        file_name: The name of the uploaded file, or None if no file is uploaded.
 
     Returns:
-        A tuple of boolean values indicating whether each tab should be disabled.
+        A tuple containing:
+        - Boolean values for disabling gm-tab, gm-accordion-control, and mg-tab.
+        - A list with a single block ID.
+        - A list with a single block component.
     """
     if file_name is None:
-        # Disable the tabs
-        return True, True, True
-    # Enable the tabs
-    return False, False, False
+        # Disable the tabs, don't change blocks
+        return True, True, True, [], []
+
+    # Enable the tabs and reset blocks
+    initial_block_id = [str(uuid.uuid4())]
+    new_blocks = [create_initial_block(initial_block_id[0])]
+
+    return False, False, False, initial_block_id, new_blocks
+
+
+def create_initial_block(block_id: str):
+    """Create the initial block component with the given ID.
+
+    Args:
+        block_id: A unique identifier for the block.
+
+    Returns:
+        A dictionary representing a dmc.Grid component with nested elements.
+    """
+    return dmc.Grid(
+        id={"type": "gm-block", "index": block_id},
+        children=[
+            dmc.GridCol(
+                dbc.Button(
+                    [html.I(className="fas fa-plus")],
+                    id={"type": "gm-add-button", "index": block_id},
+                    className="btn-primary",
+                ),
+                span=1,
+            ),
+            dmc.GridCol(
+                dcc.Dropdown(
+                    options=GM_DROPDOWN_MENU_OPTIONS,
+                    value="GCF_ID",
+                    id={"type": "gm-dropdown-menu", "index": block_id},
+                    clearable=False,
+                ),
+                span=6,
+            ),
+            dmc.GridCol(
+                [
+                    dmc.TextInput(
+                        id={"type": "gm-dropdown-ids-text-input", "index": block_id},
+                        placeholder="1, 2, 3, ...",
+                        className="custom-textinput",
+                    ),
+                    dcc.Dropdown(
+                        id={"type": "gm-dropdown-bgc-class-dropdown", "index": block_id},
+                        options=GM_DROPDOWN_BGC_CLASS_OPTIONS,
+                        multi=True,
+                        style={"display": "none"},
+                    ),
+                ],
+                span=5,
+            ),
+        ],
+        gutter="md",
+    )
 
 
 @app.callback(
@@ -198,54 +250,56 @@ def display_blocks(
     Returns:
         Updated list of block components.
     """
-    new_block_id = blocks_id[-1]
+    if len(blocks_id) > 1:
+        new_block_id = blocks_id[-1]
 
-    new_block = dmc.Grid(
-        id={"type": "gm-block", "index": new_block_id},
-        children=[
-            dmc.GridCol(
-                dbc.Button(
-                    [html.I(className="fas fa-plus")],
-                    id={"type": "gm-add-button", "index": new_block_id},
-                    className="btn-primary",
-                ),
-                span=1,
-            ),
-            dmc.GridCol(
-                dcc.Dropdown(
-                    options=GM_DROPDOWN_MENU_OPTIONS,
-                    value="GCF_ID",
-                    id={"type": "gm-dropdown-menu", "index": new_block_id},
-                    clearable=False,
-                ),
-                span=6,
-            ),
-            dmc.GridCol(
-                [
-                    dmc.TextInput(
-                        id={"type": "gm-dropdown-ids-text-input", "index": new_block_id},
-                        placeholder="1, 2, 3, ...",
-                        className="custom-textinput",
+        new_block = dmc.Grid(
+            id={"type": "gm-block", "index": new_block_id},
+            children=[
+                dmc.GridCol(
+                    dbc.Button(
+                        [html.I(className="fas fa-plus")],
+                        id={"type": "gm-add-button", "index": new_block_id},
+                        className="btn-primary",
                     ),
+                    span=1,
+                ),
+                dmc.GridCol(
                     dcc.Dropdown(
-                        id={"type": "gm-dropdown-bgc-class-dropdown", "index": new_block_id},
-                        options=GM_DROPDOWN_BGC_CLASS_OPTIONS,
-                        multi=True,
-                        style={"display": "none"},
+                        options=GM_DROPDOWN_MENU_OPTIONS,
+                        value="GCF_ID",
+                        id={"type": "gm-dropdown-menu", "index": new_block_id},
+                        clearable=False,
                     ),
-                ],
-                span=5,
-            ),
-        ],
-        gutter="md",
-    )
+                    span=6,
+                ),
+                dmc.GridCol(
+                    [
+                        dmc.TextInput(
+                            id={"type": "gm-dropdown-ids-text-input", "index": new_block_id},
+                            placeholder="1, 2, 3, ...",
+                            className="custom-textinput",
+                        ),
+                        dcc.Dropdown(
+                            id={"type": "gm-dropdown-bgc-class-dropdown", "index": new_block_id},
+                            options=GM_DROPDOWN_BGC_CLASS_OPTIONS,
+                            multi=True,
+                            style={"display": "none"},
+                        ),
+                    ],
+                    span=5,
+                ),
+            ],
+            gutter="md",
+        )
 
-    # Hide the add button on the previous last block
-    existing_blocks[-1]["props"]["children"][0]["props"]["children"]["props"]["style"] = {
-        "display": "none"
-    }
+        # Hide the add button on the previous last block
+        existing_blocks[-1]["props"]["children"][0]["props"]["children"]["props"]["style"] = {
+            "display": "none"
+        }
 
-    return existing_blocks + [new_block]
+        return existing_blocks + [new_block]
+    return existing_blocks
 
 
 @app.callback(
