@@ -2,6 +2,8 @@ import uuid
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 import dash_uploader as du
+import pandas as pd
+from dash import dash_table
 from dash import dcc
 from dash import html
 
@@ -102,11 +104,60 @@ gm_accordion = dmc.Accordion(
 )
 # gm graph
 gm_graph = dcc.Graph(id="gm-graph", className="mt-5 mb-3", style={"display": "none"})
+# gm_table
+## Sample data
+df = pd.DataFrame(
+    {
+        "GCF ID": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"],
+        "# BGC": ["3", "1", "10", "6", "3", "1", "10", "6", "3", "1", "10", "6"],
+    }
+)
+## Table
+gm_table = dbc.Card(
+    [
+        dbc.CardHeader("Select data", id="gm-table-card-header", style={"color": "#888888"}),
+        dbc.CardBody(
+            [
+                dash_table.DataTable(
+                    id="gm-table",
+                    columns=[
+                        {"name": i, "id": i, "deletable": False, "selectable": False}
+                        for i in df.columns
+                    ],
+                    data=df.to_dict("records"),
+                    editable=False,
+                    filter_action="native",
+                    sort_action="none",
+                    sort_mode="multi",
+                    column_selectable="single",
+                    row_deletable=False,
+                    row_selectable="multi",
+                    selected_columns=[],
+                    selected_rows=[],
+                    page_action="native",
+                    page_current=0,
+                    page_size=10,
+                    style_cell={"textAlign": "left", "padding": "5px"},
+                    style_header={
+                        "backgroundColor": "#FF6E42",
+                        "fontWeight": "bold",
+                        "color": "white",
+                    },
+                ),
+            ],
+            id="gm-table-card-body",
+            style={"display": "none"},  # Initially hide the CardBody
+        ),
+        html.Div(id="gm-table-output1", className="p-4"),
+        html.Div(id="gm-table-output2", className="p-4"),
+    ]
+)
 # gm tab content
 gm_content = dbc.Row(
     [
-        dbc.Col(gm_accordion, width=10, className="mx-auto"),
+        dbc.Col(gm_accordion, width=10, className="mx-auto dbc"),
         dbc.Col(gm_graph, width=10, className="mx-auto"),
+        dbc.Col(gm_table, width=10, className="mx-auto"),
     ]
 )
 # mg tab content
@@ -145,5 +196,5 @@ tabs = dbc.Row(
 
 def create_layout():  # noqa: D103
     return dmc.MantineProvider(
-        [dbc.Container([navbar, uploader, tabs], fluid=True, className="p-0 dbc")]
+        [dbc.Container([navbar, uploader, tabs], fluid=True, className="p-0")]
     )
