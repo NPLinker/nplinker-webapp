@@ -2,8 +2,6 @@ import uuid
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 import dash_uploader as du
-from config import GM_DROPDOWN_BGC_CLASS_OPTIONS
-from config import GM_DROPDOWN_MENU_OPTIONS
 from dash import dcc
 from dash import html
 
@@ -77,57 +75,10 @@ uploader = html.Div(
 initial_block_id = str(uuid.uuid4())
 gm_input_group = html.Div(
     [
-        dcc.Store(id="blocks-id", data=[initial_block_id]),  # Start with one block
+        dcc.Store(id="blocks-id", data=[]),  # Start with one block
         html.Div(
             id="blocks-container",
-            children=[
-                dmc.Grid(
-                    id={"type": "gm-block", "index": initial_block_id},  # Start with one block
-                    children=[
-                        dmc.GridCol(
-                            dbc.Button(
-                                [html.I(className="fas fa-plus")],
-                                id={"type": "gm-add-button", "index": initial_block_id},
-                                className="btn-primary",
-                            ),
-                            span=1,
-                        ),
-                        dmc.GridCol(
-                            dcc.Dropdown(
-                                options=GM_DROPDOWN_MENU_OPTIONS,
-                                value="GCF_ID",
-                                id={"type": "gm-dropdown-menu", "index": initial_block_id},
-                                clearable=False,
-                            ),
-                            span=6,
-                        ),
-                        dmc.GridCol(
-                            [
-                                dmc.TextInput(
-                                    id={
-                                        "type": "gm-dropdown-ids-text-input",
-                                        "index": initial_block_id,
-                                    },
-                                    placeholder="1, 2, 3, ...",
-                                    className="custom-textinput",
-                                ),
-                                dcc.Dropdown(
-                                    id={
-                                        "type": "gm-dropdown-bgc-class-dropdown",
-                                        "index": initial_block_id,
-                                    },
-                                    options=GM_DROPDOWN_BGC_CLASS_OPTIONS,
-                                    placeholder="Select one or more BGC classes",
-                                    multi=True,
-                                    style={"display": "none"},
-                                ),
-                            ],
-                            span=5,
-                        ),
-                    ],
-                    gutter="md",
-                )
-            ],
+            children=[],
         ),
     ]
 )
