@@ -115,7 +115,7 @@ df = pd.DataFrame(
 ## Table
 gm_table = dbc.Card(
     [
-        dbc.CardHeader("Select data", id="gm-table-card-header", style={"color": "#888888"}),
+        dbc.CardHeader("Data", id="gm-table-card-header", style={"color": "#888888"}),
         dbc.CardBody(
             [
                 dash_table.DataTable(
