@@ -7,6 +7,7 @@ import dash
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 import dash_uploader as du
+import pandas as pd
 import plotly.graph_objects as go
 from config import GM_DROPDOWN_BGC_CLASS_OPTIONS
 from config import GM_DROPDOWN_MENU_OPTIONS
@@ -22,7 +23,7 @@ from dash import dcc
 from dash import html
 
 
-dash._dash_renderer._set_react_version("18.2.0")
+dash._dash_renderer._set_react_version("18.2.0")  # type: ignore
 
 
 dbc_css = "https://cdn.jsdelivr.net/gh/AnnMarieW/dash-bootstrap-templates/dbc.min.css"
@@ -77,6 +78,8 @@ def upload_data(status: du.UploadStatus) -> tuple[str, str | None]:
     [
         Output("gm-tab", "disabled"),
         Output("gm-accordion-control", "disabled"),
+        Output("gm-table-card-header", "style"),
+        Output("gm-table-card-body", "style"),
         Output("mg-tab", "disabled"),
         Output("blocks-id", "data", allow_duplicate=True),
         Output("blocks-container", "children", allow_duplicate=True),
@@ -86,7 +89,7 @@ def upload_data(status: du.UploadStatus) -> tuple[str, str | None]:
 )
 def disable_tabs_and_reset_blocks(
     file_name: str | None,
-) -> tuple[bool, bool, bool, list[str], list[dict[str, Any]]]:
+) -> tuple[bool, bool, dict, dict[str, str], bool, list[str], list[dmc.Grid]]:
     """Manage tab states and reset blocks based on file upload status.
 
     Args:
@@ -100,13 +103,13 @@ def disable_tabs_and_reset_blocks(
     """
     if file_name is None:
         # Disable the tabs, don't change blocks
-        return True, True, True, [], []
+        return True, True, {}, {"display": "block"}, True, [], []
 
     # Enable the tabs and reset blocks
     initial_block_id = [str(uuid.uuid4())]
     new_blocks = [create_initial_block(initial_block_id[0])]
 
-    return False, False, False, initial_block_id, new_blocks
+    return False, False, {}, {"display": "block"}, False, initial_block_id, new_blocks
 
 
 def create_initial_block(block_id: str) -> dmc.Grid:
@@ -337,3 +340,35 @@ def update_placeholder(
     else:
         # This case should never occur due to the Literal type, but it satisfies mypy
         return {"display": "none"}, {"display": "none"}, "", "", "", []
+
+
+df = pd.DataFrame(
+    {
+        "GCF ID": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"],
+        "# BGC": ["3", "1", "10", "6", "3", "1", "10", "6", "3", "1", "10", "6"],
+    }
+)
+
+
+@app.callback(
+    Output("gm-table-output1", "children"),
+    Output("gm-table-output2", "children"),
+    Input("gm-table", "derived_virtual_data"),
+    Input("gm-table", "derived_virtual_selected_rows"),
+)
+def select_rows(rows, selected_rows):
+    if not rows:
+        return "No data available.", "No rows selected."
+
+    dff = pd.DataFrame(rows)
+
+    if selected_rows is None:
+        selected_rows = []
+
+    selected_rows_data = dff.iloc[selected_rows]
+
+    # to be removed later when the scoring part will be implemented
+    output1 = f"Total rows: {len(dff)}"
+    output2 = f"Selected rows: {len(selected_rows)}\nSelected GCF IDs: {', '.join(selected_rows_data['GCF ID'].astype(str))}"
+
+    return output1, output2
