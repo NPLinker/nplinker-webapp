@@ -131,10 +131,10 @@ gm_table = dbc.Card(
                     columns=[],  # Start with empty columns
                     data=[],  # Start with empty data
                     editable=False,
-                    filter_action="native",
+                    filter_action="none",
                     sort_action="none",
                     sort_mode="multi",
-                    column_selectable="single",
+                    column_selectable=False,
                     row_deletable=False,
                     row_selectable="multi",
                     selected_columns=[],
@@ -148,6 +148,17 @@ gm_table = dbc.Card(
                         "fontWeight": "bold",
                         "color": "white",
                     },
+                    style_data={
+                        "border": "1px solid #ddd"  # Ensure data cells have borders
+                    },
+                    style_data_conditional=[
+                        {
+                            "if": {"state": "selected"},
+                            "backgroundColor": "white",  # Light gray background for selected rows
+                            "border": "1px solid #ddd",  # Preserve borders for selected rows
+                        }
+                    ],
+                    style_cell_conditional=[{"if": {"column_id": "selector"}, "width": "30px"}],
                 ),
             ],
             id="gm-table-card-body",
