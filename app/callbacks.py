@@ -439,7 +439,7 @@ def apply_filters(
     Input({"type": "gm-dropdown-bgc-class-dropdown", "index": ALL}, "value"),
 )
 def update_datatable(
-    processed_data: str,
+    processed_data: str | None,
     dropdown_menus: list[str],
     text_inputs: list[str],
     bgc_class_dropdowns: list[list[str]],
@@ -483,7 +483,7 @@ def update_datatable(
     ],
 )
 def toggle_selection(
-    n_clicks: int, original_rows: list, filtered_rows: list, selected_rows: list
+    n_clicks: int, original_rows: list, filtered_rows: list | None, selected_rows: list
 ) -> list:
     """Toggle between selecting all rows and deselecting all rows in a Dash DataTable.
 
