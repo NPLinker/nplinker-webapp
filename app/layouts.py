@@ -2,7 +2,6 @@ import uuid
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 import dash_uploader as du
-import pandas as pd
 from dash import dash_table
 from dash import dcc
 from dash import html
@@ -67,6 +66,7 @@ uploader = html.Div(
             )
         ),
         dcc.Store(id="file-store"),  # Store to keep the file contents
+        dcc.Store(id="processed-data-store"),  # Store to keep the processed data
     ],
     className="p-5 ml-5 mr-5",
 )
@@ -105,14 +105,6 @@ gm_accordion = dmc.Accordion(
 # gm graph
 gm_graph = dcc.Graph(id="gm-graph", className="mt-5 mb-3", style={"display": "none"})
 # gm_table
-## Sample data
-df = pd.DataFrame(
-    {
-        "GCF ID": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"],
-        "# BGC": ["3", "1", "10", "6", "3", "1", "10", "6", "3", "1", "10", "6"],
-    }
-)
-## Table
 gm_table = dbc.Card(
     [
         dbc.CardHeader(
@@ -136,11 +128,8 @@ gm_table = dbc.Card(
                 ),
                 dash_table.DataTable(
                     id="gm-table",
-                    columns=[
-                        {"name": i, "id": i, "deletable": False, "selectable": False}
-                        for i in df.columns
-                    ],
-                    data=df.to_dict("records"),
+                    columns=[],  # Start with empty columns
+                    data=[],  # Start with empty data
                     editable=False,
                     filter_action="native",
                     sort_action="none",

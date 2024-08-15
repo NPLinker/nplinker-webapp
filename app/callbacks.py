@@ -1,3 +1,4 @@
+import json
 import os
 import pickle
 import tempfile
@@ -75,11 +76,44 @@ def upload_data(status: du.UploadStatus) -> tuple[str, str | None]:
 
 
 @app.callback(
+    Output("processed-data-store", "data"), Input("file-store", "data"), prevent_initial_call=True
+)
+def process_uploaded_data(file_path):
+    """Process the uploaded pickle file and store the processed data.
+
+    Args:
+        file_path: Path to the uploaded pickle file.
+
+    Returns:
+        JSON string of processed data or None if processing fails.
+    """
+    if file_path is None:
+        return None
+
+    try:
+        with open(file_path, "rb") as f:
+            data = pickle.load(f)
+
+        # Extract and process only the necessary data
+        _, gcfs, *_ = data
+        processed_data = {"n_bgcs": {}, "gcf_data": [(gcf.id, len(gcf.bgcs)) for gcf in gcfs]}
+        for gcf_id, n_bgcs in processed_data["gcf_data"]:
+            if n_bgcs not in processed_data["n_bgcs"]:
+                processed_data["n_bgcs"][n_bgcs] = []
+            processed_data["n_bgcs"][n_bgcs].append(gcf_id)
+
+        return json.dumps(processed_data)
+    except Exception as e:
+        print(f"Error processing file: {str(e)}")
+        return None
+
+
+@app.callback(
     [
         Output("gm-tab", "disabled"),
         Output("gm-accordion-control", "disabled"),
         Output("gm-table-card-header", "style"),
-        Output("gm-table-card-body", "style"),
+        Output("gm-table-card-body", "style", allow_duplicate=True),
         Output("mg-tab", "disabled"),
         Output("blocks-id", "data", allow_duplicate=True),
         Output("blocks-container", "children", allow_duplicate=True),
@@ -166,51 +200,40 @@ def create_initial_block(block_id: str) -> dmc.Grid:
     Output("gm-graph", "figure"),
     Output("gm-graph", "style"),
     Output("file-content-mg", "children"),
-    [Input("file-store", "data")],
+    [Input("processed-data-store", "data")],
 )
-def gm_plot(file_path):  # noqa: D103
-    if file_path is not None:
-        with open(file_path, "rb") as f:
-            data = pickle.load(f)
-        # Process and display the data as needed
-        _, gcfs, _, _, _, _ = data
-        n_bgcs = {}
-        for gcf in gcfs:
-            n = len(gcf.bgcs)
-            if n not in n_bgcs:
-                n_bgcs[n] = [gcf.id]
-            else:
-                n_bgcs[n].append(gcf.id)
-        x_values = list(n_bgcs.keys())
-        x_values.sort()
-        y_values = [len(n_bgcs[x]) for x in x_values]
-        hover_texts = [f"GCF IDs: {', '.join(n_bgcs[x])}" for x in x_values]
-        # Adjust bar width based on number of data points
-        if len(x_values) <= 5:
-            bar_width = 0.4
-        else:
-            bar_width = None
-        # Create the bar plot
-        fig = go.Figure(
-            data=[
-                go.Bar(
-                    x=x_values,
-                    y=y_values,
-                    text=hover_texts,
-                    hoverinfo="text",
-                    textposition="none",
-                    width=bar_width,  # Set the bar width
-                )
-            ]
-        )
-        # Update layout
-        fig.update_layout(
-            xaxis_title="# BGCs",
-            yaxis_title="# GCFs",
-            xaxis=dict(type="category"),
-        )
-        return fig, {"display": "block"}, "uploaded!!"
-    return {}, {"display": "none"}, "No data available"
+def gm_plot(stored_data):  # noqa: D103
+    if stored_data is None:
+        return {}, {"display": "none"}, "No data available"
+    data = json.loads(stored_data)
+    n_bgcs = data["n_bgcs"]
+
+    x_values = sorted(map(int, n_bgcs.keys()))
+    y_values = [len(n_bgcs[str(x)]) for x in x_values]
+    hover_texts = [f"GCF IDs: {', '.join(n_bgcs[str(x)])}" for x in x_values]
+
+    # Adjust bar width based on number of data points
+    bar_width = 0.4 if len(x_values) <= 5 else None
+    # Create the bar plot
+    fig = go.Figure(
+        data=[
+            go.Bar(
+                x=x_values,
+                y=y_values,
+                text=hover_texts,
+                hoverinfo="text",
+                textposition="none",
+                width=bar_width,
+            )
+        ]
+    )
+    # Update layout
+    fig.update_layout(
+        xaxis_title="# BGCs",
+        yaxis_title="# GCFs",
+        xaxis=dict(type="category"),
+    )
+    return fig, {"display": "block"}, "Data loaded and plotted!!"
 
 
 @app.callback(
@@ -342,12 +365,22 @@ def update_placeholder(
         return {"display": "none"}, {"display": "none"}, "", "", "", []
 
 
-df = pd.DataFrame(
-    {
-        "GCF ID": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"],
-        "# BGC": ["3", "1", "10", "6", "3", "1", "10", "6", "3", "1", "10", "6"],
-    }
+@app.callback(
+    Output("gm-table", "data"),
+    Output("gm-table", "columns"),
+    Output("gm-table-card-body", "style"),
+    Input("processed-data-store", "data"),
 )
+def update_datatable(processed_data):
+    if processed_data is None:
+        return [], [], {"display": "none"}
+
+    data = json.loads(processed_data)
+    df = pd.DataFrame(data["gcf_data"], columns=["GCF ID", "# BGCs"])
+
+    columns = [{"name": i, "id": i, "deletable": False, "selectable": False} for i in df.columns]
+
+    return df.to_dict("records"), columns, {"display": "block"}
 
 
 @app.callback(
@@ -399,15 +432,15 @@ def select_rows(rows, selected_rows):
     if not rows:
         return "No data available.", "No rows selected."
 
-    dff = pd.DataFrame(rows)
+    df = pd.DataFrame(rows)
 
     if selected_rows is None:
         selected_rows = []
 
-    selected_rows_data = dff.iloc[selected_rows]
+    selected_rows_data = df.iloc[selected_rows]
 
     # to be removed later when the scoring part will be implemented
-    output1 = f"Total rows: {len(dff)}"
+    output1 = f"Total rows: {len(df)}"
     output2 = f"Selected rows: {len(selected_rows)}\nSelected GCF IDs: {', '.join(selected_rows_data['GCF ID'].astype(str))}"
 
     return output1, output2
