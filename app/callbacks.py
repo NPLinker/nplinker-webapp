@@ -3,6 +3,7 @@ import os
 import pickle
 import tempfile
 import uuid
+from pathlib import Path
 from typing import Any
 import dash
 import dash_bootstrap_components as dbc
@@ -78,7 +79,7 @@ def upload_data(status: du.UploadStatus) -> tuple[str, str | None]:
 @app.callback(
     Output("processed-data-store", "data"), Input("file-store", "data"), prevent_initial_call=True
 )
-def process_uploaded_data(file_path: str | None) -> str | None:
+def process_uploaded_data(file_path: Path | str | None) -> str | None:
     """Process the uploaded pickle file and store the processed data.
 
     Args:
@@ -141,17 +142,17 @@ def process_uploaded_data(file_path: str | None) -> str | None:
     prevent_initial_call=True,
 )
 def disable_tabs_and_reset_blocks(
-    file_name: str | None,
+    file_path: Path | str | None,
 ) -> tuple[bool, bool, dict, dict[str, str], bool, list[str], list[dmc.Grid]]:
     """Manage tab states and reset blocks based on file upload status.
 
     Args:
-        file_name: The name of the uploaded file, or None if no file is uploaded.
+        file_path: The name of the uploaded file, or None if no file is uploaded.
 
     Returns:
         Tuple containing boolean values for disabling tabs, styles, and new block data.
     """
-    if file_name is None:
+    if file_path is None:
         # Disable the tabs, don't change blocks
         return True, True, {}, {"display": "block"}, True, [], []
 

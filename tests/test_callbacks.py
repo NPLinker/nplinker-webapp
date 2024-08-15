@@ -1,5 +1,6 @@
 import uuid
 import dash
+import dash_mantine_components as dmc
 import pytest
 from dash_uploader import UploadStatus
 from app.callbacks import add_block
@@ -23,30 +24,41 @@ def test_upload_data():
     assert path_string == str(MOCK_FILE_PATH)
 
 
-def test_disable_tabs():
-    # Test with None as input
-    result = disable_tabs_and_reset_blocks(None)
-    assert result[0] is True  # GM tab should be disabled
-    assert result[1] is True  # GM accordion should be disabled
-    assert result[2] is True  # MG tab should be disabled
-    assert result[3] == []  # No blocks should be displayed
-    assert result[4] == []  # No blocks should be displayed
-
-    # Test with a string as input
-    result = disable_tabs_and_reset_blocks(MOCK_FILE_PATH)
-    assert result[0] is False  # GM tab should be enabled
-    assert result[1] is False  # GM accordion should be enabled
-    assert result[2] is False  # MG tab should be enabled
-    assert len(result[3]) == 1  # One block should be displayed
-    assert len(result[4]) == 1  # One block should be displayed
-
-
 @pytest.fixture
 def mock_uuid(monkeypatch):
     def mock_uuid4():
         return "test-uuid"
 
     monkeypatch.setattr(uuid, "uuid4", mock_uuid4)
+
+
+def test_disable_tabs(mock_uuid):
+    # Test with None as input
+    result = disable_tabs_and_reset_blocks(None)
+    assert result == (True, True, {}, {"display": "block"}, True, [], [])
+
+    # Test with a string as input
+    result = disable_tabs_and_reset_blocks(MOCK_FILE_PATH)
+
+    # Unpack the result for easier assertion
+    (
+        gm_tab_disabled,
+        gm_accordion_disabled,
+        table_header_style,
+        table_body_style,
+        mg_tab_disabled,
+        block_ids,
+        blocks,
+    ) = result
+
+    assert gm_tab_disabled is False
+    assert gm_accordion_disabled is False
+    assert table_header_style == {}
+    assert table_body_style == {"display": "block"}
+    assert mg_tab_disabled is False
+    assert block_ids == ["test-uuid"]
+    assert len(blocks) == 1
+    assert isinstance(blocks[0], dmc.Grid)
 
 
 @pytest.mark.parametrize(
