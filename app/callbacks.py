@@ -79,14 +79,6 @@ def upload_data(status: du.UploadStatus) -> tuple[str, str | None]:
     Output("processed-data-store", "data"), Input("file-store", "data"), prevent_initial_call=True
 )
 def process_uploaded_data(file_path):
-    """Process the uploaded pickle file and store the processed data.
-
-    Args:
-        file_path: Path to the uploaded pickle file.
-
-    Returns:
-        JSON string of processed data or None if processing fails.
-    """
     if file_path is None:
         return None
 
@@ -94,13 +86,32 @@ def process_uploaded_data(file_path):
         with open(file_path, "rb") as f:
             data = pickle.load(f)
 
-        # Extract and process only the necessary data
-        _, gcfs, *_ = data
-        processed_data = {"n_bgcs": {}, "gcf_data": [(gcf.id, len(gcf.bgcs)) for gcf in gcfs]}
-        for gcf_id, n_bgcs in processed_data["gcf_data"]:
-            if n_bgcs not in processed_data["n_bgcs"]:
-                processed_data["n_bgcs"][n_bgcs] = []
-            processed_data["n_bgcs"][n_bgcs].append(gcf_id)
+        # Extract and process the necessary data
+        bgcs, gcfs, *_ = data
+
+        def process_bgc_class(bgc_class):
+            if bgc_class is None:
+                return ["Unknown"]
+            return list(bgc_class)  # Convert tuple to list
+
+        # Create a dictionary to map BGC to its class
+        bgc_to_class = {bgc.id: process_bgc_class(bgc.mibig_bgc_class) for bgc in bgcs}
+
+        processed_data = {"n_bgcs": {}, "gcf_data": []}
+
+        for gcf in gcfs:
+            gcf_bgc_classes = [cls for bgc in gcf.bgcs for cls in bgc_to_class[bgc.id]]
+            processed_data["gcf_data"].append(
+                {
+                    "GCF ID": gcf.id,
+                    "# BGCs": len(gcf.bgcs),
+                    "BGC Classes": list(set(gcf_bgc_classes)),  # Using set to get unique classes
+                }
+            )
+
+            if len(gcf.bgcs) not in processed_data["n_bgcs"]:
+                processed_data["n_bgcs"][len(gcf.bgcs)] = []
+            processed_data["n_bgcs"][len(gcf.bgcs)].append(gcf.id)
 
         return json.dumps(processed_data)
     except Exception as e:
@@ -365,22 +376,55 @@ def update_placeholder(
         return {"display": "none"}, {"display": "none"}, "", "", "", []
 
 
+def apply_filters(df, dropdown_menus, text_inputs, bgc_class_dropdowns):
+    masks = []
+
+    for menu, text_input, bgc_classes in zip(dropdown_menus, text_inputs, bgc_class_dropdowns):
+        if menu == "GCF_ID" and text_input:
+            gcf_ids = [id.strip() for id in text_input.split(",") if id.strip()]
+            if gcf_ids:
+                mask = df["GCF ID"].astype(str).isin(gcf_ids)
+                masks.append(mask)
+        elif menu == "BGC_CLASS" and bgc_classes:
+            mask = df["BGC Classes"].apply(
+                lambda x: any(bgc_class in x for bgc_class in bgc_classes)
+            )
+            masks.append(mask)
+
+    if masks:
+        # Combine all masks with OR operation
+        final_mask = pd.concat(masks, axis=1).any(axis=1)
+        return df[final_mask]
+    else:
+        return df
+
+
 @app.callback(
     Output("gm-table", "data"),
     Output("gm-table", "columns"),
     Output("gm-table-card-body", "style"),
     Input("processed-data-store", "data"),
+    Input({"type": "gm-dropdown-menu", "index": ALL}, "value"),
+    Input({"type": "gm-dropdown-ids-text-input", "index": ALL}, "value"),
+    Input({"type": "gm-dropdown-bgc-class-dropdown", "index": ALL}, "value"),
 )
-def update_datatable(processed_data):
+def update_datatable(processed_data, dropdown_menus, text_inputs, bgc_class_dropdowns):
     if processed_data is None:
         return [], [], {"display": "none"}
 
     data = json.loads(processed_data)
-    df = pd.DataFrame(data["gcf_data"], columns=["GCF ID", "# BGCs"])
+    df = pd.DataFrame(data["gcf_data"])
 
-    columns = [{"name": i, "id": i, "deletable": False, "selectable": False} for i in df.columns]
+    # Apply filters
+    filtered_df = apply_filters(df, dropdown_menus, text_inputs, bgc_class_dropdowns)
 
-    return df.to_dict("records"), columns, {"display": "block"}
+    display_df = filtered_df[["GCF ID", "# BGCs"]]
+
+    columns = [
+        {"name": i, "id": i, "deletable": False, "selectable": False} for i in display_df.columns
+    ]
+
+    return display_df.to_dict("records"), columns, {"display": "block"}
 
 
 @app.callback(
