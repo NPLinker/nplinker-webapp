@@ -97,7 +97,7 @@ def process_uploaded_data(file_path: str | None) -> str | None:
         # Extract and process the necessary data
         bgcs, gcfs, *_ = data
 
-        def process_bgc_class(bgc_class):
+        def process_bgc_class(bgc_class: tuple[str, ...] | None) -> list[str]:
             if bgc_class is None:
                 return ["Unknown"]
             return list(bgc_class)  # Convert tuple to list
@@ -105,7 +105,7 @@ def process_uploaded_data(file_path: str | None) -> str | None:
         # Create a dictionary to map BGC to its class
         bgc_to_class = {bgc.id: process_bgc_class(bgc.mibig_bgc_class) for bgc in bgcs}
 
-        processed_data = {"n_bgcs": {}, "gcf_data": []}
+        processed_data: dict[str, Any] = {"n_bgcs": {}, "gcf_data": []}
 
         for gcf in gcfs:
             gcf_bgc_classes = [cls for bgc in gcf.bgcs for cls in bgc_to_class[bgc.id]]
