@@ -1,10 +1,13 @@
+import json
 import uuid
+from pathlib import Path
 import dash
 import dash_mantine_components as dmc
 import pytest
 from dash_uploader import UploadStatus
 from app.callbacks import add_block
 from app.callbacks import disable_tabs_and_reset_blocks
+from app.callbacks import process_uploaded_data
 from app.callbacks import upload_data
 from . import DATA_DIR
 
@@ -59,6 +62,65 @@ def test_disable_tabs(mock_uuid):
     assert block_ids == ["test-uuid"]
     assert len(blocks) == 1
     assert isinstance(blocks[0], dmc.Grid)
+
+
+@pytest.mark.parametrize("input_path", [None, Path("non_existent_file.pkl")])
+def test_process_uploaded_data_invalid_input(input_path):
+    result = process_uploaded_data(input_path)
+    assert result is None
+
+
+def test_process_uploaded_data_success():
+    result = process_uploaded_data(MOCK_FILE_PATH)
+
+    assert result is not None
+    processed_data = json.loads(result)
+
+    assert "n_bgcs" in processed_data
+    assert "gcf_data" in processed_data
+
+    # Add more specific assertions based on the expected content of your mock_obj_data.pkl
+    # For example:
+    assert len(processed_data["gcf_data"]) > 0
+
+    first_gcf = processed_data["gcf_data"][0]
+    assert "GCF ID" in first_gcf
+    assert "# BGCs" in first_gcf
+    assert "BGC Classes" in first_gcf
+
+    # Check if n_bgcs contains at least one key-value pair
+    assert len(processed_data["n_bgcs"]) > 0
+
+    # You can add more detailed assertions here based on what you know about the content of mock_obj_data.pkl
+
+
+def test_process_uploaded_data_structure():
+    result = process_uploaded_data(MOCK_FILE_PATH)
+
+    assert result is not None
+    processed_data = json.loads(result)
+
+    # Check overall structure
+    assert isinstance(processed_data, dict)
+    assert "n_bgcs" in processed_data
+    assert "gcf_data" in processed_data
+
+    # Check n_bgcs structure
+    assert isinstance(processed_data["n_bgcs"], dict)
+    for key, value in processed_data["n_bgcs"].items():
+        assert isinstance(key, str)  # Keys should be strings (JSON converts int to str)
+        assert isinstance(value, list)
+
+    # Check gcf_data structure
+    assert isinstance(processed_data["gcf_data"], list)
+    for gcf in processed_data["gcf_data"]:
+        assert isinstance(gcf, dict)
+        assert "GCF ID" in gcf
+        assert "# BGCs" in gcf
+        assert "BGC Classes" in gcf
+        assert isinstance(gcf["GCF ID"], str)
+        assert isinstance(gcf["# BGCs"], int)
+        assert isinstance(gcf["BGC Classes"], list)
 
 
 @pytest.mark.parametrize(
