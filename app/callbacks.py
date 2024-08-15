@@ -218,7 +218,7 @@ def create_initial_block(block_id: str) -> dmc.Grid:
     Output("file-content-mg", "children"),
     [Input("processed-data-store", "data")],
 )
-def gm_plot(stored_data: str | None) -> tuple[dict, dict, str]:
+def gm_plot(stored_data: str | None) -> tuple[dict | go.Figure, dict, str]:
     """Create a bar plot based on the processed data.
 
     Args:
