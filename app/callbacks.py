@@ -78,7 +78,15 @@ def upload_data(status: du.UploadStatus) -> tuple[str, str | None]:
 @app.callback(
     Output("processed-data-store", "data"), Input("file-store", "data"), prevent_initial_call=True
 )
-def process_uploaded_data(file_path):
+def process_uploaded_data(file_path: str | None) -> str | None:
+    """Process the uploaded pickle file and store the processed data.
+
+    Args:
+        file_path: Path to the uploaded pickle file.
+
+    Returns:
+        JSON string of processed data or None if processing fails.
+    """
     if file_path is None:
         return None
 
@@ -141,10 +149,7 @@ def disable_tabs_and_reset_blocks(
         file_name: The name of the uploaded file, or None if no file is uploaded.
 
     Returns:
-        A tuple containing:
-        - Boolean values for disabling gm-tab, gm-accordion-control, and mg-tab.
-        - A list with a single block ID.
-        - A list with a single block component.
+        Tuple containing boolean values for disabling tabs, styles, and new block data.
     """
     if file_name is None:
         # Disable the tabs, don't change blocks
@@ -164,7 +169,7 @@ def create_initial_block(block_id: str) -> dmc.Grid:
         block_id: A unique identifier for the block.
 
     Returns:
-        A dictionary representing a dmc.Grid component with nested elements.
+        A Grid component with nested elements.
     """
     return dmc.Grid(
         id={"type": "gm-block", "index": block_id},
@@ -213,7 +218,15 @@ def create_initial_block(block_id: str) -> dmc.Grid:
     Output("file-content-mg", "children"),
     [Input("processed-data-store", "data")],
 )
-def gm_plot(stored_data):  # noqa: D103
+def gm_plot(stored_data: str | None) -> tuple[dict, dict, str]:
+    """Create a bar plot based on the processed data.
+
+    Args:
+        stored_data: JSON string of processed data or None.
+
+    Returns:
+        Tuple containing the plot figure, style, and a status message.
+    """
     if stored_data is None:
         return {}, {"display": "none"}, "No data available"
     data = json.loads(stored_data)
@@ -376,7 +389,23 @@ def update_placeholder(
         return {"display": "none"}, {"display": "none"}, "", "", "", []
 
 
-def apply_filters(df, dropdown_menus, text_inputs, bgc_class_dropdowns):
+def apply_filters(
+    df: pd.DataFrame,
+    dropdown_menus: list[str],
+    text_inputs: list[str],
+    bgc_class_dropdowns: list[list[str]],
+) -> pd.DataFrame:
+    """Apply filters to the DataFrame based on user inputs.
+
+    Args:
+        df: The input DataFrame.
+        dropdown_menus: List of selected dropdown menu options.
+        text_inputs: List of text inputs for GCF IDs.
+        bgc_class_dropdowns: List of selected BGC classes.
+
+    Returns:
+        Filtered DataFrame.
+    """
     masks = []
 
     for menu, text_input, bgc_classes in zip(dropdown_menus, text_inputs, bgc_class_dropdowns):
@@ -408,7 +437,23 @@ def apply_filters(df, dropdown_menus, text_inputs, bgc_class_dropdowns):
     Input({"type": "gm-dropdown-ids-text-input", "index": ALL}, "value"),
     Input({"type": "gm-dropdown-bgc-class-dropdown", "index": ALL}, "value"),
 )
-def update_datatable(processed_data, dropdown_menus, text_inputs, bgc_class_dropdowns):
+def update_datatable(
+    processed_data: str,
+    dropdown_menus: list[str],
+    text_inputs: list[str],
+    bgc_class_dropdowns: list[list[str]],
+) -> tuple[list[dict], list[dict], dict]:
+    """Update the DataTable based on processed data and applied filters.
+
+    Args:
+        processed_data : JSON string of processed data.
+        dropdown_menus: List of selected dropdown menu options.
+        text_inputs: List of text inputs for GCF IDs.
+        bgc_class_dropdowns: List of selected BGC classes.
+
+    Returns:
+        Tuple containing table data, column definitions, and style.
+    """
     if processed_data is None:
         return [], [], {"display": "none"}
 
@@ -471,8 +516,16 @@ def toggle_selection(
     Input("gm-table", "derived_virtual_data"),
     Input("gm-table", "derived_virtual_selected_rows"),
 )
-def select_rows(rows, selected_rows):
-    """Display the total number of rows and the number of selected rows in the table."""
+def select_rows(rows: list[dict[str, Any]], selected_rows: list[int] | None) -> tuple[str, str]:
+    """Display the total number of rows and the number of selected rows in the table.
+
+    Args:
+        rows: List of row data from the DataTable.
+        selected_rows: Indices of selected rows.
+
+    Returns:
+        Strings describing total rows and selected rows.
+    """
     if not rows:
         return "No data available.", "No rows selected."
 
