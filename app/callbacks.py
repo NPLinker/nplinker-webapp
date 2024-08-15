@@ -351,12 +351,51 @@ df = pd.DataFrame(
 
 
 @app.callback(
+    [Output("gm-table", "selected_rows")],
+    [Input("gm-rows-selection-button", "n_clicks")],
+    [
+        State("gm-table", "data"),
+        State("gm-table", "derived_virtual_data"),
+        State("gm-table", "derived_virtual_selected_rows"),
+    ],
+)
+def toggle_selection(
+    n_clicks: int, original_rows: list, filtered_rows: list, selected_rows: list
+) -> list:
+    """Toggle between selecting all rows and deselecting all rows in a Dash DataTable.
+
+    Args:
+        n_clicks: Number of button clicks (unused).
+        original_rows: All rows in the table.
+        filtered_rows: Rows visible after filtering.
+        selected_rows: Currently selected row indices.
+
+    Returns:
+        Indices of selected rows after toggling.
+
+    Raises:
+        PreventUpdate: If filtered_rows is None.
+    """
+    if filtered_rows is None:
+        raise dash.exceptions.PreventUpdate
+
+    if not selected_rows or len(selected_rows) < len(filtered_rows):
+        # If no rows are selected or not all rows are selected, select all filtered rows
+        selected_ids = [row for row in filtered_rows]
+        return [[i for i, row in enumerate(original_rows) if row in selected_ids]]
+    else:
+        # If all rows are selected, deselect all
+        return [[]]
+
+
+@app.callback(
     Output("gm-table-output1", "children"),
     Output("gm-table-output2", "children"),
     Input("gm-table", "derived_virtual_data"),
     Input("gm-table", "derived_virtual_selected_rows"),
 )
 def select_rows(rows, selected_rows):
+    """Display the total number of rows and the number of selected rows in the table."""
     if not rows:
         return "No data available.", "No rows selected."
 

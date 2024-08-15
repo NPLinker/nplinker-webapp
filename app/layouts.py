@@ -115,9 +115,25 @@ df = pd.DataFrame(
 ## Table
 gm_table = dbc.Card(
     [
-        dbc.CardHeader("Data", id="gm-table-card-header", style={"color": "#888888"}),
+        dbc.CardHeader(
+            [
+                "Data",
+            ],
+            id="gm-table-card-header",
+            style={"color": "#888888"},
+        ),
         dbc.CardBody(
             [
+                dbc.Row(
+                    dbc.Col(
+                        dbc.Button(
+                            "Select/deselect all",
+                            id="gm-rows-selection-button",
+                            className="mb-3",
+                        ),
+                        className="text-center",
+                    )
+                ),
                 dash_table.DataTable(
                     id="gm-table",
                     columns=[
