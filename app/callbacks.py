@@ -181,7 +181,7 @@ def create_initial_block(block_id: str) -> dmc.Grid:
                     id={"type": "gm-add-button", "index": block_id},
                     className="btn-primary",
                 ),
-                span=1,
+                span=2,
             ),
             dmc.GridCol(
                 dcc.Dropdown(
@@ -190,7 +190,7 @@ def create_initial_block(block_id: str) -> dmc.Grid:
                     id={"type": "gm-dropdown-menu", "index": block_id},
                     clearable=False,
                 ),
-                span=6,
+                span=4,
             ),
             dmc.GridCol(
                 [
@@ -206,7 +206,7 @@ def create_initial_block(block_id: str) -> dmc.Grid:
                         style={"display": "none"},
                     ),
                 ],
-                span=5,
+                span=6,
             ),
         ],
         gutter="md",
@@ -306,12 +306,31 @@ def display_blocks(blocks_id: list[str], existing_blocks: list[dmc.Grid]) -> lis
             id={"type": "gm-block", "index": new_block_id},
             children=[
                 dmc.GridCol(
-                    dbc.Button(
-                        [html.I(className="fas fa-plus")],
-                        id={"type": "gm-add-button", "index": new_block_id},
-                        className="btn-primary",
+                    html.Div(
+                        [
+                            dbc.Button(
+                                [html.I(className="fas fa-plus")],
+                                id={"type": "gm-add-button", "index": new_block_id},
+                                className="btn-primary",
+                            ),
+                            html.Label(
+                                "OR",
+                                id={"type": "gm-or-label", "index": new_block_id},
+                                className="ms-2 px-2 py-1 rounded",
+                                style={
+                                    "color": "green",
+                                    "backgroundColor": "#f0f0f0",
+                                    "display": "inline-block",
+                                    "position": "absolute",
+                                    "left": "50px",  # Adjust based on button width
+                                    "top": "50%",
+                                    "transform": "translateY(-50%)",
+                                },
+                            ),
+                        ],
+                        style={"position": "relative", "height": "38px"},
                     ),
-                    span=1,
+                    span=2,
                 ),
                 dmc.GridCol(
                     dcc.Dropdown(
@@ -320,7 +339,7 @@ def display_blocks(blocks_id: list[str], existing_blocks: list[dmc.Grid]) -> lis
                         id={"type": "gm-dropdown-menu", "index": new_block_id},
                         clearable=False,
                     ),
-                    span=6,
+                    span=4,
                 ),
                 dmc.GridCol(
                     [
@@ -336,16 +355,21 @@ def display_blocks(blocks_id: list[str], existing_blocks: list[dmc.Grid]) -> lis
                             style={"display": "none"},
                         ),
                     ],
-                    span=5,
+                    span=6,
                 ),
             ],
             gutter="md",
         )
 
-        # Hide the add button on the previous last block
-        existing_blocks[-1]["props"]["children"][0]["props"]["children"]["props"]["style"] = {
-            "display": "none"
-        }
+        # Hide the add button and OR label on the previous last block
+        if len(existing_blocks) == 1:
+            existing_blocks[-1]["props"]["children"][0]["props"]["children"]["props"]["style"] = {
+                "display": "none"
+            }
+        else:
+            existing_blocks[-1]["props"]["children"][0]["props"]["children"]["props"]["children"][
+                0
+            ]["props"]["style"] = {"display": "none"}
 
         return existing_blocks + [new_block]
     return existing_blocks
