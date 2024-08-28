@@ -475,7 +475,7 @@ def update_datatable(
 
 @app.callback(
     [Output("gm-table", "selected_rows")],
-    [Input("gm-rows-selection-checkbox", "value")],
+    [Input("select-all-checkbox", "value")],
     [
         State("gm-table", "data"),
         State("gm-table", "derived_virtual_data"),

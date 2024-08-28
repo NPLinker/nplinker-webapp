@@ -116,15 +116,18 @@ gm_table = dbc.Card(
         ),
         dbc.CardBody(
             [
-                dbc.Row(
-                    dbc.Col(
-                        dcc.Checklist(
-                            options={"disabled": ""},
-                            id="gm-rows-selection-checkbox",
-                            className="mb-3",
-                        ),
-                        className="text-center",
-                    )
+                html.Div(
+                    dcc.Checklist(
+                        options={"disabled": ""},
+                        id="select-all-checkbox",
+                        style={
+                            "position": "absolute",
+                            "top": "4px",
+                            "left": "10px",
+                            "zIndex": "1000",
+                        },
+                    ),
+                    style={"position": "relative", "height": "0px"},
                 ),
                 dash_table.DataTable(
                     id="gm-table",
