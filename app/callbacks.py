@@ -475,7 +475,7 @@ def update_datatable(
 
 @app.callback(
     [Output("gm-table", "selected_rows")],
-    [Input("gm-rows-selection-button", "n_clicks")],
+    [Input("gm-rows-selection-checkbox", "value")],
     [
         State("gm-table", "data"),
         State("gm-table", "derived_virtual_data"),
@@ -483,12 +483,12 @@ def update_datatable(
     ],
 )
 def toggle_selection(
-    n_clicks: int, original_rows: list, filtered_rows: list | None, selected_rows: list
+    value: int, original_rows: list, filtered_rows: list | None, selected_rows: list
 ) -> list:
     """Toggle between selecting all rows and deselecting all rows in a Dash DataTable.
 
     Args:
-        n_clicks: Number of button clicks (unused).
+        value: Checkbox selected.
         original_rows: All rows in the table.
         filtered_rows: Rows visible after filtering.
         selected_rows: Currently selected row indices.

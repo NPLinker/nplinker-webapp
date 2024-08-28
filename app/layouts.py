@@ -118,9 +118,9 @@ gm_table = dbc.Card(
             [
                 dbc.Row(
                     dbc.Col(
-                        dbc.Button(
-                            "Select/deselect all",
-                            id="gm-rows-selection-button",
+                        dcc.Checklist(
+                            options={"disabled": ""},
+                            id="gm-rows-selection-checkbox",
                             className="mb-3",
                         ),
                         className="text-center",
