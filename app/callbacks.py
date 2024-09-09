@@ -441,7 +441,7 @@ def apply_filters(
                 masks.append(mask)
         elif menu == "BGC_CLASS" and bgc_classes:
             mask = df["BGC Classes"].apply(
-                lambda x: any(bgc_class in x for bgc_class in bgc_classes)
+                lambda x: any(bc.lower() in [y.lower() for y in x] for bc in bgc_classes)
             )
             masks.append(mask)
 
