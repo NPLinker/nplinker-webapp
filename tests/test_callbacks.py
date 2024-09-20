@@ -1,6 +1,7 @@
 import json
 import uuid
 from pathlib import Path
+from unittest.mock import patch
 import dash
 import dash_mantine_components as dmc
 import pandas as pd
@@ -35,10 +36,14 @@ def processed_data():
 
 
 @pytest.fixture
-def sample_df(processed_data):
-    # Convert the processed data back to a DataFrame
-    data = json.loads(processed_data)
-    return pd.DataFrame(data["gcf_data"])
+def sample_processed_data():
+    data = {
+        "gcf_data": [
+            {"GCF ID": "GCF_1", "# BGCs": 3, "BGC Classes": ["NRPS", "PKS"]},
+            {"GCF ID": "GCF_2", "# BGCs": 2, "BGC Classes": ["RiPP", "Terpene"]},
+        ]
+    }
+    return json.dumps(data)
 
 
 def test_upload_data():
@@ -162,56 +167,109 @@ def test_add_block(mock_uuid, n_clicks, initial_blocks, expected_result):
             add_block(n_clicks, initial_blocks)
 
 
-def test_apply_filters(sample_df):
+def test_apply_filters(sample_processed_data):
+    data = json.loads(sample_processed_data)
+    df = pd.DataFrame(data["gcf_data"])
+
     # Test GCF_ID filter
-    gcf_ids = sample_df["GCF ID"].iloc[:2].tolist()
-    filtered_df = apply_filters(sample_df, ["GCF_ID"], [",".join(gcf_ids)], [[]])
+    gcf_ids = df["GCF ID"].iloc[:2].tolist()
+    filtered_df = apply_filters(df, ["GCF_ID"], [",".join(gcf_ids)], [[]])
     assert len(filtered_df) == 2
     assert set(filtered_df["GCF ID"]) == set(gcf_ids)
 
     # Test BGC_CLASS filter
-    bgc_class = sample_df["BGC Classes"].iloc[0][0]  # Get the first BGC class from the first row
-    filtered_df = apply_filters(sample_df, ["BGC_CLASS"], [""], [[bgc_class]])
+    bgc_class = df["BGC Classes"].iloc[0][0]  # Get the first BGC class from the first row
+    filtered_df = apply_filters(df, ["BGC_CLASS"], [""], [[bgc_class]])
     assert len(filtered_df) > 0
     assert all(bgc_class in classes for classes in filtered_df["BGC Classes"])
 
     # Test no filter
-    filtered_df = apply_filters(sample_df, [], [], [])
-    assert len(filtered_df) == len(sample_df)
+    filtered_df = apply_filters(df, [], [], [])
+    assert len(filtered_df) == len(df)
 
 
-def test_update_datatable(processed_data):
-    result = update_datatable(processed_data, [], [], [])
-    assert len(result) == 3
-    assert isinstance(result[0], list)  # data
-    assert isinstance(result[1], list)  # columns
-    assert result[2] == {"display": "block"}  # style
+def test_update_datatable(sample_processed_data):
+    with patch("app.callbacks.ctx") as mock_ctx:
+        # Test with processed data and no filters applied
+        mock_ctx.triggered_id = None
+        result = update_datatable(
+            sample_processed_data,
+            None,  # n_clicks
+            [],  # dropdown_menus
+            [],  # text_inputs
+            [],  # bgc_class_dropdowns
+            None,  # checkbox_value
+        )
 
-    # Test with None input
-    result = update_datatable(None, [], [], [])
-    assert result == ([], [], {"display": "none"})
+        assert len(result) == 5
+        data, columns, style, selected_rows, checkbox_value = result
+
+        # Check data
+        assert len(data) == 2
+        assert data[0]["GCF ID"] == "GCF_1"
+        assert data[1]["GCF ID"] == "GCF_2"
+
+        # Check columns
+        assert len(columns) == 2
+        assert columns[0]["name"] == "GCF ID"
+        assert columns[1]["name"] == "# BGCs"
+
+        # Check style
+        assert style == {"display": "block"}
+
+        # Check selected_rows
+        assert selected_rows == []
+
+        # Check checkbox_value
+        assert checkbox_value == []
+
+        # Test with None input
+        result = update_datatable(None, None, [], [], [], None)
+        assert result == ([], [], {"display": "none"}, [], [])
+
+        # Test with apply-filters-button triggered
+        mock_ctx.triggered_id = "apply-filters-button"
+        result = update_datatable(
+            sample_processed_data,
+            1,  # n_clicks
+            ["GCF_ID"],  # dropdown_menus
+            ["GCF_1"],  # text_inputs
+            [[]],  # bgc_class_dropdowns
+            ["disabled"],  # checkbox_value
+        )
+
+        data, columns, style, selected_rows, checkbox_value = result
+        assert len(data) == 1
+        assert data[0]["GCF ID"] == "GCF_1"
+        assert checkbox_value == []
 
 
-def test_toggle_selection(sample_df):
-    original_rows = sample_df.to_dict("records")
+def test_toggle_selection(sample_processed_data):
+    data = json.loads(sample_processed_data)
+    original_rows = data["gcf_data"]
     filtered_rows = original_rows[:2]
 
     # Test selecting all rows
-    result = toggle_selection(1, original_rows, filtered_rows, [])
-    assert result == [[0, 1]]
+    result = toggle_selection(["disabled"], original_rows, filtered_rows)
+    assert result == [0, 1]  # Assuming it now returns a list of indices directly
 
     # Test deselecting all rows
-    result = toggle_selection(1, original_rows, filtered_rows, [0, 1])
-    assert result == [[]]
+    result = toggle_selection([], original_rows, filtered_rows)
+    assert result == []
 
     # Test with None filtered_rows
-    with pytest.raises(dash.exceptions.PreventUpdate):
-        toggle_selection(1, original_rows, None, [])
+    result = toggle_selection(["disabled"], original_rows, None)
+    assert result == list(range(len(original_rows)))  # Should select all rows in original_rows
+
+    # Test with empty value (deselecting when no filter is applied)
+    result = toggle_selection([], original_rows, None)
+    assert result == []
 
 
-def test_select_rows(sample_df):
-    rows = sample_df.to_dict("records")
-    selected_rows = [0, 2]
+def test_select_rows(sample_processed_data):
+    data = json.loads(sample_processed_data)
+    rows = data["gcf_data"]
+    selected_rows = [0, 1]
 
     output1, output2 = select_rows(rows, selected_rows)
     assert output1 == f"Total rows: {len(rows)}"
