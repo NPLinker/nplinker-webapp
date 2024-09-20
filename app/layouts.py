@@ -95,7 +95,20 @@ gm_accordion = dmc.Accordion(
                     id="gm-accordion-control",
                     className="mt-5 mb-3",
                 ),
-                dmc.AccordionPanel(gm_input_group),
+                dmc.AccordionPanel(
+                    [
+                        gm_input_group,
+                        html.Div(
+                            dbc.Button(
+                                "Apply Filters",
+                                id="apply-filters-button",
+                                color="primary",
+                                className="mt-3",
+                            ),
+                            className="d-flex justify-content-center",
+                        ),
+                    ]
+                ),
             ],
             value="gm-accordion",
         ),
@@ -118,7 +131,7 @@ gm_table = dbc.Card(
             [
                 html.Div(
                     dcc.Checklist(
-                        options={"disabled": ""},
+                        options=[{"label": "", "value": "disabled"}],
                         id="select-all-checkbox",
                         style={
                             "position": "absolute",
