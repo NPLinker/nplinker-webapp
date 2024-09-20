@@ -457,36 +457,55 @@ def apply_filters(
     Output("gm-table", "data"),
     Output("gm-table", "columns"),
     Output("gm-table-card-body", "style"),
+    Output("gm-table", "selected_rows", allow_duplicate=True),
+    Output("select-all-checkbox", "value"),
     Input("processed-data-store", "data"),
-    Input({"type": "gm-dropdown-menu", "index": ALL}, "value"),
-    Input({"type": "gm-dropdown-ids-text-input", "index": ALL}, "value"),
-    Input({"type": "gm-dropdown-bgc-class-dropdown", "index": ALL}, "value"),
+    Input("apply-filters-button", "n_clicks"),
+    State({"type": "gm-dropdown-menu", "index": ALL}, "value"),
+    State({"type": "gm-dropdown-ids-text-input", "index": ALL}, "value"),
+    State({"type": "gm-dropdown-bgc-class-dropdown", "index": ALL}, "value"),
+    State("select-all-checkbox", "value"),
+    prevent_initial_call=True,
 )
 def update_datatable(
     processed_data: str | None,
+    n_clicks: int | None,
     dropdown_menus: list[str],
     text_inputs: list[str],
     bgc_class_dropdowns: list[list[str]],
-) -> tuple[list[dict], list[dict], dict]:
-    """Update the DataTable based on processed data and applied filters.
+    checkbox_value: list | None,
+) -> tuple[list[dict], list[dict], dict, list, list]:
+    """Update the DataTable based on processed data and applied filters when the button is clicked.
 
     Args:
-        processed_data : JSON string of processed data.
+        processed_data: JSON string of processed data.
+        n_clicks: Number of times the Apply Filters button has been clicked.
         dropdown_menus: List of selected dropdown menu options.
         text_inputs: List of text inputs for GCF IDs.
         bgc_class_dropdowns: List of selected BGC classes.
+        checkbox_value: Current value of the select-all checkbox.
 
     Returns:
-        Tuple containing table data, column definitions, and style.
+        Tuple containing table data, column definitions, style, empty selected rows, and updated checkbox value.
     """
     if processed_data is None:
-        return [], [], {"display": "none"}
+        return [], [], {"display": "none"}, [], []
 
-    data = json.loads(processed_data)
-    df = pd.DataFrame(data["gcf_data"])
+    try:
+        data = json.loads(processed_data)
+        df = pd.DataFrame(data["gcf_data"])
+    except (json.JSONDecodeError, KeyError, pd.errors.EmptyDataError):
+        return [], [], {"display": "none"}, [], []
 
-    # Apply filters
-    filtered_df = apply_filters(df, dropdown_menus, text_inputs, bgc_class_dropdowns)
+    if ctx.triggered_id == "apply-filters-button":
+        # Apply filters only when the button is clicked
+        filtered_df = apply_filters(df, dropdown_menus, text_inputs, bgc_class_dropdowns)
+        # Reset the checkbox when filters are applied
+        new_checkbox_value = []
+    else:
+        # On initial load or when processed data changes, show all data
+        filtered_df = df
+        new_checkbox_value = checkbox_value if checkbox_value is not None else []
 
     display_df = filtered_df[["GCF ID", "# BGCs"]]
 
@@ -494,45 +513,41 @@ def update_datatable(
         {"name": i, "id": i, "deletable": False, "selectable": False} for i in display_df.columns
     ]
 
-    return display_df.to_dict("records"), columns, {"display": "block"}
+    return display_df.to_dict("records"), columns, {"display": "block"}, [], new_checkbox_value
 
 
 @app.callback(
-    [Output("gm-table", "selected_rows")],
-    [Input("select-all-checkbox", "value")],
-    [
-        State("gm-table", "data"),
-        State("gm-table", "derived_virtual_data"),
-        State("gm-table", "derived_virtual_selected_rows"),
-    ],
+    Output("gm-table", "selected_rows", allow_duplicate=True),
+    Input("select-all-checkbox", "value"),
+    State("gm-table", "data"),
+    State("gm-table", "derived_virtual_data"),
+    prevent_initial_call=True,
 )
 def toggle_selection(
-    value: int, original_rows: list, filtered_rows: list | None, selected_rows: list
+    value: list | None,
+    original_rows: list,
+    filtered_rows: list | None,
 ) -> list:
-    """Toggle between selecting all rows and deselecting all rows in a Dash DataTable.
+    """Toggle between selecting all rows and deselecting all rows in the current view of a Dash DataTable.
 
     Args:
-        value: Checkbox selected.
+        value: Value of the select-all checkbox.
         original_rows: All rows in the table.
-        filtered_rows: Rows visible after filtering.
-        selected_rows: Currently selected row indices.
+        filtered_rows: Rows visible after filtering, or None if no filter is applied.
 
     Returns:
-        Indices of selected rows after toggling.
-
-    Raises:
-        PreventUpdate: If filtered_rows is None.
+        List of indices of selected rows after toggling.
     """
-    if filtered_rows is None:
-        raise dash.exceptions.PreventUpdate
+    is_checked = value and "disabled" in value
 
-    if not selected_rows or len(selected_rows) < len(filtered_rows):
-        # If no rows are selected or not all rows are selected, select all filtered rows
-        selected_ids = [row for row in filtered_rows]
-        return [[i for i, row in enumerate(original_rows) if row in selected_ids]]
+    if filtered_rows is None:
+        # No filtering applied, toggle all rows
+        return list(range(len(original_rows))) if is_checked else []
     else:
-        # If all rows are selected, deselect all
-        return [[]]
+        # Filtering applied, toggle only visible rows
+        return (
+            [i for i, row in enumerate(original_rows) if row in filtered_rows] if is_checked else []
+        )
 
 
 @app.callback(
