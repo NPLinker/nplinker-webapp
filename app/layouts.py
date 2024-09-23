@@ -146,6 +146,7 @@ gm_table = dbc.Card(
                     id="gm-table",
                     columns=[],  # Start with empty columns
                     data=[],  # Start with empty data
+                    tooltip_data=[],  # Start with empty tooltip data
                     editable=False,
                     filter_action="none",
                     sort_action="none",
@@ -164,17 +165,23 @@ gm_table = dbc.Card(
                         "fontWeight": "bold",
                         "color": "white",
                     },
-                    style_data={
-                        "border": "1px solid #ddd"  # Ensure data cells have borders
-                    },
+                    style_data={"border": "1px solid #ddd"},
                     style_data_conditional=[
                         {
                             "if": {"state": "selected"},
-                            "backgroundColor": "white",  # Light gray background for selected rows
-                            "border": "1px solid #ddd",  # Preserve borders for selected rows
+                            "backgroundColor": "white",
+                            "border": "1px solid #ddd",
                         }
                     ],
                     style_cell_conditional=[{"if": {"column_id": "selector"}, "width": "30px"}],
+                    tooltip_delay=500,
+                    tooltip_duration=None,
+                    css=[
+                        {
+                            "selector": ".dash-table-tooltip",
+                            "rule": "background-color: white; font-family: monospace; max-width: none !important",
+                        }
+                    ],
                 ),
             ],
             id="gm-table-card-body",

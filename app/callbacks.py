@@ -110,11 +110,15 @@ def process_uploaded_data(file_path: Path | str | None) -> str | None:
 
         for gcf in gcfs:
             gcf_bgc_classes = [cls for bgc in gcf.bgcs for cls in bgc_to_class[bgc.id]]
+            bgc_ids = [bgc.id for bgc in gcf.bgcs]
+            strains = [str(gcf.strains)]
             processed_data["gcf_data"].append(
                 {
                     "GCF ID": gcf.id,
                     "# BGCs": len(gcf.bgcs),
                     "BGC Classes": list(set(gcf_bgc_classes)),  # Using set to get unique classes
+                    "BGC IDs": bgc_ids,
+                    "strains": strains,
                 }
             )
 
@@ -456,6 +460,7 @@ def apply_filters(
 @app.callback(
     Output("gm-table", "data"),
     Output("gm-table", "columns"),
+    Output("gm-table", "tooltip_data"),
     Output("gm-table-card-body", "style"),
     Output("gm-table", "selected_rows", allow_duplicate=True),
     Output("select-all-checkbox", "value"),
@@ -474,7 +479,7 @@ def update_datatable(
     text_inputs: list[str],
     bgc_class_dropdowns: list[list[str]],
     checkbox_value: list | None,
-) -> tuple[list[dict], list[dict], dict, list, list]:
+) -> tuple[list[dict], list[dict], list[dict], dict, list, list]:
     """Update the DataTable based on processed data and applied filters when the button is clicked.
 
     Args:
@@ -486,16 +491,16 @@ def update_datatable(
         checkbox_value: Current value of the select-all checkbox.
 
     Returns:
-        Tuple containing table data, column definitions, style, empty selected rows, and updated checkbox value.
+        Tuple containing table data, column definitions, tooltips data, style, empty selected rows, and updated checkbox value.
     """
     if processed_data is None:
-        return [], [], {"display": "none"}, [], []
+        return [], [], [], {"display": "none"}, [], []
 
     try:
         data = json.loads(processed_data)
         df = pd.DataFrame(data["gcf_data"])
     except (json.JSONDecodeError, KeyError, pd.errors.EmptyDataError):
-        return [], [], {"display": "none"}, [], []
+        return [], [], [], {"display": "none"}, [], []
 
     if ctx.triggered_id == "apply-filters-button":
         # Apply filters only when the button is clicked
@@ -507,13 +512,26 @@ def update_datatable(
         filtered_df = df
         new_checkbox_value = checkbox_value if checkbox_value is not None else []
 
-    display_df = filtered_df[["GCF ID", "# BGCs"]]
+    # Prepare the data for display
+    display_df = filtered_df[["GCF ID", "# BGCs", "BGC IDs", "strains"]]
+    display_data = display_df[["GCF ID", "# BGCs"]].to_dict("records")
+
+    # Prepare tooltip data
+    tooltip_data = []
+    for _, row in display_df.iterrows():
+        tooltip_data.append(
+            {
+                "# BGCs": {"value": f"BGC IDs: {', '.join(row['BGC IDs'])}"},
+                "GCF ID": {"value": f"strains: {', '.join(row['strains'])}"},
+            },
+        )
 
     columns = [
-        {"name": i, "id": i, "deletable": False, "selectable": False} for i in display_df.columns
+        {"name": "GCF ID", "id": "GCF ID"},
+        {"name": "# BGCs", "id": "# BGCs", "type": "numeric"},
     ]
 
-    return display_df.to_dict("records"), columns, {"display": "block"}, [], new_checkbox_value
+    return display_data, columns, tooltip_data, {"display": "block"}, [], new_checkbox_value
 
 
 @app.callback(
