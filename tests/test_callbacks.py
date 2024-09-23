@@ -39,8 +39,20 @@ def processed_data():
 def sample_processed_data():
     data = {
         "gcf_data": [
-            {"GCF ID": "GCF_1", "# BGCs": 3, "BGC Classes": ["NRPS", "PKS"]},
-            {"GCF ID": "GCF_2", "# BGCs": 2, "BGC Classes": ["RiPP", "Terpene"]},
+            {
+                "GCF ID": "GCF_1",
+                "# BGCs": 3,
+                "BGC Classes": ["NRPS", "PKS"],
+                "BGC IDs": ["BGC_1", "BGC_2", "BGC_3"],
+                "strains": ["Strain_1", "Strain_2", "Strain_3"],
+            },
+            {
+                "GCF ID": "GCF_2",
+                "# BGCs": 2,
+                "BGC Classes": ["RiPP", "Terpene"],
+                "BGC IDs": ["BGC_1", "BGC_3"],
+                "strains": ["Strain_3"],
+            },
         ]
     }
     return json.dumps(data)
@@ -201,8 +213,8 @@ def test_update_datatable(sample_processed_data):
             None,  # checkbox_value
         )
 
-        assert len(result) == 5
-        data, columns, style, selected_rows, checkbox_value = result
+        assert len(result) == 6
+        data, columns, tooltip_data, style, selected_rows, checkbox_value = result
 
         # Check data
         assert len(data) == 2
@@ -225,7 +237,7 @@ def test_update_datatable(sample_processed_data):
 
         # Test with None input
         result = update_datatable(None, None, [], [], [], None)
-        assert result == ([], [], {"display": "none"}, [], [])
+        assert result == ([], [], [], {"display": "none"}, [], [])
 
         # Test with apply-filters-button triggered
         mock_ctx.triggered_id = "apply-filters-button"
@@ -238,7 +250,7 @@ def test_update_datatable(sample_processed_data):
             ["disabled"],  # checkbox_value
         )
 
-        data, columns, style, selected_rows, checkbox_value = result
+        data, columns, tooltip_data, style, selected_rows, checkbox_value = result
         assert len(data) == 1
         assert data[0]["GCF ID"] == "GCF_1"
         assert checkbox_value == []
