@@ -144,9 +144,9 @@ gm_table = dbc.Card(
                 ),
                 dash_table.DataTable(
                     id="gm-table",
-                    columns=[],  # Start with empty columns
-                    data=[],  # Start with empty data
-                    tooltip_data=[],  # Start with empty tooltip data
+                    columns=[],
+                    data=[],
+                    tooltip_data=[],
                     editable=False,
                     filter_action="none",
                     sort_action="none",
@@ -174,18 +174,19 @@ gm_table = dbc.Card(
                         }
                     ],
                     style_cell_conditional=[{"if": {"column_id": "selector"}, "width": "30px"}],
-                    tooltip_delay=500,
+                    tooltip_delay=0,
                     tooltip_duration=None,
                     css=[
                         {
                             "selector": ".dash-table-tooltip",
-                            "rule": "background-color: white; font-family: monospace; max-width: none !important",
+                            "rule": "background-color: white; font-family: monospace; max-width: none !important; white-space: pre-wrap; padding: 5px;",
                         }
                     ],
+                    tooltip={"type": "markdown"},
                 ),
             ],
             id="gm-table-card-body",
-            style={"display": "none"},  # Initially hide the CardBody
+            style={"display": "none"},
         ),
         html.Div(id="gm-table-output1", className="p-4"),
         html.Div(id="gm-table-output2", className="p-4"),

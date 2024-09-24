@@ -111,6 +111,10 @@ def process_uploaded_data(file_path: Path | str | None) -> str | None:
         for gcf in gcfs:
             gcf_bgc_classes = [cls for bgc in gcf.bgcs for cls in bgc_to_class[bgc.id]]
             bgc_ids = [bgc.id for bgc in gcf.bgcs]
+            bgc_smiles = [
+                bgc.smiles[0] if bgc.smiles and bgc.smiles[0] is not None else "N/A"
+                for bgc in gcf.bgcs
+            ]
             strains = [str(gcf.strains)]
             processed_data["gcf_data"].append(
                 {
@@ -118,6 +122,7 @@ def process_uploaded_data(file_path: Path | str | None) -> str | None:
                     "# BGCs": len(gcf.bgcs),
                     "BGC Classes": list(set(gcf_bgc_classes)),  # Using set to get unique classes
                     "BGC IDs": bgc_ids,
+                    "BGC smiles": bgc_smiles,
                     "strains": strains,
                 }
             )
@@ -513,17 +518,24 @@ def update_datatable(
         new_checkbox_value = checkbox_value if checkbox_value is not None else []
 
     # Prepare the data for display
-    display_df = filtered_df[["GCF ID", "# BGCs", "BGC IDs", "strains"]]
+    display_df = filtered_df[["GCF ID", "# BGCs", "BGC IDs", "BGC smiles", "strains"]]
     display_data = display_df[["GCF ID", "# BGCs"]].to_dict("records")
 
     # Prepare tooltip data
     tooltip_data = []
     for _, row in display_df.iterrows():
+        bgc_ids_smiles_markdown = "| BGC IDs | SMILES |\n|---------|--------|\n" + "\n".join(
+            [f"| {id} | {smiles} |" for id, smiles in zip(row["BGC IDs"], row["BGC smiles"])]
+        )
+        strains_markdown = "| Strains |\n|----------|\n" + "\n".join(
+            [f"| {strain} |" for strain in row["strains"]]
+        )
+
         tooltip_data.append(
             {
-                "# BGCs": {"value": f"BGC IDs: {', '.join(row['BGC IDs'])}"},
-                "GCF ID": {"value": f"strains: {', '.join(row['strains'])}"},
-            },
+                "# BGCs": {"value": bgc_ids_smiles_markdown, "type": "markdown"},
+                "GCF ID": {"value": strains_markdown, "type": "markdown"},
+            }
         )
 
     columns = [
