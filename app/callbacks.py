@@ -110,19 +110,21 @@ def process_uploaded_data(file_path: Path | str | None) -> str | None:
 
         for gcf in gcfs:
             gcf_bgc_classes = [cls for bgc in gcf.bgcs for cls in bgc_to_class[bgc.id]]
-            bgc_ids = [bgc.id for bgc in gcf.bgcs]
-            bgc_smiles = [
-                bgc.smiles[0] if bgc.smiles and bgc.smiles[0] is not None else "N/A"
+            bgc_data = [
+                (bgc.id, bgc.smiles[0] if bgc.smiles and bgc.smiles[0] is not None else "N/A")
                 for bgc in gcf.bgcs
             ]
-            strains = [str(gcf.strains)]
+            bgc_data.sort(key=lambda x: x[0])
+            bgc_ids, bgc_smiles = zip(*bgc_data)
+            strains = [s.id for s in gcf.strains._strains]
+            strains.sort()
             processed_data["gcf_data"].append(
                 {
                     "GCF ID": gcf.id,
                     "# BGCs": len(gcf.bgcs),
                     "BGC Classes": list(set(gcf_bgc_classes)),  # Using set to get unique classes
-                    "BGC IDs": bgc_ids,
-                    "BGC smiles": bgc_smiles,
+                    "BGC IDs": list(bgc_ids),
+                    "BGC smiles": list(bgc_smiles),
                     "strains": strains,
                 }
             )

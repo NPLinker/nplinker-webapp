@@ -179,7 +179,16 @@ gm_table = dbc.Card(
                     css=[
                         {
                             "selector": ".dash-table-tooltip",
-                            "rule": "background-color: white; font-family: monospace; max-width: none !important; white-space: pre-wrap; padding: 5px;",
+                            "rule": """
+                                background-color: #ffd8cc;
+                                font-family: monospace;
+                                font-size: 12px;
+                                max-width: none !important;
+                                white-space: pre-wrap;
+                                padding: 8px;
+                                border: 1px solid #FF6E42;
+                                box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+                            """,
                         }
                     ],
                     tooltip={"type": "markdown"},
