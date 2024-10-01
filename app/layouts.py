@@ -2,6 +2,7 @@ import uuid
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 import dash_uploader as du
+from dash import dash_table
 from dash import dcc
 from dash import html
 
@@ -65,6 +66,7 @@ uploader = html.Div(
             )
         ),
         dcc.Store(id="file-store"),  # Store to keep the file contents
+        dcc.Store(id="processed-data-store"),  # Store to keep the processed data
     ],
     className="p-5 ml-5 mr-5",
 )
@@ -93,7 +95,20 @@ gm_accordion = dmc.Accordion(
                     id="gm-accordion-control",
                     className="mt-5 mb-3",
                 ),
-                dmc.AccordionPanel(gm_input_group),
+                dmc.AccordionPanel(
+                    [
+                        gm_input_group,
+                        html.Div(
+                            dbc.Button(
+                                "Apply Filters",
+                                id="apply-filters-button",
+                                color="primary",
+                                className="mt-3",
+                            ),
+                            className="d-flex justify-content-center",
+                        ),
+                    ]
+                ),
             ],
             value="gm-accordion",
         ),
@@ -102,11 +117,96 @@ gm_accordion = dmc.Accordion(
 )
 # gm graph
 gm_graph = dcc.Graph(id="gm-graph", className="mt-5 mb-3", style={"display": "none"})
+# gm_table
+gm_table = dbc.Card(
+    [
+        dbc.CardHeader(
+            [
+                "Data",
+            ],
+            id="gm-table-card-header",
+            style={"color": "#888888"},
+        ),
+        dbc.CardBody(
+            [
+                html.Div(
+                    dcc.Checklist(
+                        options=[{"label": "", "value": "disabled"}],
+                        id="select-all-checkbox",
+                        style={
+                            "position": "absolute",
+                            "top": "4px",
+                            "left": "10px",
+                            "zIndex": "1000",
+                        },
+                    ),
+                    style={"position": "relative", "height": "0px"},
+                ),
+                dash_table.DataTable(
+                    id="gm-table",
+                    columns=[],
+                    data=[],
+                    tooltip_data=[],
+                    editable=False,
+                    filter_action="none",
+                    sort_action="none",
+                    sort_mode="multi",
+                    column_selectable=False,
+                    row_deletable=False,
+                    row_selectable="multi",
+                    selected_columns=[],
+                    selected_rows=[],
+                    page_action="native",
+                    page_current=0,
+                    page_size=10,
+                    style_cell={"textAlign": "left", "padding": "5px"},
+                    style_header={
+                        "backgroundColor": "#FF6E42",
+                        "fontWeight": "bold",
+                        "color": "white",
+                    },
+                    style_data={"border": "1px solid #ddd"},
+                    style_data_conditional=[
+                        {
+                            "if": {"state": "selected"},
+                            "backgroundColor": "white",
+                            "border": "1px solid #ddd",
+                        }
+                    ],
+                    style_cell_conditional=[{"if": {"column_id": "selector"}, "width": "30px"}],
+                    tooltip_delay=0,
+                    tooltip_duration=None,
+                    css=[
+                        {
+                            "selector": ".dash-table-tooltip",
+                            "rule": """
+                                background-color: #ffd8cc;
+                                font-family: monospace;
+                                font-size: 12px;
+                                max-width: none !important;
+                                white-space: pre-wrap;
+                                padding: 8px;
+                                border: 1px solid #FF6E42;
+                                box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+                            """,
+                        }
+                    ],
+                    tooltip={"type": "markdown"},
+                ),
+            ],
+            id="gm-table-card-body",
+            style={"display": "none"},
+        ),
+        html.Div(id="gm-table-output1", className="p-4"),
+        html.Div(id="gm-table-output2", className="p-4"),
+    ]
+)
 # gm tab content
 gm_content = dbc.Row(
     [
-        dbc.Col(gm_accordion, width=10, className="mx-auto"),
+        dbc.Col(gm_accordion, width=10, className="mx-auto dbc"),
         dbc.Col(gm_graph, width=10, className="mx-auto"),
+        dbc.Col(gm_table, width=10, className="mx-auto"),
     ]
 )
 # mg tab content
@@ -145,5 +245,5 @@ tabs = dbc.Row(
 
 def create_layout():  # noqa: D103
     return dmc.MantineProvider(
-        [dbc.Container([navbar, uploader, tabs], fluid=True, className="p-0 dbc")]
+        [dbc.Container([navbar, uploader, tabs], fluid=True, className="p-0")]
     )
