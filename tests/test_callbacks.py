@@ -7,13 +7,13 @@ import dash_mantine_components as dmc
 import pandas as pd
 import pytest
 from dash_uploader import UploadStatus
-from app.callbacks import add_block
-from app.callbacks import apply_filters
 from app.callbacks import disable_tabs_and_reset_blocks
+from app.callbacks import gm_filter_add_block
+from app.callbacks import gm_filter_apply
+from app.callbacks import gm_table_select_rows
+from app.callbacks import gm_table_toggle_selection
+from app.callbacks import gm_table_update_datatable
 from app.callbacks import process_uploaded_data
-from app.callbacks import select_rows
-from app.callbacks import toggle_selection
-from app.callbacks import update_datatable
 from app.callbacks import upload_data
 from . import DATA_DIR
 
@@ -134,7 +134,7 @@ def test_process_uploaded_data_structure():
 def test_disable_tabs(mock_uuid):
     # Test with None as input
     result = disable_tabs_and_reset_blocks(None)
-    assert result == (True, True, {}, {"display": "block"}, True, [], [])
+    assert result == (True, True, [], [], {}, {"display": "block"}, True)
 
     # Test with a string as input
     result = disable_tabs_and_reset_blocks(MOCK_FILE_PATH)
@@ -143,11 +143,11 @@ def test_disable_tabs(mock_uuid):
     (
         gm_tab_disabled,
         gm_accordion_disabled,
+        block_ids,
+        blocks,
         table_header_style,
         table_body_style,
         mg_tab_disabled,
-        block_ids,
-        blocks,
     ) = result
 
     assert gm_tab_disabled is False
@@ -172,41 +172,41 @@ def test_disable_tabs(mock_uuid):
         ),  # three buttons, each clicked once
     ],
 )
-def test_add_block(mock_uuid, n_clicks, initial_blocks, expected_result):
+def test_gm_filter_add_block(mock_uuid, n_clicks, initial_blocks, expected_result):
     if isinstance(expected_result, list):
-        result = add_block(n_clicks, initial_blocks)
+        result = gm_filter_add_block(n_clicks, initial_blocks)
         assert result == expected_result
     else:
         with expected_result:
-            add_block(n_clicks, initial_blocks)
+            gm_filter_add_block(n_clicks, initial_blocks)
 
 
-def test_apply_filters(sample_processed_data):
+def test_gm_filter_apply(sample_processed_data):
     data = json.loads(sample_processed_data)
     df = pd.DataFrame(data["gcf_data"])
 
     # Test GCF_ID filter
     gcf_ids = df["GCF ID"].iloc[:2].tolist()
-    filtered_df = apply_filters(df, ["GCF_ID"], [",".join(gcf_ids)], [[]])
+    filtered_df = gm_filter_apply(df, ["GCF_ID"], [",".join(gcf_ids)], [[]])
     assert len(filtered_df) == 2
     assert set(filtered_df["GCF ID"]) == set(gcf_ids)
 
     # Test BGC_CLASS filter
     bgc_class = df["BGC Classes"].iloc[0][0]  # Get the first BGC class from the first row
-    filtered_df = apply_filters(df, ["BGC_CLASS"], [""], [[bgc_class]])
+    filtered_df = gm_filter_apply(df, ["BGC_CLASS"], [""], [[bgc_class]])
     assert len(filtered_df) > 0
     assert all(bgc_class in classes for classes in filtered_df["BGC Classes"])
 
     # Test no filter
-    filtered_df = apply_filters(df, [], [], [])
+    filtered_df = gm_filter_apply(df, [], [], [])
     assert len(filtered_df) == len(df)
 
 
-def test_update_datatable(sample_processed_data):
+def test_gm_table_update_datatable(sample_processed_data):
     with patch("app.callbacks.ctx") as mock_ctx:
         # Test with processed data and no filters applied
         mock_ctx.triggered_id = None
-        result = update_datatable(
+        result = gm_table_update_datatable(
             sample_processed_data,
             None,  # n_clicks
             [],  # dropdown_menus
@@ -238,12 +238,12 @@ def test_update_datatable(sample_processed_data):
         assert checkbox_value == []
 
         # Test with None input
-        result = update_datatable(None, None, [], [], [], None)
+        result = gm_table_update_datatable(None, None, [], [], [], None)
         assert result == ([], [], [], {"display": "none"}, [], [])
 
         # Test with apply-filters-button triggered
-        mock_ctx.triggered_id = "apply-filters-button"
-        result = update_datatable(
+        mock_ctx.triggered_id = "gm-filter-apply-button"
+        result = gm_table_update_datatable(
             sample_processed_data,
             1,  # n_clicks
             ["GCF_ID"],  # dropdown_menus
@@ -258,38 +258,38 @@ def test_update_datatable(sample_processed_data):
         assert checkbox_value == []
 
 
-def test_toggle_selection(sample_processed_data):
+def test_gm_table_toggle_selection(sample_processed_data):
     data = json.loads(sample_processed_data)
     original_rows = data["gcf_data"]
     filtered_rows = original_rows[:2]
 
     # Test selecting all rows
-    result = toggle_selection(["disabled"], original_rows, filtered_rows)
+    result = gm_table_toggle_selection(["disabled"], original_rows, filtered_rows)
     assert result == [0, 1]  # Assuming it now returns a list of indices directly
 
     # Test deselecting all rows
-    result = toggle_selection([], original_rows, filtered_rows)
+    result = gm_table_toggle_selection([], original_rows, filtered_rows)
     assert result == []
 
     # Test with None filtered_rows
-    result = toggle_selection(["disabled"], original_rows, None)
+    result = gm_table_toggle_selection(["disabled"], original_rows, None)
     assert result == list(range(len(original_rows)))  # Should select all rows in original_rows
 
     # Test with empty value (deselecting when no filter is applied)
-    result = toggle_selection([], original_rows, None)
+    result = gm_table_toggle_selection([], original_rows, None)
     assert result == []
 
 
-def test_select_rows(sample_processed_data):
+def test_gm_table_select_rows(sample_processed_data):
     data = json.loads(sample_processed_data)
     rows = data["gcf_data"]
     selected_rows = [0, 1]
 
-    output1, output2 = select_rows(rows, selected_rows)
+    output1, output2 = gm_table_select_rows(rows, selected_rows)
     assert output1 == f"Total rows: {len(rows)}"
     assert output2.startswith(f"Selected rows: {len(selected_rows)}\nSelected GCF IDs: ")
 
     # Test with no rows
-    output1, output2 = select_rows([], None)
+    output1, output2 = gm_table_select_rows([], None)
     assert output1 == "No data available."
     assert output2 == "No rows selected."

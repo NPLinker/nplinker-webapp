@@ -142,19 +142,19 @@ def process_uploaded_data(file_path: Path | str | None) -> str | None:
 @app.callback(
     [
         Output("gm-tab", "disabled"),
-        Output("gm-accordion-control", "disabled"),
+        Output("gm-filter-accordion-control", "disabled"),
+        Output("gm-filter-blocks-id", "data", allow_duplicate=True),
+        Output("gm-filter-blocks-container", "children", allow_duplicate=True),
         Output("gm-table-card-header", "style"),
         Output("gm-table-card-body", "style", allow_duplicate=True),
         Output("mg-tab", "disabled"),
-        Output("blocks-id", "data", allow_duplicate=True),
-        Output("blocks-container", "children", allow_duplicate=True),
     ],
     [Input("file-store", "data")],
     prevent_initial_call=True,
 )
 def disable_tabs_and_reset_blocks(
     file_path: Path | str | None,
-) -> tuple[bool, bool, dict, dict[str, str], bool, list[str], list[dmc.Grid]]:
+) -> tuple[bool, bool, list[str], list[dmc.Grid], dict, dict[str, str], bool]:
     """Manage tab states and reset blocks based on file upload status.
 
     Args:
@@ -165,16 +165,24 @@ def disable_tabs_and_reset_blocks(
     """
     if file_path is None:
         # Disable the tabs, don't change blocks
-        return True, True, {}, {"display": "block"}, True, [], []
+        return True, True, [], [], {}, {"display": "block"}, True
 
     # Enable the tabs and reset blocks
-    initial_block_id = [str(uuid.uuid4())]
-    new_blocks = [create_initial_block(initial_block_id[0])]
+    gm_filter_initial_block_id = [str(uuid.uuid4())]
+    gm_filter_new_blocks = [gm_filter_create_initial_block(gm_filter_initial_block_id[0])]
 
-    return False, False, {}, {"display": "block"}, False, initial_block_id, new_blocks
+    return (
+        False,
+        False,
+        gm_filter_initial_block_id,
+        gm_filter_new_blocks,
+        {},
+        {"display": "block"},
+        False,
+    )
 
 
-def create_initial_block(block_id: str) -> dmc.Grid:
+def gm_filter_create_initial_block(block_id: str) -> dmc.Grid:
     """Create the initial block component with the given ID.
 
     Args:
@@ -184,12 +192,12 @@ def create_initial_block(block_id: str) -> dmc.Grid:
         A Grid component with nested elements.
     """
     return dmc.Grid(
-        id={"type": "gm-block", "index": block_id},
+        id={"type": "gm-filter-block", "index": block_id},
         children=[
             dmc.GridCol(
                 dbc.Button(
                     [html.I(className="fas fa-plus")],
-                    id={"type": "gm-add-button", "index": block_id},
+                    id={"type": "gm-filter-add-button", "index": block_id},
                     className="btn-primary",
                 ),
                 span=2,
@@ -198,7 +206,7 @@ def create_initial_block(block_id: str) -> dmc.Grid:
                 dcc.Dropdown(
                     options=GM_DROPDOWN_MENU_OPTIONS,
                     value="GCF_ID",
-                    id={"type": "gm-dropdown-menu", "index": block_id},
+                    id={"type": "gm-filter-dropdown-menu", "index": block_id},
                     clearable=False,
                 ),
                 span=4,
@@ -206,12 +214,12 @@ def create_initial_block(block_id: str) -> dmc.Grid:
             dmc.GridCol(
                 [
                     dmc.TextInput(
-                        id={"type": "gm-dropdown-ids-text-input", "index": block_id},
+                        id={"type": "gm-filter-dropdown-ids-text-input", "index": block_id},
                         placeholder="1, 2, 3, ...",
                         className="custom-textinput",
                     ),
                     dcc.Dropdown(
-                        id={"type": "gm-dropdown-bgc-class-dropdown", "index": block_id},
+                        id={"type": "gm-filter-dropdown-bgc-class-dropdown", "index": block_id},
                         options=GM_DROPDOWN_BGC_CLASS_OPTIONS,
                         multi=True,
                         style={"display": "none"},
@@ -227,7 +235,7 @@ def create_initial_block(block_id: str) -> dmc.Grid:
 @app.callback(
     Output("gm-graph", "figure"),
     Output("gm-graph", "style"),
-    Output("file-content-mg", "children"),
+    Output("mg-file-content", "children"),
     [Input("processed-data-store", "data")],
 )
 def gm_plot(stored_data: str | None) -> tuple[dict | go.Figure, dict, str]:
@@ -273,11 +281,11 @@ def gm_plot(stored_data: str | None) -> tuple[dict | go.Figure, dict, str]:
 
 
 @app.callback(
-    Output("blocks-id", "data"),
-    Input({"type": "gm-add-button", "index": ALL}, "n_clicks"),
-    State("blocks-id", "data"),
+    Output("gm-filter-blocks-id", "data"),
+    Input({"type": "gm-filter-add-button", "index": ALL}, "n_clicks"),
+    State("gm-filter-blocks-id", "data"),
 )
-def add_block(n_clicks: list[int], blocks_id: list[str]) -> list[str]:
+def gm_filter_add_block(n_clicks: list[int], blocks_id: list[str]) -> list[str]:
     """Add a new block to the layout when the add button is clicked.
 
     Args:
@@ -296,11 +304,13 @@ def add_block(n_clicks: list[int], blocks_id: list[str]) -> list[str]:
 
 
 @app.callback(
-    Output("blocks-container", "children"),
-    Input("blocks-id", "data"),
-    State("blocks-container", "children"),
+    Output("gm-filter-blocks-container", "children"),
+    Input("gm-filter-blocks-id", "data"),
+    State("gm-filter-blocks-container", "children"),
 )
-def display_blocks(blocks_id: list[str], existing_blocks: list[dmc.Grid]) -> list[dmc.Grid]:
+def gm_filter_display_blocks(
+    blocks_id: list[str], existing_blocks: list[dmc.Grid]
+) -> list[dmc.Grid]:
     """Display the blocks for the input block IDs.
 
     Args:
@@ -314,19 +324,19 @@ def display_blocks(blocks_id: list[str], existing_blocks: list[dmc.Grid]) -> lis
         new_block_id = blocks_id[-1]
 
         new_block = dmc.Grid(
-            id={"type": "gm-block", "index": new_block_id},
+            id={"type": "gm-filter-block", "index": new_block_id},
             children=[
                 dmc.GridCol(
                     html.Div(
                         [
                             dbc.Button(
                                 [html.I(className="fas fa-plus")],
-                                id={"type": "gm-add-button", "index": new_block_id},
+                                id={"type": "gm-filter-add-button", "index": new_block_id},
                                 className="btn-primary",
                             ),
                             html.Label(
                                 "OR",
-                                id={"type": "gm-or-label", "index": new_block_id},
+                                id={"type": "gm-filter-or-label", "index": new_block_id},
                                 className="ms-2 px-2 py-1 rounded",
                                 style={
                                     "color": "green",
@@ -347,7 +357,7 @@ def display_blocks(blocks_id: list[str], existing_blocks: list[dmc.Grid]) -> lis
                     dcc.Dropdown(
                         options=GM_DROPDOWN_MENU_OPTIONS,
                         value="GCF_ID",
-                        id={"type": "gm-dropdown-menu", "index": new_block_id},
+                        id={"type": "gm-filter-dropdown-menu", "index": new_block_id},
                         clearable=False,
                     ),
                     span=4,
@@ -355,12 +365,15 @@ def display_blocks(blocks_id: list[str], existing_blocks: list[dmc.Grid]) -> lis
                 dmc.GridCol(
                     [
                         dmc.TextInput(
-                            id={"type": "gm-dropdown-ids-text-input", "index": new_block_id},
+                            id={"type": "gm-filter-dropdown-ids-text-input", "index": new_block_id},
                             placeholder="1, 2, 3, ...",
                             className="custom-textinput",
                         ),
                         dcc.Dropdown(
-                            id={"type": "gm-dropdown-bgc-class-dropdown", "index": new_block_id},
+                            id={
+                                "type": "gm-filter-dropdown-bgc-class-dropdown",
+                                "index": new_block_id,
+                            },
                             options=GM_DROPDOWN_BGC_CLASS_OPTIONS,
                             multi=True,
                             style={"display": "none"},
@@ -387,15 +400,15 @@ def display_blocks(blocks_id: list[str], existing_blocks: list[dmc.Grid]) -> lis
 
 
 @app.callback(
-    Output({"type": "gm-dropdown-ids-text-input", "index": MATCH}, "style"),
-    Output({"type": "gm-dropdown-bgc-class-dropdown", "index": MATCH}, "style"),
-    Output({"type": "gm-dropdown-ids-text-input", "index": MATCH}, "placeholder"),
-    Output({"type": "gm-dropdown-bgc-class-dropdown", "index": MATCH}, "placeholder"),
-    Output({"type": "gm-dropdown-ids-text-input", "index": MATCH}, "value"),
-    Output({"type": "gm-dropdown-bgc-class-dropdown", "index": MATCH}, "value"),
-    Input({"type": "gm-dropdown-menu", "index": MATCH}, "value"),
+    Output({"type": "gm-filter-dropdown-ids-text-input", "index": MATCH}, "style"),
+    Output({"type": "gm-filter-dropdown-bgc-class-dropdown", "index": MATCH}, "style"),
+    Output({"type": "gm-filter-dropdown-ids-text-input", "index": MATCH}, "placeholder"),
+    Output({"type": "gm-filter-dropdown-bgc-class-dropdown", "index": MATCH}, "placeholder"),
+    Output({"type": "gm-filter-dropdown-ids-text-input", "index": MATCH}, "value"),
+    Output({"type": "gm-filter-dropdown-bgc-class-dropdown", "index": MATCH}, "value"),
+    Input({"type": "gm-filter-dropdown-menu", "index": MATCH}, "value"),
 )
-def update_placeholder(
+def gm_filter_update_placeholder(
     selected_value: str,
 ) -> tuple[dict[str, str], dict[str, str], str, str, str, list[Any]]:
     """Update the placeholder text and style of input fields based on the dropdown selection.
@@ -425,7 +438,7 @@ def update_placeholder(
         return {"display": "none"}, {"display": "none"}, "", "", "", []
 
 
-def apply_filters(
+def gm_filter_apply(
     df: pd.DataFrame,
     dropdown_menus: list[str],
     text_inputs: list[str],
@@ -470,16 +483,16 @@ def apply_filters(
     Output("gm-table", "tooltip_data"),
     Output("gm-table-card-body", "style"),
     Output("gm-table", "selected_rows", allow_duplicate=True),
-    Output("select-all-checkbox", "value"),
+    Output("gm-table-select-all-checkbox", "value"),
     Input("processed-data-store", "data"),
-    Input("apply-filters-button", "n_clicks"),
-    State({"type": "gm-dropdown-menu", "index": ALL}, "value"),
-    State({"type": "gm-dropdown-ids-text-input", "index": ALL}, "value"),
-    State({"type": "gm-dropdown-bgc-class-dropdown", "index": ALL}, "value"),
-    State("select-all-checkbox", "value"),
+    Input("gm-filter-apply-button", "n_clicks"),
+    State({"type": "gm-filter-dropdown-menu", "index": ALL}, "value"),
+    State({"type": "gm-filter-dropdown-ids-text-input", "index": ALL}, "value"),
+    State({"type": "gm-filter-dropdown-bgc-class-dropdown", "index": ALL}, "value"),
+    State("gm-table-select-all-checkbox", "value"),
     prevent_initial_call=True,
 )
-def update_datatable(
+def gm_table_update_datatable(
     processed_data: str | None,
     n_clicks: int | None,
     dropdown_menus: list[str],
@@ -509,9 +522,9 @@ def update_datatable(
     except (json.JSONDecodeError, KeyError, pd.errors.EmptyDataError):
         return [], [], [], {"display": "none"}, [], []
 
-    if ctx.triggered_id == "apply-filters-button":
+    if ctx.triggered_id == "gm-filter-apply-button":
         # Apply filters only when the button is clicked
-        filtered_df = apply_filters(df, dropdown_menus, text_inputs, bgc_class_dropdowns)
+        filtered_df = gm_filter_apply(df, dropdown_menus, text_inputs, bgc_class_dropdowns)
         # Reset the checkbox when filters are applied
         new_checkbox_value = []
     else:
@@ -550,12 +563,12 @@ def update_datatable(
 
 @app.callback(
     Output("gm-table", "selected_rows", allow_duplicate=True),
-    Input("select-all-checkbox", "value"),
+    Input("gm-table-select-all-checkbox", "value"),
     State("gm-table", "data"),
     State("gm-table", "derived_virtual_data"),
     prevent_initial_call=True,
 )
-def toggle_selection(
+def gm_table_toggle_selection(
     value: list | None,
     original_rows: list,
     filtered_rows: list | None,
@@ -588,7 +601,9 @@ def toggle_selection(
     Input("gm-table", "derived_virtual_data"),
     Input("gm-table", "derived_virtual_selected_rows"),
 )
-def select_rows(rows: list[dict[str, Any]], selected_rows: list[int] | None) -> tuple[str, str]:
+def gm_table_select_rows(
+    rows: list[dict[str, Any]], selected_rows: list[int] | None
+) -> tuple[str, str]:
     """Display the total number of rows and the number of selected rows in the table.
 
     Args:
