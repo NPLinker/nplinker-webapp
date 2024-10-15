@@ -200,12 +200,54 @@ gm_table = dbc.Card(
         html.Div(id="gm-table-output2", className="p-4"),
     ]
 )
+# gm scoring dropdown menu items
+gm_scoring_input_group = html.Div(
+    [
+        dcc.Store(id="gm-scoring-blocks-id", data=[]),  # Start with one block
+        html.Div(
+            id="gm-scoring-blocks-container",
+            children=[],
+        ),
+    ]
+)
+# gm score (accordion) card
+gm_scoring_accordion = dmc.Accordion(
+    [
+        dmc.AccordionItem(
+            [
+                dmc.AccordionControl(
+                    "Scoring",
+                    disabled=True,
+                    id="gm-scoring-accordion-control",
+                    className="mt-5 mb-3",
+                ),
+                dmc.AccordionPanel(
+                    [
+                        gm_scoring_input_group,
+                        html.Div(
+                            dbc.Button(
+                                "Set Scoring",
+                                id="gm-scoring-apply-button",
+                                color="primary",
+                                className="mt-3",
+                            ),
+                            className="d-flex justify-content-center",
+                        ),
+                    ]
+                ),
+            ],
+            value="gm-scoring-accordion",
+        ),
+    ],
+    className="mt-5 mb-3",
+)
 # gm tab content
 gm_content = dbc.Row(
     [
         dbc.Col(gm_filter_accordion, width=10, className="mx-auto dbc"),
         dbc.Col(gm_graph, width=10, className="mx-auto"),
         dbc.Col(gm_table, width=10, className="mx-auto"),
+        dbc.Col(gm_scoring_accordion, width=10, className="mx-auto dbc"),
     ]
 )
 # mg tab content

@@ -145,6 +145,9 @@ def process_uploaded_data(file_path: Path | str | None) -> str | None:
         Output("gm-filter-accordion-control", "disabled"),
         Output("gm-filter-blocks-id", "data", allow_duplicate=True),
         Output("gm-filter-blocks-container", "children", allow_duplicate=True),
+        Output("gm-scoring-accordion-control", "disabled"),
+        Output("gm-scoring-blocks-id", "data", allow_duplicate=True),
+        Output("gm-scoring-blocks-container", "children", allow_duplicate=True),
         Output("gm-table-card-header", "style"),
         Output("gm-table-card-body", "style", allow_duplicate=True),
         Output("mg-tab", "disabled"),
@@ -154,7 +157,18 @@ def process_uploaded_data(file_path: Path | str | None) -> str | None:
 )
 def disable_tabs_and_reset_blocks(
     file_path: Path | str | None,
-) -> tuple[bool, bool, list[str], list[dmc.Grid], dict, dict[str, str], bool]:
+) -> tuple[
+    bool,
+    bool,
+    list[str],
+    list[dmc.Grid],
+    bool,
+    list[str],
+    list[dmc.Grid],
+    dict,
+    dict[str, str],
+    bool,
+]:
     """Manage tab states and reset blocks based on file upload status.
 
     Args:
@@ -165,23 +179,29 @@ def disable_tabs_and_reset_blocks(
     """
     if file_path is None:
         # Disable the tabs, don't change blocks
-        return True, True, [], [], {}, {"display": "block"}, True
+        return True, True, [], [], True, [], [], {}, {"display": "block"}, True
 
     # Enable the tabs and reset blocks
     gm_filter_initial_block_id = [str(uuid.uuid4())]
     gm_filter_new_blocks = [gm_filter_create_initial_block(gm_filter_initial_block_id[0])]
+    gm_scoring_initial_block_id = [str(uuid.uuid4())]
+    gm_scoring_new_blocks = [gm_scoring_create_initial_block(gm_scoring_initial_block_id[0])]
 
     return (
         False,
         False,
         gm_filter_initial_block_id,
         gm_filter_new_blocks,
+        False,
+        gm_scoring_initial_block_id,
+        gm_scoring_new_blocks,
         {},
         {"display": "block"},
         False,
     )
 
 
+# Filter callbacks
 def gm_filter_create_initial_block(block_id: str) -> dmc.Grid:
     """Create the initial block component with the given ID.
 
@@ -230,54 +250,6 @@ def gm_filter_create_initial_block(block_id: str) -> dmc.Grid:
         ],
         gutter="md",
     )
-
-
-@app.callback(
-    Output("gm-graph", "figure"),
-    Output("gm-graph", "style"),
-    Output("mg-file-content", "children"),
-    [Input("processed-data-store", "data")],
-)
-def gm_plot(stored_data: str | None) -> tuple[dict | go.Figure, dict, str]:
-    """Create a bar plot based on the processed data.
-
-    Args:
-        stored_data: JSON string of processed data or None.
-
-    Returns:
-        Tuple containing the plot figure, style, and a status message.
-    """
-    if stored_data is None:
-        return {}, {"display": "none"}, "No data available"
-    data = json.loads(stored_data)
-    n_bgcs = data["n_bgcs"]
-
-    x_values = sorted(map(int, n_bgcs.keys()))
-    y_values = [len(n_bgcs[str(x)]) for x in x_values]
-    hover_texts = [f"GCF IDs: {', '.join(n_bgcs[str(x)])}" for x in x_values]
-
-    # Adjust bar width based on number of data points
-    bar_width = 0.4 if len(x_values) <= 5 else None
-    # Create the bar plot
-    fig = go.Figure(
-        data=[
-            go.Bar(
-                x=x_values,
-                y=y_values,
-                text=hover_texts,
-                hoverinfo="text",
-                textposition="none",
-                width=bar_width,
-            )
-        ]
-    )
-    # Update layout
-    fig.update_layout(
-        xaxis_title="# BGCs",
-        yaxis_title="# GCFs",
-        xaxis=dict(type="category"),
-    )
-    return fig, {"display": "block"}, "Data loaded and plotted!!"
 
 
 @app.callback(
@@ -475,6 +447,305 @@ def gm_filter_apply(
         return df[final_mask]
     else:
         return df
+
+
+# Scoring callbacks
+def gm_scoring_create_initial_block(block_id: str) -> dmc.Grid:
+    """Create the initial block component with the given ID.
+
+    Args:
+        block_id: A unique identifier for the block.
+
+    Returns:
+        A Grid component with nested elements.
+    """
+    return dmc.Grid(
+        id={"type": "gm-scoring-block", "index": block_id},
+        children=[
+            dmc.GridCol(
+                dbc.Button(
+                    [html.I(className="fas fa-plus")],
+                    id={"type": "gm-scoring-add-button", "index": block_id},
+                    className="btn-primary",
+                ),
+                span=2,
+            ),
+            dmc.GridCol(
+                dcc.Dropdown(
+                    options=GM_DROPDOWN_MENU_OPTIONS,
+                    value="GCF_ID",
+                    id={"type": "gm-scoring-dropdown-menu", "index": block_id},
+                    clearable=False,
+                ),
+                span=4,
+            ),
+            dmc.GridCol(
+                [
+                    dmc.TextInput(
+                        id={"type": "gm-scoring-dropdown-ids-text-input", "index": block_id},
+                        placeholder="1, 2, 3, ...",
+                        className="custom-textinput",
+                    ),
+                    dcc.Dropdown(
+                        id={"type": "gm-scoring-dropdown-bgc-class-dropdown", "index": block_id},
+                        options=GM_DROPDOWN_BGC_CLASS_OPTIONS,
+                        multi=True,
+                        style={"display": "none"},
+                    ),
+                ],
+                span=6,
+            ),
+        ],
+        gutter="md",
+    )
+
+
+@app.callback(
+    Output("gm-scoring-blocks-id", "data"),
+    Input({"type": "gm-scoring-add-button", "index": ALL}, "n_clicks"),
+    State("gm-scoring-blocks-id", "data"),
+)
+def gm_scoring_add_block(n_clicks: list[int], blocks_id: list[str]) -> list[str]:
+    """Add a new block to the layout when the add button is clicked.
+
+    Args:
+        n_clicks: List of number of clicks for each add button.
+        blocks_id: Current list of block IDs.
+
+    Returns:
+        Updated list of block IDs.
+    """
+    if not any(n_clicks):
+        raise dash.exceptions.PreventUpdate
+    # Create a unique ID for the new block
+    new_block_id = str(uuid.uuid4())
+    blocks_id.append(new_block_id)
+    return blocks_id
+
+
+@app.callback(
+    Output("gm-scoring-blocks-container", "children"),
+    Input("gm-scoring-blocks-id", "data"),
+    State("gm-scoring-blocks-container", "children"),
+)
+def gm_scoring_display_blocks(
+    blocks_id: list[str], existing_blocks: list[dmc.Grid]
+) -> list[dmc.Grid]:
+    """Display the blocks for the input block IDs.
+
+    Args:
+        blocks_id: List of block IDs.
+        existing_blocks: Current list of block components.
+
+    Returns:
+        Updated list of block components.
+    """
+    if len(blocks_id) > 1:
+        new_block_id = blocks_id[-1]
+
+        new_block = dmc.Grid(
+            id={"type": "gm-scoring-block", "index": new_block_id},
+            children=[
+                dmc.GridCol(
+                    html.Div(
+                        [
+                            dbc.Button(
+                                [html.I(className="fas fa-plus")],
+                                id={"type": "gm-scoring-add-button", "index": new_block_id},
+                                className="btn-primary",
+                            ),
+                            html.Label(
+                                "OR",
+                                id={"type": "gm-scoring-or-label", "index": new_block_id},
+                                className="ms-2 px-2 py-1 rounded",
+                                style={
+                                    "color": "green",
+                                    "backgroundColor": "#f0f0f0",
+                                    "display": "inline-block",
+                                    "position": "absolute",
+                                    "left": "50px",  # Adjust based on button width
+                                    "top": "50%",
+                                    "transform": "translateY(-50%)",
+                                },
+                            ),
+                        ],
+                        style={"position": "relative", "height": "38px"},
+                    ),
+                    span=2,
+                ),
+                dmc.GridCol(
+                    dcc.Dropdown(
+                        options=GM_DROPDOWN_MENU_OPTIONS,
+                        value="GCF_ID",
+                        id={"type": "gm-scoring-dropdown-menu", "index": new_block_id},
+                        clearable=False,
+                    ),
+                    span=4,
+                ),
+                dmc.GridCol(
+                    [
+                        dmc.TextInput(
+                            id={
+                                "type": "gm-scoring-dropdown-ids-text-input",
+                                "index": new_block_id,
+                            },
+                            placeholder="1, 2, 3, ...",
+                            className="custom-textinput",
+                        ),
+                        dcc.Dropdown(
+                            id={
+                                "type": "gm-scoring-dropdown-bgc-class-dropdown",
+                                "index": new_block_id,
+                            },
+                            options=GM_DROPDOWN_BGC_CLASS_OPTIONS,
+                            multi=True,
+                            style={"display": "none"},
+                        ),
+                    ],
+                    span=6,
+                ),
+            ],
+            gutter="md",
+        )
+
+        # Hide the add button and OR label on the previous last block
+        if len(existing_blocks) == 1:
+            existing_blocks[-1]["props"]["children"][0]["props"]["children"]["props"]["style"] = {
+                "display": "none"
+            }
+        else:
+            existing_blocks[-1]["props"]["children"][0]["props"]["children"]["props"]["children"][
+                0
+            ]["props"]["style"] = {"display": "none"}
+
+        return existing_blocks + [new_block]
+    return existing_blocks
+
+
+@app.callback(
+    Output({"type": "gm-scoring-dropdown-ids-text-input", "index": MATCH}, "style"),
+    Output({"type": "gm-scoring-dropdown-bgc-class-dropdown", "index": MATCH}, "style"),
+    Output({"type": "gm-scoring-dropdown-ids-text-input", "index": MATCH}, "placeholder"),
+    Output({"type": "gm-scoring-dropdown-bgc-class-dropdown", "index": MATCH}, "placeholder"),
+    Output({"type": "gm-scoring-dropdown-ids-text-input", "index": MATCH}, "value"),
+    Output({"type": "gm-scoring-dropdown-bgc-class-dropdown", "index": MATCH}, "value"),
+    Input({"type": "gm-scoring-dropdown-menu", "index": MATCH}, "value"),
+)
+def gm_scoring_update_placeholder(
+    selected_value: str,
+) -> tuple[dict[str, str], dict[str, str], str, str, str, list[Any]]:
+    """Update the placeholder text and style of input fields based on the dropdown selection.
+
+    Args:
+        selected_value: The value selected in the dropdown menu.
+
+    Returns:
+        A tuple containing style, placeholder, and value updates for the input fields.
+    """
+    if not ctx.triggered:
+        # Callback was not triggered by user interaction, don't change anything
+        raise dash.exceptions.PreventUpdate
+    if selected_value == "GCF_ID":
+        return {"display": "block"}, {"display": "none"}, "1, 2, 3, ...", "", "", []
+    elif selected_value == "BGC_CLASS":
+        return (
+            {"display": "none"},
+            {"display": "block"},
+            "",
+            "Select one or more BGC classes",
+            "",
+            [],
+        )
+    else:
+        # This case should never occur due to the Literal type, but it satisfies mypy
+        return {"display": "none"}, {"display": "none"}, "", "", "", []
+
+
+def gm_scoring_apply(
+    df: pd.DataFrame,
+    dropdown_menus: list[str],
+    text_inputs: list[str],
+    bgc_class_dropdowns: list[list[str]],
+) -> pd.DataFrame:
+    """Apply scoring to the DataFrame based on user inputs.
+
+    Args:
+        df: The input DataFrame.
+        dropdown_menus: List of selected dropdown menu options.
+        text_inputs: List of text inputs for GCF IDs.
+        bgc_class_dropdowns: List of selected BGC classes.
+
+    Returns:
+        Scoring filtered DataFrame.
+    """
+    masks = []
+
+    for menu, text_input, bgc_classes in zip(dropdown_menus, text_inputs, bgc_class_dropdowns):
+        if menu == "GCF_ID" and text_input:
+            gcf_ids = [id.strip() for id in text_input.split(",") if id.strip()]
+            if gcf_ids:
+                mask = df["GCF ID"].astype(str).isin(gcf_ids)
+                masks.append(mask)
+        elif menu == "BGC_CLASS" and bgc_classes:
+            mask = df["BGC Classes"].apply(
+                lambda x: any(bc.lower() in [y.lower() for y in x] for bc in bgc_classes)
+            )
+            masks.append(mask)
+
+    if masks:
+        # Combine all masks with OR operation
+        final_mask = pd.concat(masks, axis=1).any(axis=1)
+        return df[final_mask]
+    else:
+        return df
+
+
+@app.callback(
+    Output("gm-graph", "figure"),
+    Output("gm-graph", "style"),
+    Output("mg-file-content", "children"),
+    [Input("processed-data-store", "data")],
+)
+def gm_plot(stored_data: str | None) -> tuple[dict | go.Figure, dict, str]:
+    """Create a bar plot based on the processed data.
+
+    Args:
+        stored_data: JSON string of processed data or None.
+
+    Returns:
+        Tuple containing the plot figure, style, and a status message.
+    """
+    if stored_data is None:
+        return {}, {"display": "none"}, "No data available"
+    data = json.loads(stored_data)
+    n_bgcs = data["n_bgcs"]
+
+    x_values = sorted(map(int, n_bgcs.keys()))
+    y_values = [len(n_bgcs[str(x)]) for x in x_values]
+    hover_texts = [f"GCF IDs: {', '.join(n_bgcs[str(x)])}" for x in x_values]
+
+    # Adjust bar width based on number of data points
+    bar_width = 0.4 if len(x_values) <= 5 else None
+    # Create the bar plot
+    fig = go.Figure(
+        data=[
+            go.Bar(
+                x=x_values,
+                y=y_values,
+                text=hover_texts,
+                hoverinfo="text",
+                textposition="none",
+                width=bar_width,
+            )
+        ]
+    )
+    # Update layout
+    fig.update_layout(
+        xaxis_title="# BGCs",
+        yaxis_title="# GCFs",
+        xaxis=dict(type="category"),
+    )
+    return fig, {"display": "block"}, "Data loaded and plotted!!"
 
 
 @app.callback(
