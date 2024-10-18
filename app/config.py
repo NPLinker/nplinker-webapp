@@ -1,9 +1,13 @@
-GM_DROPDOWN_MENU_OPTIONS = [
+GM_FILTER_DROPDOWN_MENU_OPTIONS = [
     {"label": "GCF ID", "value": "GCF_ID"},
     {"label": "BGC Class", "value": "BGC_CLASS"},
 ]
 
-GM_DROPDOWN_BGC_CLASS_OPTIONS = [
+GM_SCORING_DROPDOWN_MENU_OPTIONS = [
+    {"label": "Metcalf", "value": "METCALF"},
+]
+
+GM_FILTER_DROPDOWN_BGC_CLASS_OPTIONS = [
     {"label": "Alkaloid", "value": "ALKALOID"},
     {"label": "NRP", "value": "NRP"},
     {"label": "Polyketide", "value": "POLYKETIDE"},
