@@ -11,8 +11,9 @@ import dash_mantine_components as dmc
 import dash_uploader as du
 import pandas as pd
 import plotly.graph_objects as go
-from config import GM_DROPDOWN_BGC_CLASS_OPTIONS
-from config import GM_DROPDOWN_MENU_OPTIONS
+from config import GM_FILTER_DROPDOWN_BGC_CLASS_OPTIONS
+from config import GM_FILTER_DROPDOWN_MENU_OPTIONS
+from config import GM_SCORING_DROPDOWN_MENU_OPTIONS
 from dash import ALL
 from dash import MATCH
 from dash import Dash
@@ -224,7 +225,7 @@ def gm_filter_create_initial_block(block_id: str) -> dmc.Grid:
             ),
             dmc.GridCol(
                 dcc.Dropdown(
-                    options=GM_DROPDOWN_MENU_OPTIONS,
+                    options=GM_FILTER_DROPDOWN_MENU_OPTIONS,
                     value="GCF_ID",
                     id={"type": "gm-filter-dropdown-menu", "index": block_id},
                     clearable=False,
@@ -240,7 +241,7 @@ def gm_filter_create_initial_block(block_id: str) -> dmc.Grid:
                     ),
                     dcc.Dropdown(
                         id={"type": "gm-filter-dropdown-bgc-class-dropdown", "index": block_id},
-                        options=GM_DROPDOWN_BGC_CLASS_OPTIONS,
+                        options=GM_FILTER_DROPDOWN_BGC_CLASS_OPTIONS,
                         multi=True,
                         style={"display": "none"},
                     ),
@@ -327,7 +328,7 @@ def gm_filter_display_blocks(
                 ),
                 dmc.GridCol(
                     dcc.Dropdown(
-                        options=GM_DROPDOWN_MENU_OPTIONS,
+                        options=GM_FILTER_DROPDOWN_MENU_OPTIONS,
                         value="GCF_ID",
                         id={"type": "gm-filter-dropdown-menu", "index": new_block_id},
                         clearable=False,
@@ -346,7 +347,7 @@ def gm_filter_display_blocks(
                                 "type": "gm-filter-dropdown-bgc-class-dropdown",
                                 "index": new_block_id,
                             },
-                            options=GM_DROPDOWN_BGC_CLASS_OPTIONS,
+                            options=GM_FILTER_DROPDOWN_BGC_CLASS_OPTIONS,
                             multi=True,
                             style={"display": "none"},
                         ),
@@ -449,6 +450,7 @@ def gm_filter_apply(
         return df
 
 
+# TODO: add tests for the scoring part
 # Scoring callbacks
 def gm_scoring_create_initial_block(block_id: str) -> dmc.Grid:
     """Create the initial block component with the given ID.
@@ -462,6 +464,17 @@ def gm_scoring_create_initial_block(block_id: str) -> dmc.Grid:
     return dmc.Grid(
         id={"type": "gm-scoring-block", "index": block_id},
         children=[
+            dmc.GridCol(span=6),
+            dmc.GridCol(
+                # TODO: improve the style of the radio items
+                dcc.RadioItems(
+                    ["RAW", "STANDARDISED"],
+                    "RAW",
+                    inline=True,
+                    id={"type": "gm-scoring-radio-items", "index": block_id},
+                ),
+                span=6,
+            ),
             dmc.GridCol(
                 dbc.Button(
                     [html.I(className="fas fa-plus")],
@@ -472,8 +485,8 @@ def gm_scoring_create_initial_block(block_id: str) -> dmc.Grid:
             ),
             dmc.GridCol(
                 dcc.Dropdown(
-                    options=GM_DROPDOWN_MENU_OPTIONS,
-                    value="GCF_ID",
+                    options=GM_SCORING_DROPDOWN_MENU_OPTIONS,
+                    value="METCALF",
                     id={"type": "gm-scoring-dropdown-menu", "index": block_id},
                     clearable=False,
                 ),
@@ -483,14 +496,8 @@ def gm_scoring_create_initial_block(block_id: str) -> dmc.Grid:
                 [
                     dmc.TextInput(
                         id={"type": "gm-scoring-dropdown-ids-text-input", "index": block_id},
-                        placeholder="1, 2, 3, ...",
+                        placeholder="Insert cutoff value as a number",
                         className="custom-textinput",
-                    ),
-                    dcc.Dropdown(
-                        id={"type": "gm-scoring-dropdown-bgc-class-dropdown", "index": block_id},
-                        options=GM_DROPDOWN_BGC_CLASS_OPTIONS,
-                        multi=True,
-                        style={"display": "none"},
                     ),
                 ],
                 span=6,
@@ -546,6 +553,16 @@ def gm_scoring_display_blocks(
         new_block = dmc.Grid(
             id={"type": "gm-scoring-block", "index": new_block_id},
             children=[
+                dmc.GridCol(span=6),
+                dmc.GridCol(
+                    dcc.RadioItems(
+                        ["RAW", "STANDARDISED"],
+                        "RAW",
+                        inline=True,
+                        id={"type": "gm-scoring-radio-items", "index": new_block_id},
+                    ),
+                    span=6,
+                ),
                 dmc.GridCol(
                     html.Div(
                         [
@@ -575,8 +592,8 @@ def gm_scoring_display_blocks(
                 ),
                 dmc.GridCol(
                     dcc.Dropdown(
-                        options=GM_DROPDOWN_MENU_OPTIONS,
-                        value="GCF_ID",
+                        options=GM_SCORING_DROPDOWN_MENU_OPTIONS,
+                        value="METCALF",
                         id={"type": "gm-scoring-dropdown-menu", "index": new_block_id},
                         clearable=False,
                     ),
@@ -589,17 +606,8 @@ def gm_scoring_display_blocks(
                                 "type": "gm-scoring-dropdown-ids-text-input",
                                 "index": new_block_id,
                             },
-                            placeholder="1, 2, 3, ...",
+                            placeholder="Insert cutoff value as a number",
                             className="custom-textinput",
-                        ),
-                        dcc.Dropdown(
-                            id={
-                                "type": "gm-scoring-dropdown-bgc-class-dropdown",
-                                "index": new_block_id,
-                            },
-                            options=GM_DROPDOWN_BGC_CLASS_OPTIONS,
-                            multi=True,
-                            style={"display": "none"},
                         ),
                     ],
                     span=6,
@@ -610,11 +618,11 @@ def gm_scoring_display_blocks(
 
         # Hide the add button and OR label on the previous last block
         if len(existing_blocks) == 1:
-            existing_blocks[-1]["props"]["children"][0]["props"]["children"]["props"]["style"] = {
+            existing_blocks[-1]["props"]["children"][2]["props"]["children"]["props"]["style"] = {
                 "display": "none"
             }
         else:
-            existing_blocks[-1]["props"]["children"][0]["props"]["children"]["props"]["children"][
+            existing_blocks[-1]["props"]["children"][2]["props"]["children"]["props"]["children"][
                 0
             ]["props"]["style"] = {"display": "none"}
 
@@ -623,17 +631,15 @@ def gm_scoring_display_blocks(
 
 
 @app.callback(
+    Output({"type": "gm-scoring-radio-items", "index": MATCH}, "style"),
     Output({"type": "gm-scoring-dropdown-ids-text-input", "index": MATCH}, "style"),
-    Output({"type": "gm-scoring-dropdown-bgc-class-dropdown", "index": MATCH}, "style"),
     Output({"type": "gm-scoring-dropdown-ids-text-input", "index": MATCH}, "placeholder"),
-    Output({"type": "gm-scoring-dropdown-bgc-class-dropdown", "index": MATCH}, "placeholder"),
     Output({"type": "gm-scoring-dropdown-ids-text-input", "index": MATCH}, "value"),
-    Output({"type": "gm-scoring-dropdown-bgc-class-dropdown", "index": MATCH}, "value"),
     Input({"type": "gm-scoring-dropdown-menu", "index": MATCH}, "value"),
 )
 def gm_scoring_update_placeholder(
     selected_value: str,
-) -> tuple[dict[str, str], dict[str, str], str, str, str, list[Any]]:
+) -> tuple[dict[str, str], dict[str, str], str, str]:
     """Update the placeholder text and style of input fields based on the dropdown selection.
 
     Args:
@@ -645,22 +651,20 @@ def gm_scoring_update_placeholder(
     if not ctx.triggered:
         # Callback was not triggered by user interaction, don't change anything
         raise dash.exceptions.PreventUpdate
-    if selected_value == "GCF_ID":
-        return {"display": "block"}, {"display": "none"}, "1, 2, 3, ...", "", "", []
-    elif selected_value == "BGC_CLASS":
+    # TODO: Disable radiobutton when selected value is not METCALF
+    if selected_value == "METCALF":
         return (
             {"display": "none"},
-            {"display": "block"},
+            {"display": "none"},
             "",
-            "Select one or more BGC classes",
             "",
-            [],
         )
     else:
         # This case should never occur due to the Literal type, but it satisfies mypy
-        return {"display": "none"}, {"display": "none"}, "", "", "", []
+        return {"display": "none"}, {"display": "none"}, "", ""
 
 
+# TODO: adapt logic to the scoring part
 def gm_scoring_apply(
     df: pd.DataFrame,
     dropdown_menus: list[str],
@@ -894,7 +898,7 @@ def gm_table_select_rows(
 
     selected_rows_data = df.iloc[selected_rows]
 
-    # to be removed later when the scoring part will be implemented
+    # TODO: to be removed later when the scoring part will be implemented
     output1 = f"Total rows: {len(df)}"
     output2 = f"Selected rows: {len(selected_rows)}\nSelected GCF IDs: {', '.join(selected_rows_data['GCF ID'].astype(str))}"
 
