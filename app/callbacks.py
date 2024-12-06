@@ -137,7 +137,7 @@ def process_uploaded_data(file_path: Path | str | None) -> tuple[str | None, str
                 processed_data["n_bgcs"][len(gcf.bgcs)] = []
             processed_data["n_bgcs"][len(gcf.bgcs)].append(gcf.id)
 
-        processed_links = {
+        processed_links: dict[str, Any] = {
             "gcf_id": [],
             "spectrum_id": [],
             "strains": [],
