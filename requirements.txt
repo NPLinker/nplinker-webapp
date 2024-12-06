@@ -1,4 +1,4 @@
-nplinker==2.0.0a4
+nplinker==2.0.0a7
 dash
 dash-bootstrap-components
 dash-mantine-components
