@@ -78,9 +78,12 @@ def upload_data(status: du.UploadStatus) -> tuple[str, str | None]:
 
 
 @app.callback(
-    Output("processed-data-store", "data"), Input("file-store", "data"), prevent_initial_call=True
+    Output("processed-data-store", "data"),
+    Output("processed-links-store", "data"),
+    Input("file-store", "data"),
+    prevent_initial_call=True,
 )
-def process_uploaded_data(file_path: Path | str | None) -> str | None:
+def process_uploaded_data(file_path: Path | str | None) -> tuple[str | None, str | None]:
     """Process the uploaded pickle file and store the processed data.
 
     Args:
@@ -90,14 +93,14 @@ def process_uploaded_data(file_path: Path | str | None) -> str | None:
         JSON string of processed data or None if processing fails.
     """
     if file_path is None:
-        return None
+        return None, None
 
     try:
         with open(file_path, "rb") as f:
             data = pickle.load(f)
 
         # Extract and process the necessary data
-        bgcs, gcfs, *_ = data
+        bgcs, gcfs, _, _, _, links = data
 
         def process_bgc_class(bgc_class: tuple[str, ...] | None) -> list[str]:
             if bgc_class is None:
@@ -134,10 +137,30 @@ def process_uploaded_data(file_path: Path | str | None) -> str | None:
                 processed_data["n_bgcs"][len(gcf.bgcs)] = []
             processed_data["n_bgcs"][len(gcf.bgcs)].append(gcf.id)
 
-        return json.dumps(processed_data)
+        processed_links = {
+            "gcf_id": [],
+            "spectrum_id": [],
+            "strains": [],
+            "method": [],
+            "score": [],
+            "cutoff": [],
+            "standardised": [],
+        }
+
+        for link in links.links:
+            for method, data in link[2].items():
+                processed_links["gcf_id"].append(link[0].id)
+                processed_links["spectrum_id"].append(link[1].id)
+                processed_links["strains"].append([s.id for s in link[1].strains._strains])
+                processed_links["method"].append(method)
+                processed_links["score"].append(data.value)
+                processed_links["cutoff"].append(data.parameter["cutoff"])
+                processed_links["standardised"].append(data.parameter["standardised"])
+
+        return json.dumps(processed_data), json.dumps(processed_links)
     except Exception as e:
         print(f"Error processing file: {str(e)}")
-        return None
+        return None, None
 
 
 @app.callback(
@@ -200,6 +223,54 @@ def disable_tabs_and_reset_blocks(
         {"display": "block"},
         False,
     )
+
+
+@app.callback(
+    Output("gm-graph", "figure"),
+    Output("gm-graph", "style"),
+    Output("mg-file-content", "children"),
+    [Input("processed-data-store", "data")],
+)
+def gm_plot(stored_data: str | None) -> tuple[dict | go.Figure, dict, str]:
+    """Create a bar plot based on the processed data.
+
+    Args:
+        stored_data: JSON string of processed data or None.
+
+    Returns:
+        Tuple containing the plot figure, style, and a status message.
+    """
+    if stored_data is None:
+        return {}, {"display": "none"}, "No data available"
+    data = json.loads(stored_data)
+    n_bgcs = data["n_bgcs"]
+
+    x_values = sorted(map(int, n_bgcs.keys()))
+    y_values = [len(n_bgcs[str(x)]) for x in x_values]
+    hover_texts = [f"GCF IDs: {', '.join(n_bgcs[str(x)])}" for x in x_values]
+
+    # Adjust bar width based on number of data points
+    bar_width = 0.4 if len(x_values) <= 5 else None
+    # Create the bar plot
+    fig = go.Figure(
+        data=[
+            go.Bar(
+                x=x_values,
+                y=y_values,
+                text=hover_texts,
+                hoverinfo="text",
+                textposition="none",
+                width=bar_width,
+            )
+        ]
+    )
+    # Update layout
+    fig.update_layout(
+        xaxis_title="# BGCs",
+        yaxis_title="# GCFs",
+        xaxis=dict(type="category"),
+    )
+    return fig, {"display": "block"}, "Data loaded and plotted!!"
 
 
 # Filter callbacks
@@ -414,6 +485,7 @@ def gm_filter_update_placeholder(
         return {"display": "none"}, {"display": "none"}, "", "", "", []
 
 
+# First table callbacks
 def gm_filter_apply(
     df: pd.DataFrame,
     dropdown_menus: list[str],
@@ -453,8 +525,161 @@ def gm_filter_apply(
         return df
 
 
+@app.callback(
+    Output("gm-table", "data"),
+    Output("gm-table", "columns"),
+    Output("gm-table", "tooltip_data"),
+    Output("gm-table-card-body", "style"),
+    Output("gm-table", "selected_rows", allow_duplicate=True),
+    Output("gm-table-select-all-checkbox", "value"),
+    Input("processed-data-store", "data"),
+    Input("gm-filter-apply-button", "n_clicks"),
+    State({"type": "gm-filter-dropdown-menu", "index": ALL}, "value"),
+    State({"type": "gm-filter-dropdown-ids-text-input", "index": ALL}, "value"),
+    State({"type": "gm-filter-dropdown-bgc-class-dropdown", "index": ALL}, "value"),
+    State("gm-table-select-all-checkbox", "value"),
+    prevent_initial_call=True,
+)
+def gm_table_update_datatable(
+    processed_data: str | None,
+    n_clicks: int | None,
+    dropdown_menus: list[str],
+    text_inputs: list[str],
+    bgc_class_dropdowns: list[list[str]],
+    checkbox_value: list | None,
+) -> tuple[list[dict], list[dict], list[dict], dict, list, list]:
+    """Update the DataTable based on processed data and applied filters when the button is clicked.
+
+    Args:
+        processed_data: JSON string of processed data.
+        n_clicks: Number of times the Apply Filters button has been clicked.
+        dropdown_menus: List of selected dropdown menu options.
+        text_inputs: List of text inputs for GCF IDs.
+        bgc_class_dropdowns: List of selected BGC classes.
+        checkbox_value: Current value of the select-all checkbox.
+
+    Returns:
+        Tuple containing table data, column definitions, tooltips data, style, empty selected rows, and updated checkbox value.
+    """
+    if processed_data is None:
+        return [], [], [], {"display": "none"}, [], []
+
+    try:
+        data = json.loads(processed_data)
+        df = pd.DataFrame(data["gcf_data"])
+    except (json.JSONDecodeError, KeyError, pd.errors.EmptyDataError):
+        return [], [], [], {"display": "none"}, [], []
+
+    if ctx.triggered_id == "gm-filter-apply-button":
+        # Apply filters only when the button is clicked
+        filtered_df = gm_filter_apply(df, dropdown_menus, text_inputs, bgc_class_dropdowns)
+        # Reset the checkbox when filters are applied
+        new_checkbox_value = []
+    else:
+        # On initial load or when processed data changes, show all data
+        filtered_df = df
+        new_checkbox_value = checkbox_value if checkbox_value is not None else []
+
+    # Prepare the data for display
+    display_df = filtered_df[["GCF ID", "# BGCs", "BGC IDs", "BGC smiles", "strains"]]
+    display_data = display_df[["GCF ID", "# BGCs"]].to_dict("records")
+
+    # Prepare tooltip data
+    tooltip_data = []
+    for _, row in display_df.iterrows():
+        bgc_ids_smiles_markdown = "| BGC IDs | SMILES |\n|---------|--------|\n" + "\n".join(
+            [f"| {id} | {smiles} |" for id, smiles in zip(row["BGC IDs"], row["BGC smiles"])]
+        )
+        strains_markdown = "| Strains |\n|----------|\n" + "\n".join(
+            [f"| {strain} |" for strain in row["strains"]]
+        )
+
+        tooltip_data.append(
+            {
+                "# BGCs": {"value": bgc_ids_smiles_markdown, "type": "markdown"},
+                "GCF ID": {"value": strains_markdown, "type": "markdown"},
+            }
+        )
+
+    columns = [
+        {"name": "GCF ID", "id": "GCF ID"},
+        {"name": "# BGCs", "id": "# BGCs", "type": "numeric"},
+    ]
+
+    return display_data, columns, tooltip_data, {"display": "block"}, [], new_checkbox_value
+
+
+@app.callback(
+    Output("gm-table", "selected_rows", allow_duplicate=True),
+    Input("gm-table-select-all-checkbox", "value"),
+    State("gm-table", "data"),
+    State("gm-table", "derived_virtual_data"),
+    prevent_initial_call=True,
+)
+def gm_table_toggle_selection(
+    value: list | None,
+    original_rows: list,
+    filtered_rows: list | None,
+) -> list:
+    """Toggle between selecting all rows and deselecting all rows in the current view of a Dash DataTable.
+
+    Args:
+        value: Value of the select-all checkbox.
+        original_rows: All rows in the table.
+        filtered_rows: Rows visible after filtering, or None if no filter is applied.
+
+    Returns:
+        List of indices of selected rows after toggling.
+    """
+    is_checked = value and "disabled" in value
+
+    if filtered_rows is None:
+        # No filtering applied, toggle all rows
+        return list(range(len(original_rows))) if is_checked else []
+    else:
+        # Filtering applied, toggle only visible rows
+        return (
+            [i for i, row in enumerate(original_rows) if row in filtered_rows] if is_checked else []
+        )
+
+
+@app.callback(
+    Output("gm-table-output1", "children"),
+    Output("gm-table-output2", "children"),
+    Input("gm-table", "derived_virtual_data"),
+    Input("gm-table", "derived_virtual_selected_rows"),
+)
+def gm_table_select_rows(
+    rows: list[dict[str, Any]], selected_rows: list[int] | None
+) -> tuple[str, str]:
+    """Display the total number of rows and the number of selected rows in the table.
+
+    Args:
+        rows: List of row data from the DataTable.
+        selected_rows: Indices of selected rows.
+
+    Returns:
+        Strings describing total rows and selected rows.
+    """
+    if not rows:
+        return "No data available.", "No rows selected."
+
+    df = pd.DataFrame(rows)
+
+    if selected_rows is None:
+        selected_rows = []
+
+    selected_rows_data = df.iloc[selected_rows]
+
+    # TODO: to be removed later when the scoring part will be implemented
+    output1 = f"Total rows: {len(df)}"
+    output2 = f"Selected rows: {len(selected_rows)}\nSelected GCF IDs: {', '.join(selected_rows_data['GCF ID'].astype(str))}"
+
+    return output1, output2
+
+
+# Scoring filter callbacks
 # TODO: add tests for the scoring part
-# Scoring callbacks
 def gm_scoring_create_initial_block(block_id: str) -> dmc.Grid:
     """Create the initial block component with the given ID.
 
@@ -675,13 +900,13 @@ def gm_scoring_display_blocks(
 def gm_scoring_update_placeholder(
     selected_value: str,
 ) -> tuple[dict[str, str], str, dict[str, str]]:
-    """Update the placeholder text and style of input fields based on the dropdown selection.
+    """Update the style and label of the radio items and input fields based on the dropdown selection.
 
     Args:
         selected_value: The value selected in the dropdown menu.
 
     Returns:
-        A tuple containing style, placeholder, and value updates for the input fields.
+        A tuple containing style and label updates of the radio items and input fields.
     """
     if not ctx.triggered:
         # Callback was not triggered by user interaction, don't change anything
@@ -707,242 +932,56 @@ def gm_scoring_update_placeholder(
         )
 
 
-# TODO: adapt logic to the scoring part
+# Results table callbacks
+# TODO: add and/or logic for multiple blocks
+# TODO: add docstring
 def gm_scoring_apply(
     df: pd.DataFrame,
     dropdown_menus: list[str],
-    text_inputs: list[str],
-    bgc_class_dropdowns: list[list[str]],
+    radiobuttons: list[str],
+    text_inputs1: list[str],
+    text_inputs2: list[str],
 ) -> pd.DataFrame:
-    """Apply scoring to the DataFrame based on user inputs.
+    for menu, radiobutton, text_input1, text_input2 in zip(
+        dropdown_menus, radiobuttons, text_inputs1, text_inputs2
+    ):
+        if menu == "METCALF":
+            masked_df = df[df["method"] == "metcalf"]
+            if radiobutton == "RAW":
+                masked_df = masked_df[~masked_df["standardised"]]
+            else:
+                masked_df = masked_df[masked_df["standardised"]]
 
-    Args:
-        df: The input DataFrame.
-        dropdown_menus: List of selected dropdown menu options.
-        text_inputs: List of text inputs for GCF IDs.
-        bgc_class_dropdowns: List of selected BGC classes.
+            if text_input1:
+                masked_df = masked_df[masked_df["cutoff"] >= float(text_input1)]
 
-    Returns:
-        Scoring filtered DataFrame.
-    """
-    masks = []
-
-    for menu, text_input, bgc_classes in zip(dropdown_menus, text_inputs, bgc_class_dropdowns):
-        if menu == "GCF_ID" and text_input:
-            gcf_ids = [id.strip() for id in text_input.split(",") if id.strip()]
-            if gcf_ids:
-                mask = df["GCF ID"].astype(str).isin(gcf_ids)
-                masks.append(mask)
-        elif menu == "BGC_CLASS" and bgc_classes:
-            mask = df["BGC Classes"].apply(
-                lambda x: any(bc.lower() in [y.lower() for y in x] for bc in bgc_classes)
-            )
-            masks.append(mask)
-
-    if masks:
-        # Combine all masks with OR operation
-        final_mask = pd.concat(masks, axis=1).any(axis=1)
-        return df[final_mask]
+        return masked_df
     else:
         return df
 
 
+# TODO: add the logic for outputing data in the results table, issue #33
+# TODO: add docstring
 @app.callback(
-    Output("gm-graph", "figure"),
-    Output("gm-graph", "style"),
-    Output("mg-file-content", "children"),
-    [Input("processed-data-store", "data")],
+    Input("gm-scoring-apply-button", "n_clicks"),
+    State("processed-links-store", "data"),
+    State({"type": "gm-scoring-dropdown-menu", "index": ALL}, "value"),
+    State({"type": "gm-scoring-radio-items", "index": ALL}, "value"),
+    State({"type": "gm-scoring-dropdown-ids-cutoff1", "index": ALL}, "value"),
+    State({"type": "gm-scoring-dropdown-ids-cutoff2", "index": ALL}, "value"),
 )
-def gm_plot(stored_data: str | None) -> tuple[dict | go.Figure, dict, str]:
-    """Create a bar plot based on the processed data.
-
-    Args:
-        stored_data: JSON string of processed data or None.
-
-    Returns:
-        Tuple containing the plot figure, style, and a status message.
-    """
-    if stored_data is None:
-        return {}, {"display": "none"}, "No data available"
-    data = json.loads(stored_data)
-    n_bgcs = data["n_bgcs"]
-
-    x_values = sorted(map(int, n_bgcs.keys()))
-    y_values = [len(n_bgcs[str(x)]) for x in x_values]
-    hover_texts = [f"GCF IDs: {', '.join(n_bgcs[str(x)])}" for x in x_values]
-
-    # Adjust bar width based on number of data points
-    bar_width = 0.4 if len(x_values) <= 5 else None
-    # Create the bar plot
-    fig = go.Figure(
-        data=[
-            go.Bar(
-                x=x_values,
-                y=y_values,
-                text=hover_texts,
-                hoverinfo="text",
-                textposition="none",
-                width=bar_width,
-            )
-        ]
-    )
-    # Update layout
-    fig.update_layout(
-        xaxis_title="# BGCs",
-        yaxis_title="# GCFs",
-        xaxis=dict(type="category"),
-    )
-    return fig, {"display": "block"}, "Data loaded and plotted!!"
-
-
-@app.callback(
-    Output("gm-table", "data"),
-    Output("gm-table", "columns"),
-    Output("gm-table", "tooltip_data"),
-    Output("gm-table-card-body", "style"),
-    Output("gm-table", "selected_rows", allow_duplicate=True),
-    Output("gm-table-select-all-checkbox", "value"),
-    Input("processed-data-store", "data"),
-    Input("gm-filter-apply-button", "n_clicks"),
-    State({"type": "gm-filter-dropdown-menu", "index": ALL}, "value"),
-    State({"type": "gm-filter-dropdown-ids-text-input", "index": ALL}, "value"),
-    State({"type": "gm-filter-dropdown-bgc-class-dropdown", "index": ALL}, "value"),
-    State("gm-table-select-all-checkbox", "value"),
-    prevent_initial_call=True,
-)
-def gm_table_update_datatable(
-    processed_data: str | None,
+def gm_update_results_datatable(
     n_clicks: int | None,
+    filtered_data: str,
     dropdown_menus: list[str],
-    text_inputs: list[str],
-    bgc_class_dropdowns: list[list[str]],
-    checkbox_value: list | None,
-) -> tuple[list[dict], list[dict], list[dict], dict, list, list]:
-    """Update the DataTable based on processed data and applied filters when the button is clicked.
-
-    Args:
-        processed_data: JSON string of processed data.
-        n_clicks: Number of times the Apply Filters button has been clicked.
-        dropdown_menus: List of selected dropdown menu options.
-        text_inputs: List of text inputs for GCF IDs.
-        bgc_class_dropdowns: List of selected BGC classes.
-        checkbox_value: Current value of the select-all checkbox.
-
-    Returns:
-        Tuple containing table data, column definitions, tooltips data, style, empty selected rows, and updated checkbox value.
-    """
-    if processed_data is None:
-        return [], [], [], {"display": "none"}, [], []
-
+    radiobuttons: list[str],
+    text_inputs1: list[str],
+    text_inputs2: list[str],
+):
     try:
-        data = json.loads(processed_data)
-        df = pd.DataFrame(data["gcf_data"])
+        data = json.loads(filtered_data)
+        df = pd.DataFrame(data)
     except (json.JSONDecodeError, KeyError, pd.errors.EmptyDataError):
-        return [], [], [], {"display": "none"}, [], []
-
-    if ctx.triggered_id == "gm-filter-apply-button":
-        # Apply filters only when the button is clicked
-        filtered_df = gm_filter_apply(df, dropdown_menus, text_inputs, bgc_class_dropdowns)
-        # Reset the checkbox when filters are applied
-        new_checkbox_value = []
-    else:
-        # On initial load or when processed data changes, show all data
-        filtered_df = df
-        new_checkbox_value = checkbox_value if checkbox_value is not None else []
-
-    # Prepare the data for display
-    display_df = filtered_df[["GCF ID", "# BGCs", "BGC IDs", "BGC smiles", "strains"]]
-    display_data = display_df[["GCF ID", "# BGCs"]].to_dict("records")
-
-    # Prepare tooltip data
-    tooltip_data = []
-    for _, row in display_df.iterrows():
-        bgc_ids_smiles_markdown = "| BGC IDs | SMILES |\n|---------|--------|\n" + "\n".join(
-            [f"| {id} | {smiles} |" for id, smiles in zip(row["BGC IDs"], row["BGC smiles"])]
-        )
-        strains_markdown = "| Strains |\n|----------|\n" + "\n".join(
-            [f"| {strain} |" for strain in row["strains"]]
-        )
-
-        tooltip_data.append(
-            {
-                "# BGCs": {"value": bgc_ids_smiles_markdown, "type": "markdown"},
-                "GCF ID": {"value": strains_markdown, "type": "markdown"},
-            }
-        )
-
-    columns = [
-        {"name": "GCF ID", "id": "GCF ID"},
-        {"name": "# BGCs", "id": "# BGCs", "type": "numeric"},
-    ]
-
-    return display_data, columns, tooltip_data, {"display": "block"}, [], new_checkbox_value
-
-
-@app.callback(
-    Output("gm-table", "selected_rows", allow_duplicate=True),
-    Input("gm-table-select-all-checkbox", "value"),
-    State("gm-table", "data"),
-    State("gm-table", "derived_virtual_data"),
-    prevent_initial_call=True,
-)
-def gm_table_toggle_selection(
-    value: list | None,
-    original_rows: list,
-    filtered_rows: list | None,
-) -> list:
-    """Toggle between selecting all rows and deselecting all rows in the current view of a Dash DataTable.
-
-    Args:
-        value: Value of the select-all checkbox.
-        original_rows: All rows in the table.
-        filtered_rows: Rows visible after filtering, or None if no filter is applied.
-
-    Returns:
-        List of indices of selected rows after toggling.
-    """
-    is_checked = value and "disabled" in value
-
-    if filtered_rows is None:
-        # No filtering applied, toggle all rows
-        return list(range(len(original_rows))) if is_checked else []
-    else:
-        # Filtering applied, toggle only visible rows
-        return (
-            [i for i, row in enumerate(original_rows) if row in filtered_rows] if is_checked else []
-        )
-
-
-@app.callback(
-    Output("gm-table-output1", "children"),
-    Output("gm-table-output2", "children"),
-    Input("gm-table", "derived_virtual_data"),
-    Input("gm-table", "derived_virtual_selected_rows"),
-)
-def gm_table_select_rows(
-    rows: list[dict[str, Any]], selected_rows: list[int] | None
-) -> tuple[str, str]:
-    """Display the total number of rows and the number of selected rows in the table.
-
-    Args:
-        rows: List of row data from the DataTable.
-        selected_rows: Indices of selected rows.
-
-    Returns:
-        Strings describing total rows and selected rows.
-    """
-    if not rows:
-        return "No data available.", "No rows selected."
-
-    df = pd.DataFrame(rows)
-
-    if selected_rows is None:
-        selected_rows = []
-
-    selected_rows_data = df.iloc[selected_rows]
-
-    # TODO: to be removed later when the scoring part will be implemented
-    output1 = f"Total rows: {len(df)}"
-    output2 = f"Selected rows: {len(selected_rows)}\nSelected GCF IDs: {', '.join(selected_rows_data['GCF ID'].astype(str))}"
-
-    return output1, output2
+        return
+    df_results = gm_scoring_apply(df, dropdown_menus, radiobuttons, text_inputs1, text_inputs2)
+    print(df_results.head())
