@@ -598,7 +598,6 @@ def gm_scoring_display_blocks(
                                 [html.I(className="fas fa-plus")],
                                 id={"type": "gm-scoring-add-button", "index": new_block_id},
                                 className="btn-primary",
-                                style={"marginTop": "24px"},
                             ),
                             html.Label(
                                 "OR",
@@ -609,14 +608,12 @@ def gm_scoring_display_blocks(
                                     "backgroundColor": "#f0f0f0",
                                     "display": "inline-block",
                                     "position": "absolute",
-                                    "left": "50px",  # Adjust based on button width
-                                    "top": "50%",
-                                    "transform": "translateY(-50%)",
+                                    "left": "50px",
                                 },
                             ),
                         ],
-                        style={"position": "relative", "height": "38px"},
                     ),
+                    style={"position": "relative", "marginTop": "24px"},
                     span=2,
                 ),
                 dmc.GridCol(
@@ -652,6 +649,7 @@ def gm_scoring_display_blocks(
                 ),
             ],
             gutter="md",
+            style={"marginTop": "30px"},
         )
 
         # Hide the add button and OR label on the previous last block
