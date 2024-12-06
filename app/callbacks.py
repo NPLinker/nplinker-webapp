@@ -466,12 +466,19 @@ def gm_scoring_create_initial_block(block_id: str) -> dmc.Grid:
         children=[
             dmc.GridCol(span=6),
             dmc.GridCol(
-                # TODO: improve the style of the radio items
                 dcc.RadioItems(
                     ["RAW", "STANDARDISED"],
                     "RAW",
                     inline=True,
                     id={"type": "gm-scoring-radio-items", "index": block_id},
+                    labelStyle={
+                        "marginRight": "20px",
+                        "padding": "8px 12px",
+                        "backgroundColor": "#f0f0f0",
+                        "border": "1px solid #ddd",
+                        "borderRadius": "4px",
+                        "cursor": "pointer",
+                    },
                 ),
                 span=6,
             ),
@@ -560,6 +567,14 @@ def gm_scoring_display_blocks(
                         "RAW",
                         inline=True,
                         id={"type": "gm-scoring-radio-items", "index": new_block_id},
+                        labelStyle={
+                            "marginRight": "20px",
+                            "padding": "8px 12px",
+                            "backgroundColor": "#f0f0f0",
+                            "border": "1px solid #ddd",
+                            "borderRadius": "4px",
+                            "cursor": "pointer",
+                        },
                     ),
                     span=6,
                 ),
