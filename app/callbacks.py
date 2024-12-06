@@ -203,6 +203,9 @@ def disable_tabs_and_reset_blocks(
 
 
 # Filter callbacks
+# TODO: Check whether is possible to avoid the repetition of the same code for the initial block and
+# for adding a new block (see gm_filter_add_block and gm_filter_display_blocks)
+# In case, edit that for the scoring part as well
 def gm_filter_create_initial_block(block_id: str) -> dmc.Grid:
     """Create the initial block component with the given ID.
 
@@ -487,6 +490,7 @@ def gm_scoring_create_initial_block(block_id: str) -> dmc.Grid:
                     [html.I(className="fas fa-plus")],
                     id={"type": "gm-scoring-add-button", "index": block_id},
                     className="btn-primary",
+                    style={"marginTop": "24px"},
                 ),
                 span=2,
             ),
@@ -496,15 +500,24 @@ def gm_scoring_create_initial_block(block_id: str) -> dmc.Grid:
                     value="METCALF",
                     id={"type": "gm-scoring-dropdown-menu", "index": block_id},
                     clearable=False,
+                    style={"marginTop": "24px"},
                 ),
                 span=4,
             ),
             dmc.GridCol(
                 [
                     dmc.TextInput(
-                        id={"type": "gm-scoring-dropdown-ids-text-input", "index": block_id},
+                        id={"type": "gm-scoring-dropdown-ids-cutoff1", "index": block_id},
+                        label="Cutoff",
                         placeholder="Insert cutoff value as a number",
                         className="custom-textinput",
+                    ),
+                    dmc.TextInput(
+                        id={"type": "gm-scoring-dropdown-ids-cutoff2", "index": block_id},
+                        label="BGC score cutoff",
+                        placeholder="Insert cutoff value as a number",
+                        className="custom-textinput",
+                        style={"display": "none"},
                     ),
                 ],
                 span=6,
@@ -585,6 +598,7 @@ def gm_scoring_display_blocks(
                                 [html.I(className="fas fa-plus")],
                                 id={"type": "gm-scoring-add-button", "index": new_block_id},
                                 className="btn-primary",
+                                style={"marginTop": "24px"},
                             ),
                             html.Label(
                                 "OR",
@@ -611,6 +625,7 @@ def gm_scoring_display_blocks(
                         value="METCALF",
                         id={"type": "gm-scoring-dropdown-menu", "index": new_block_id},
                         clearable=False,
+                        style={"marginTop": "24px"},
                     ),
                     span=4,
                 ),
@@ -618,11 +633,19 @@ def gm_scoring_display_blocks(
                     [
                         dmc.TextInput(
                             id={
-                                "type": "gm-scoring-dropdown-ids-text-input",
+                                "type": "gm-scoring-dropdown-ids-cutoff1",
                                 "index": new_block_id,
                             },
+                            label="Cutoff",
                             placeholder="Insert cutoff value as a number",
                             className="custom-textinput",
+                        ),
+                        dmc.TextInput(
+                            id={"type": "gm-scoring-dropdown-ids-cutoff2", "index": new_block_id},
+                            label="BGC score cutoff",
+                            placeholder="Insert cutoff value as a number",
+                            className="custom-textinput",
+                            style={"display": "none"},
                         ),
                     ],
                     span=6,
@@ -647,14 +670,13 @@ def gm_scoring_display_blocks(
 
 @app.callback(
     Output({"type": "gm-scoring-radio-items", "index": MATCH}, "style"),
-    Output({"type": "gm-scoring-dropdown-ids-text-input", "index": MATCH}, "style"),
-    Output({"type": "gm-scoring-dropdown-ids-text-input", "index": MATCH}, "placeholder"),
-    Output({"type": "gm-scoring-dropdown-ids-text-input", "index": MATCH}, "value"),
+    Output({"type": "gm-scoring-dropdown-ids-cutoff1", "index": MATCH}, "label"),
+    Output({"type": "gm-scoring-dropdown-ids-cutoff2", "index": MATCH}, "style"),
     Input({"type": "gm-scoring-dropdown-menu", "index": MATCH}, "value"),
 )
 def gm_scoring_update_placeholder(
     selected_value: str,
-) -> tuple[dict[str, str], dict[str, str], str, str]:
+) -> tuple[dict[str, str], str, dict[str, str]]:
     """Update the placeholder text and style of input fields based on the dropdown selection.
 
     Args:
@@ -666,17 +688,25 @@ def gm_scoring_update_placeholder(
     if not ctx.triggered:
         # Callback was not triggered by user interaction, don't change anything
         raise dash.exceptions.PreventUpdate
-    # TODO: Disable radiobutton when selected value is not METCALF
     if selected_value == "METCALF":
         return (
+            {"display": "block"},
+            "Cutoff",
             {"display": "none"},
+        )
+    elif selected_value == "ROSETTA":
+        return (
             {"display": "none"},
-            "",
-            "",
+            "Spectral score cutoff",
+            {"display": "block"},
         )
     else:
         # This case should never occur due to the Literal type, but it satisfies mypy
-        return {"display": "none"}, {"display": "none"}, "", ""
+        return (
+            {"display": "none"},
+            "",
+            {"display": "none"},
+        )
 
 
 # TODO: adapt logic to the scoring part

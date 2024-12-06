@@ -5,6 +5,7 @@ GM_FILTER_DROPDOWN_MENU_OPTIONS = [
 
 GM_SCORING_DROPDOWN_MENU_OPTIONS = [
     {"label": "Metcalf", "value": "METCALF"},
+    {"label": "Rosetta", "value": "ROSETTA"},
 ]
 
 GM_FILTER_DROPDOWN_BGC_CLASS_OPTIONS = [
