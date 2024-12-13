@@ -676,7 +676,6 @@ def gm_table_select_rows(
 
 
 # Scoring filter callbacks
-# TODO: add tests for the scoring part
 def gm_scoring_create_initial_block(block_id: str) -> dmc.Grid:
     """Create the initial block component with the given ID.
 
