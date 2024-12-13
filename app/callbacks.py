@@ -274,9 +274,6 @@ def gm_plot(stored_data: str | None) -> tuple[dict | go.Figure, dict, str]:
 
 
 # Filter callbacks
-# TODO: Check whether is possible to avoid the repetition of the same code for the initial block and
-# for adding a new block (see gm_filter_add_block and gm_filter_display_blocks)
-# In case, edit that for the scoring part as well
 def gm_filter_create_initial_block(block_id: str) -> dmc.Grid:
     """Create the initial block component with the given ID.
 
@@ -907,10 +904,20 @@ def gm_scoring_update_placeholder(
 
 
 # Results table callbacks
-# TODO: add docstring
 def gm_scoring_apply(
     df: pd.DataFrame, dropdown_menus: list[str], radiobuttons: list[str], cutoffs_met: list[str]
 ) -> pd.DataFrame:
+    """Apply scoring filters to the DataFrame based on user inputs.
+
+    Args:
+        df: The input DataFrame.
+        dropdown_menus: List of selected dropdown menu options.
+        radiobuttons: List of selected radio button options.
+        cutoffs_met: List of cutoff values for METCALF method.
+
+    Returns:
+        Filtered DataFrame.
+    """
     for menu, radiobutton, cutoff_met in zip(dropdown_menus, radiobuttons, cutoffs_met):
         if menu == "METCALF":
             masked_df = df[df["method"] == "metcalf"]
@@ -928,7 +935,6 @@ def gm_scoring_apply(
 
 
 # TODO: add the logic for outputing data in the results table, issue #33
-# TODO: add docstring
 @app.callback(
     Input("gm-scoring-apply-button", "n_clicks"),
     State("processed-links-store", "data"),
@@ -943,6 +949,18 @@ def gm_update_results_datatable(
     radiobuttons: list[str],
     cutoffs_met: list[str],
 ):
+    """Update the results DataTable based on scoring filters.
+
+    Args:
+        n_clicks: Number of times the "Show Spectra" button has been clicked.
+        filtered_data: JSON string of filtered data.
+        dropdown_menus: List of selected dropdown menu options.
+        radiobuttons: List of selected radio button options.
+        cutoffs_met: List of cutoff values for METCALF method.
+
+    Returns:
+        None
+    """
     try:
         data = json.loads(filtered_data)
         df = pd.DataFrame(data)
