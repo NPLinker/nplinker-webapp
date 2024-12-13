@@ -906,7 +906,7 @@ def gm_scoring_update_placeholder(
         selected_value: The value selected in the dropdown menu.
 
     Returns:
-        A tuple containing style and label updates of the radio items and input fields.
+        A tuple containing st syle and label updates of the radio items and input fields.
     """
     if not ctx.triggered:
         # Callback was not triggered by user interaction, don't change anything
@@ -916,12 +916,6 @@ def gm_scoring_update_placeholder(
             {"display": "block"},
             "Cutoff",
             {"display": "none"},
-        )
-    elif selected_value == "ROSETTA":
-        return (
-            {"display": "none"},
-            "Spectral score cutoff",
-            {"display": "block"},
         )
     else:
         # This case should never occur due to the Literal type, but it satisfies mypy

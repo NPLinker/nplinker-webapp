@@ -3,10 +3,7 @@ GM_FILTER_DROPDOWN_MENU_OPTIONS = [
     {"label": "BGC Class", "value": "BGC_CLASS"},
 ]
 
-GM_SCORING_DROPDOWN_MENU_OPTIONS = [
-    {"label": "Metcalf", "value": "METCALF"},
-    {"label": "Rosetta", "value": "ROSETTA"},
-]
+GM_SCORING_DROPDOWN_MENU_OPTIONS = [{"label": "Metcalf", "value": "METCALF"}]
 
 GM_FILTER_DROPDOWN_BGC_CLASS_OPTIONS = [
     {"label": "Alkaloid", "value": "ALKALOID"},
