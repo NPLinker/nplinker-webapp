@@ -732,18 +732,12 @@ def gm_scoring_create_initial_block(block_id: str) -> dmc.Grid:
             dmc.GridCol(
                 [
                     dmc.TextInput(
-                        id={"type": "gm-scoring-dropdown-ids-cutoff1", "index": block_id},
+                        id={"type": "gm-scoring-dropdown-ids-cutoff-met", "index": block_id},
                         label="Cutoff",
                         placeholder="Insert cutoff value as a number",
+                        value="1",
                         className="custom-textinput",
-                    ),
-                    dmc.TextInput(
-                        id={"type": "gm-scoring-dropdown-ids-cutoff2", "index": block_id},
-                        label="BGC score cutoff",
-                        placeholder="Insert cutoff value as a number",
-                        className="custom-textinput",
-                        style={"display": "none"},
-                    ),
+                    )
                 ],
                 span=6,
             ),
@@ -855,19 +849,13 @@ def gm_scoring_display_blocks(
                     [
                         dmc.TextInput(
                             id={
-                                "type": "gm-scoring-dropdown-ids-cutoff1",
+                                "type": "gm-scoring-dropdown-ids-cutoff-met",
                                 "index": new_block_id,
                             },
                             label="Cutoff",
                             placeholder="Insert cutoff value as a number",
+                            value="1",
                             className="custom-textinput",
-                        ),
-                        dmc.TextInput(
-                            id={"type": "gm-scoring-dropdown-ids-cutoff2", "index": new_block_id},
-                            label="BGC score cutoff",
-                            placeholder="Insert cutoff value as a number",
-                            className="custom-textinput",
-                            style={"display": "none"},
                         ),
                     ],
                     span=6,
@@ -893,13 +881,13 @@ def gm_scoring_display_blocks(
 
 @app.callback(
     Output({"type": "gm-scoring-radio-items", "index": MATCH}, "style"),
-    Output({"type": "gm-scoring-dropdown-ids-cutoff1", "index": MATCH}, "label"),
-    Output({"type": "gm-scoring-dropdown-ids-cutoff2", "index": MATCH}, "style"),
+    Output({"type": "gm-scoring-dropdown-ids-cutoff-met", "index": MATCH}, "label"),
+    Output({"type": "gm-scoring-dropdown-ids-cutoff-met", "index": MATCH}, "value"),
     Input({"type": "gm-scoring-dropdown-menu", "index": MATCH}, "value"),
 )
 def gm_scoring_update_placeholder(
     selected_value: str,
-) -> tuple[dict[str, str], str, dict[str, str]]:
+) -> tuple[dict[str, str], str, str]:
     """Update the style and label of the radio items and input fields based on the dropdown selection.
 
     Args:
@@ -912,33 +900,18 @@ def gm_scoring_update_placeholder(
         # Callback was not triggered by user interaction, don't change anything
         raise dash.exceptions.PreventUpdate
     if selected_value == "METCALF":
-        return (
-            {"display": "block"},
-            "Cutoff",
-            {"display": "none"},
-        )
+        return ({"display": "block"}, "Cutoff", "1")
     else:
         # This case should never occur due to the Literal type, but it satisfies mypy
-        return (
-            {"display": "none"},
-            "",
-            {"display": "none"},
-        )
+        return ({"display": "none"}, "", "")
 
 
 # Results table callbacks
-# TODO: add and/or logic for multiple blocks
 # TODO: add docstring
 def gm_scoring_apply(
-    df: pd.DataFrame,
-    dropdown_menus: list[str],
-    radiobuttons: list[str],
-    text_inputs1: list[str],
-    text_inputs2: list[str],
+    df: pd.DataFrame, dropdown_menus: list[str], radiobuttons: list[str], cutoffs_met: list[str]
 ) -> pd.DataFrame:
-    for menu, radiobutton, text_input1, text_input2 in zip(
-        dropdown_menus, radiobuttons, text_inputs1, text_inputs2
-    ):
+    for menu, radiobutton, cutoff_met in zip(dropdown_menus, radiobuttons, cutoffs_met):
         if menu == "METCALF":
             masked_df = df[df["method"] == "metcalf"]
             if radiobutton == "RAW":
@@ -946,8 +919,8 @@ def gm_scoring_apply(
             else:
                 masked_df = masked_df[masked_df["standardised"]]
 
-            if text_input1:
-                masked_df = masked_df[masked_df["cutoff"] >= float(text_input1)]
+            if cutoff_met:
+                masked_df = masked_df[masked_df["cutoff"] >= float(cutoff_met)]
 
         return masked_df
     else:
@@ -961,21 +934,19 @@ def gm_scoring_apply(
     State("processed-links-store", "data"),
     State({"type": "gm-scoring-dropdown-menu", "index": ALL}, "value"),
     State({"type": "gm-scoring-radio-items", "index": ALL}, "value"),
-    State({"type": "gm-scoring-dropdown-ids-cutoff1", "index": ALL}, "value"),
-    State({"type": "gm-scoring-dropdown-ids-cutoff2", "index": ALL}, "value"),
+    State({"type": "gm-scoring-dropdown-ids-cutoff-met", "index": ALL}, "value"),
 )
 def gm_update_results_datatable(
     n_clicks: int | None,
     filtered_data: str,
     dropdown_menus: list[str],
     radiobuttons: list[str],
-    text_inputs1: list[str],
-    text_inputs2: list[str],
+    cutoffs_met: list[str],
 ):
     try:
         data = json.loads(filtered_data)
         df = pd.DataFrame(data)
     except (json.JSONDecodeError, KeyError, pd.errors.EmptyDataError):
         return
-    df_results = gm_scoring_apply(df, dropdown_menus, radiobuttons, text_inputs1, text_inputs2)
+    df_results = gm_scoring_apply(df, dropdown_menus, radiobuttons, cutoffs_met)
     print(df_results.head())
