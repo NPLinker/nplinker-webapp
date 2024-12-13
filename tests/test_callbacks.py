@@ -10,6 +10,7 @@ from dash_uploader import UploadStatus
 from app.callbacks import disable_tabs_and_reset_blocks
 from app.callbacks import gm_filter_add_block
 from app.callbacks import gm_filter_apply
+from app.callbacks import gm_scoring_apply
 from app.callbacks import gm_table_select_rows
 from app.callbacks import gm_table_toggle_selection
 from app.callbacks import gm_table_update_datatable
@@ -86,6 +87,7 @@ def test_process_uploaded_data_structure():
     assert processed_links is not None
 
     processed_data = json.loads(processed_data)
+    processed_links = json.loads(processed_links)
 
     # Check overall structure
     assert isinstance(processed_data, dict)
@@ -116,6 +118,26 @@ def test_process_uploaded_data_structure():
         assert isinstance(gcf["GCF ID"], str)
         assert isinstance(gcf["# BGCs"], int)
         assert isinstance(gcf["BGC Classes"], list)
+
+    # Check processed_links structure
+    expected_link_keys = [
+        "gcf_id",
+        "spectrum_id",
+        "strains",
+        "method",
+        "score",
+        "cutoff",
+        "standardised",
+    ]
+    for key in expected_link_keys:
+        assert key in processed_links, f"Missing key '{key}' in processed links"
+        assert isinstance(processed_links[key], list), f"{key} should be a list"
+
+    # Check that all lists have the same length
+    list_lengths = [len(processed_links[key]) for key in expected_link_keys]
+    assert all(
+        length == list_lengths[0] for length in list_lengths
+    ), "Link data lists have inconsistent lengths"
 
 
 def test_disable_tabs(mock_uuid):
@@ -287,3 +309,65 @@ def test_gm_table_select_rows(sample_processed_data):
     output1, output2 = gm_table_select_rows([], None)
     assert output1 == "No data available."
     assert output2 == "No rows selected."
+
+
+def test_gm_scoring_apply_metcalf_raw():
+    """Test gm_scoring_apply with Metcalf method and raw scores."""
+    # Create test DataFrame
+    df = pd.DataFrame(
+        {
+            "method": ["metcalf", "metcalf", "other"],
+            "standardised": [False, True, False],
+            "cutoff": [1.5, 2.0, 1.0],
+            "score": [2.0, 2.5, 1.5],
+        }
+    )
+
+    # Test parameters
+    dropdown_menus = ["METCALF"]
+    radiobuttons = ["RAW"]
+    cutoffs_met = ["1.0"]
+
+    result = gm_scoring_apply(df, dropdown_menus, radiobuttons, cutoffs_met)
+
+    assert len(result) == 1, "Should return one row"
+    assert result.iloc[0]["method"] == "metcalf", "Method should be metcalf"
+    assert not result.iloc[0]["standardised"], "Should be raw (not standardised)"
+    assert result.iloc[0]["cutoff"] >= 1.0, "Cutoff should be >= 1.0"
+
+
+def test_gm_scoring_apply_metcalf_standardised():
+    """Test gm_scoring_apply with Metcalf method and standardised scores."""
+    # Create test DataFrame
+    df = pd.DataFrame(
+        {
+            "method": ["metcalf", "metcalf", "other"],
+            "standardised": [False, True, False],
+            "cutoff": [1.5, 2.0, 1.0],
+            "score": [2.0, 2.5, 1.5],
+        }
+    )
+
+    # Test parameters
+    dropdown_menus = ["METCALF"]
+    radiobuttons = ["STANDARDISED"]
+    cutoffs_met = ["1.5"]
+
+    result = gm_scoring_apply(df, dropdown_menus, radiobuttons, cutoffs_met)
+
+    assert len(result) == 1, "Should return one row"
+    assert result.iloc[0]["method"] == "metcalf", "Method should be metcalf"
+    assert result.iloc[0]["standardised"], "Should be standardised"
+    assert result.iloc[0]["cutoff"] >= 1.5, "Cutoff should be >= 1.5"
+
+
+def test_gm_scoring_apply_empty_inputs():
+    """Test gm_scoring_apply with empty inputs."""
+    df = pd.DataFrame(
+        {"method": ["metcalf"], "standardised": [False], "cutoff": [1.0], "score": [2.0]}
+    )
+
+    result = gm_scoring_apply(df, [], [], [])
+
+    assert len(result) == 1, "Should return original DataFrame"
+    assert result.equals(df), "Should return unmodified DataFrame"
