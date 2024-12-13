@@ -74,44 +74,31 @@ def test_upload_data():
 
 @pytest.mark.parametrize("input_path", [None, Path("non_existent_file.pkl")])
 def test_process_uploaded_data_invalid_input(input_path):
-    result = process_uploaded_data(input_path)
-    assert result is None
-
-
-def test_process_uploaded_data_success():
-    result = process_uploaded_data(MOCK_FILE_PATH)
-
-    assert result is not None
-    processed_data = json.loads(result)
-
-    assert "n_bgcs" in processed_data
-    assert "gcf_data" in processed_data
-
-    # Add more specific assertions based on the expected content of your mock_obj_data.pkl
-    # For example:
-    assert len(processed_data["gcf_data"]) > 0
-
-    first_gcf = processed_data["gcf_data"][0]
-    assert "GCF ID" in first_gcf
-    assert "# BGCs" in first_gcf
-    assert "BGC Classes" in first_gcf
-
-    # Check if n_bgcs contains at least one key-value pair
-    assert len(processed_data["n_bgcs"]) > 0
-
-    # You can add more detailed assertions here based on what you know about the content of mock_obj_data.pkl
+    processed_data, processed_links = process_uploaded_data(input_path)
+    assert processed_data is None
+    assert processed_links is None
 
 
 def test_process_uploaded_data_structure():
-    result = process_uploaded_data(MOCK_FILE_PATH)
+    processed_data, processed_links = process_uploaded_data(MOCK_FILE_PATH)
 
-    assert result is not None
-    processed_data = json.loads(result)
+    assert processed_data is not None
+    assert processed_links is not None
+
+    processed_data = json.loads(processed_data)
 
     # Check overall structure
     assert isinstance(processed_data, dict)
     assert "n_bgcs" in processed_data
     assert "gcf_data" in processed_data
+
+    # Add more specific assertions based on the expected content of your mock_obj_data.pkl
+    assert len(processed_data["gcf_data"]) > 0
+    assert len(processed_data["n_bgcs"]) > 0
+    first_gcf = processed_data["gcf_data"][0]
+    assert "GCF ID" in first_gcf
+    assert "# BGCs" in first_gcf
+    assert "BGC Classes" in first_gcf
 
     # Check n_bgcs structure
     assert isinstance(processed_data["n_bgcs"], dict)
