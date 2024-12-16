@@ -67,41 +67,41 @@ uploader = html.Div(
         ),
         dcc.Store(id="file-store"),  # Store to keep the file contents
         dcc.Store(id="processed-data-store"),  # Store to keep the processed data
+        dcc.Store(id="processed-links-store"),  # Store to keep the processed links
     ],
     className="p-5 ml-5 mr-5",
 )
 
 
 # ------------------ Tabs ------------------ #
-# dropdown menu items
-initial_block_id = str(uuid.uuid4())
-gm_input_group = html.Div(
+# gm filter dropdown menu items
+gm_filter_input_group = html.Div(
     [
-        dcc.Store(id="blocks-id", data=[]),  # Start with one block
+        dcc.Store(id="gm-filter-blocks-id", data=[]),  # Start with one block
         html.Div(
-            id="blocks-container",
+            id="gm-filter-blocks-container",
             children=[],
         ),
     ]
 )
-# gm accordion (filter) card
-gm_accordion = dmc.Accordion(
+# gm filter (accordion) card
+gm_filter_accordion = dmc.Accordion(
     [
         dmc.AccordionItem(
             [
                 dmc.AccordionControl(
                     "Genomics filter",
                     disabled=True,
-                    id="gm-accordion-control",
+                    id="gm-filter-accordion-control",
                     className="mt-5 mb-3",
                 ),
                 dmc.AccordionPanel(
                     [
-                        gm_input_group,
+                        gm_filter_input_group,
                         html.Div(
                             dbc.Button(
                                 "Apply Filters",
-                                id="apply-filters-button",
+                                id="gm-filter-apply-button",
                                 color="primary",
                                 className="mt-3",
                             ),
@@ -110,7 +110,7 @@ gm_accordion = dmc.Accordion(
                     ]
                 ),
             ],
-            value="gm-accordion",
+            value="gm-filter-accordion",
         ),
     ],
     className="mt-5 mb-3",
@@ -132,7 +132,7 @@ gm_table = dbc.Card(
                 html.Div(
                     dcc.Checklist(
                         options=[{"label": "", "value": "disabled"}],
-                        id="select-all-checkbox",
+                        id="gm-table-select-all-checkbox",
                         style={
                             "position": "absolute",
                             "top": "4px",
@@ -201,19 +201,61 @@ gm_table = dbc.Card(
         html.Div(id="gm-table-output2", className="p-4"),
     ]
 )
+# gm scoring dropdown menu items
+gm_scoring_input_group = html.Div(
+    [
+        dcc.Store(id="gm-scoring-blocks-id", data=[]),  # Start with one block
+        html.Div(
+            id="gm-scoring-blocks-container",
+            children=[],
+        ),
+    ]
+)
+# gm score (accordion) card
+gm_scoring_accordion = dmc.Accordion(
+    [
+        dmc.AccordionItem(
+            [
+                dmc.AccordionControl(
+                    "Scoring",
+                    disabled=True,
+                    id="gm-scoring-accordion-control",
+                    className="mt-5 mb-3",
+                ),
+                dmc.AccordionPanel(
+                    [
+                        gm_scoring_input_group,
+                        html.Div(
+                            dbc.Button(
+                                "Set Scoring",
+                                id="gm-scoring-apply-button",
+                                color="primary",
+                                className="mt-3",
+                            ),
+                            className="d-flex justify-content-center",
+                        ),
+                    ]
+                ),
+            ],
+            value="gm-scoring-accordion",
+        ),
+    ],
+    className="mt-5 mb-3",
+)
 # gm tab content
 gm_content = dbc.Row(
     [
-        dbc.Col(gm_accordion, width=10, className="mx-auto dbc"),
+        dbc.Col(gm_filter_accordion, width=10, className="mx-auto dbc"),
         dbc.Col(gm_graph, width=10, className="mx-auto"),
         dbc.Col(gm_table, width=10, className="mx-auto"),
+        dbc.Col(gm_scoring_accordion, width=10, className="mx-auto dbc"),
     ]
 )
 # mg tab content
 mg_content = dbc.Row(
     dbc.Col(
         dbc.Card(
-            dbc.CardBody([html.Div(id="file-content-mg")]),
+            dbc.CardBody([html.Div(id="mg-file-content")]),
         )
     ),
 )

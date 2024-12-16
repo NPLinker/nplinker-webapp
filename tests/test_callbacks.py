@@ -7,13 +7,14 @@ import dash_mantine_components as dmc
 import pandas as pd
 import pytest
 from dash_uploader import UploadStatus
-from app.callbacks import add_block
-from app.callbacks import apply_filters
 from app.callbacks import disable_tabs_and_reset_blocks
+from app.callbacks import gm_filter_add_block
+from app.callbacks import gm_filter_apply
+from app.callbacks import gm_scoring_apply
+from app.callbacks import gm_table_select_rows
+from app.callbacks import gm_table_toggle_selection
+from app.callbacks import gm_table_update_datatable
 from app.callbacks import process_uploaded_data
-from app.callbacks import select_rows
-from app.callbacks import toggle_selection
-from app.callbacks import update_datatable
 from app.callbacks import upload_data
 from . import DATA_DIR
 
@@ -74,44 +75,32 @@ def test_upload_data():
 
 @pytest.mark.parametrize("input_path", [None, Path("non_existent_file.pkl")])
 def test_process_uploaded_data_invalid_input(input_path):
-    result = process_uploaded_data(input_path)
-    assert result is None
-
-
-def test_process_uploaded_data_success():
-    result = process_uploaded_data(MOCK_FILE_PATH)
-
-    assert result is not None
-    processed_data = json.loads(result)
-
-    assert "n_bgcs" in processed_data
-    assert "gcf_data" in processed_data
-
-    # Add more specific assertions based on the expected content of your mock_obj_data.pkl
-    # For example:
-    assert len(processed_data["gcf_data"]) > 0
-
-    first_gcf = processed_data["gcf_data"][0]
-    assert "GCF ID" in first_gcf
-    assert "# BGCs" in first_gcf
-    assert "BGC Classes" in first_gcf
-
-    # Check if n_bgcs contains at least one key-value pair
-    assert len(processed_data["n_bgcs"]) > 0
-
-    # You can add more detailed assertions here based on what you know about the content of mock_obj_data.pkl
+    processed_data, processed_links = process_uploaded_data(input_path)
+    assert processed_data is None
+    assert processed_links is None
 
 
 def test_process_uploaded_data_structure():
-    result = process_uploaded_data(MOCK_FILE_PATH)
+    processed_data, processed_links = process_uploaded_data(MOCK_FILE_PATH)
 
-    assert result is not None
-    processed_data = json.loads(result)
+    assert processed_data is not None
+    assert processed_links is not None
+
+    processed_data = json.loads(processed_data)
+    processed_links = json.loads(processed_links)
 
     # Check overall structure
     assert isinstance(processed_data, dict)
     assert "n_bgcs" in processed_data
     assert "gcf_data" in processed_data
+
+    # Add more specific assertions based on the expected content of your mock_obj_data.pkl
+    assert len(processed_data["gcf_data"]) > 0
+    assert len(processed_data["n_bgcs"]) > 0
+    first_gcf = processed_data["gcf_data"][0]
+    assert "GCF ID" in first_gcf
+    assert "# BGCs" in first_gcf
+    assert "BGC Classes" in first_gcf
 
     # Check n_bgcs structure
     assert isinstance(processed_data["n_bgcs"], dict)
@@ -130,11 +119,31 @@ def test_process_uploaded_data_structure():
         assert isinstance(gcf["# BGCs"], int)
         assert isinstance(gcf["BGC Classes"], list)
 
+    # Check processed_links structure
+    expected_link_keys = [
+        "gcf_id",
+        "spectrum_id",
+        "strains",
+        "method",
+        "score",
+        "cutoff",
+        "standardised",
+    ]
+    for key in expected_link_keys:
+        assert key in processed_links, f"Missing key '{key}' in processed links"
+        assert isinstance(processed_links[key], list), f"{key} should be a list"
+
+    # Check that all lists have the same length
+    list_lengths = [len(processed_links[key]) for key in expected_link_keys]
+    assert all(
+        length == list_lengths[0] for length in list_lengths
+    ), "Link data lists have inconsistent lengths"
+
 
 def test_disable_tabs(mock_uuid):
     # Test with None as input
     result = disable_tabs_and_reset_blocks(None)
-    assert result == (True, True, {}, {"display": "block"}, True, [], [])
+    assert result == (True, True, [], [], True, [], [], {}, {"display": "block"}, True)
 
     # Test with a string as input
     result = disable_tabs_and_reset_blocks(MOCK_FILE_PATH)
@@ -142,22 +151,29 @@ def test_disable_tabs(mock_uuid):
     # Unpack the result for easier assertion
     (
         gm_tab_disabled,
-        gm_accordion_disabled,
+        gm_filter_accordion_disabled,
+        gm_filter_block_ids,
+        gm_filter_blocks,
+        gm_scoring_accordion_disabled,
+        gm_scoring_block_ids,
+        gm_scoring_blocks,
         table_header_style,
         table_body_style,
         mg_tab_disabled,
-        block_ids,
-        blocks,
     ) = result
 
     assert gm_tab_disabled is False
-    assert gm_accordion_disabled is False
+    assert gm_filter_accordion_disabled is False
+    assert gm_scoring_accordion_disabled is False
     assert table_header_style == {}
     assert table_body_style == {"display": "block"}
     assert mg_tab_disabled is False
-    assert block_ids == ["test-uuid"]
-    assert len(blocks) == 1
-    assert isinstance(blocks[0], dmc.Grid)
+    assert gm_filter_block_ids == ["test-uuid"]
+    assert len(gm_filter_blocks) == 1
+    assert isinstance(gm_filter_blocks[0], dmc.Grid)
+    assert gm_scoring_block_ids == ["test-uuid"]
+    assert len(gm_scoring_blocks) == 1
+    assert isinstance(gm_scoring_blocks[0], dmc.Grid)
 
 
 @pytest.mark.parametrize(
@@ -172,41 +188,41 @@ def test_disable_tabs(mock_uuid):
         ),  # three buttons, each clicked once
     ],
 )
-def test_add_block(mock_uuid, n_clicks, initial_blocks, expected_result):
+def test_gm_filter_add_block(mock_uuid, n_clicks, initial_blocks, expected_result):
     if isinstance(expected_result, list):
-        result = add_block(n_clicks, initial_blocks)
+        result = gm_filter_add_block(n_clicks, initial_blocks)
         assert result == expected_result
     else:
         with expected_result:
-            add_block(n_clicks, initial_blocks)
+            gm_filter_add_block(n_clicks, initial_blocks)
 
 
-def test_apply_filters(sample_processed_data):
+def test_gm_filter_apply(sample_processed_data):
     data = json.loads(sample_processed_data)
     df = pd.DataFrame(data["gcf_data"])
 
     # Test GCF_ID filter
     gcf_ids = df["GCF ID"].iloc[:2].tolist()
-    filtered_df = apply_filters(df, ["GCF_ID"], [",".join(gcf_ids)], [[]])
+    filtered_df = gm_filter_apply(df, ["GCF_ID"], [",".join(gcf_ids)], [[]])
     assert len(filtered_df) == 2
     assert set(filtered_df["GCF ID"]) == set(gcf_ids)
 
     # Test BGC_CLASS filter
     bgc_class = df["BGC Classes"].iloc[0][0]  # Get the first BGC class from the first row
-    filtered_df = apply_filters(df, ["BGC_CLASS"], [""], [[bgc_class]])
+    filtered_df = gm_filter_apply(df, ["BGC_CLASS"], [""], [[bgc_class]])
     assert len(filtered_df) > 0
     assert all(bgc_class in classes for classes in filtered_df["BGC Classes"])
 
     # Test no filter
-    filtered_df = apply_filters(df, [], [], [])
+    filtered_df = gm_filter_apply(df, [], [], [])
     assert len(filtered_df) == len(df)
 
 
-def test_update_datatable(sample_processed_data):
+def test_gm_table_update_datatable(sample_processed_data):
     with patch("app.callbacks.ctx") as mock_ctx:
         # Test with processed data and no filters applied
         mock_ctx.triggered_id = None
-        result = update_datatable(
+        result = gm_table_update_datatable(
             sample_processed_data,
             None,  # n_clicks
             [],  # dropdown_menus
@@ -238,12 +254,12 @@ def test_update_datatable(sample_processed_data):
         assert checkbox_value == []
 
         # Test with None input
-        result = update_datatable(None, None, [], [], [], None)
+        result = gm_table_update_datatable(None, None, [], [], [], None)
         assert result == ([], [], [], {"display": "none"}, [], [])
 
         # Test with apply-filters-button triggered
-        mock_ctx.triggered_id = "apply-filters-button"
-        result = update_datatable(
+        mock_ctx.triggered_id = "gm-filter-apply-button"
+        result = gm_table_update_datatable(
             sample_processed_data,
             1,  # n_clicks
             ["GCF_ID"],  # dropdown_menus
@@ -258,38 +274,100 @@ def test_update_datatable(sample_processed_data):
         assert checkbox_value == []
 
 
-def test_toggle_selection(sample_processed_data):
+def test_gm_table_toggle_selection(sample_processed_data):
     data = json.loads(sample_processed_data)
     original_rows = data["gcf_data"]
     filtered_rows = original_rows[:2]
 
     # Test selecting all rows
-    result = toggle_selection(["disabled"], original_rows, filtered_rows)
+    result = gm_table_toggle_selection(["disabled"], original_rows, filtered_rows)
     assert result == [0, 1]  # Assuming it now returns a list of indices directly
 
     # Test deselecting all rows
-    result = toggle_selection([], original_rows, filtered_rows)
+    result = gm_table_toggle_selection([], original_rows, filtered_rows)
     assert result == []
 
     # Test with None filtered_rows
-    result = toggle_selection(["disabled"], original_rows, None)
+    result = gm_table_toggle_selection(["disabled"], original_rows, None)
     assert result == list(range(len(original_rows)))  # Should select all rows in original_rows
 
     # Test with empty value (deselecting when no filter is applied)
-    result = toggle_selection([], original_rows, None)
+    result = gm_table_toggle_selection([], original_rows, None)
     assert result == []
 
 
-def test_select_rows(sample_processed_data):
+def test_gm_table_select_rows(sample_processed_data):
     data = json.loads(sample_processed_data)
     rows = data["gcf_data"]
     selected_rows = [0, 1]
 
-    output1, output2 = select_rows(rows, selected_rows)
+    output1, output2 = gm_table_select_rows(rows, selected_rows)
     assert output1 == f"Total rows: {len(rows)}"
     assert output2.startswith(f"Selected rows: {len(selected_rows)}\nSelected GCF IDs: ")
 
     # Test with no rows
-    output1, output2 = select_rows([], None)
+    output1, output2 = gm_table_select_rows([], None)
     assert output1 == "No data available."
     assert output2 == "No rows selected."
+
+
+def test_gm_scoring_apply_metcalf_raw():
+    """Test gm_scoring_apply with Metcalf method and raw scores."""
+    # Create test DataFrame
+    df = pd.DataFrame(
+        {
+            "method": ["metcalf", "metcalf", "other"],
+            "standardised": [False, True, False],
+            "cutoff": [1.5, 2.0, 1.0],
+            "score": [2.0, 2.5, 1.5],
+        }
+    )
+
+    # Test parameters
+    dropdown_menus = ["METCALF"]
+    radiobuttons = ["RAW"]
+    cutoffs_met = ["1.0"]
+
+    result = gm_scoring_apply(df, dropdown_menus, radiobuttons, cutoffs_met)
+
+    assert len(result) == 1, "Should return one row"
+    assert result.iloc[0]["method"] == "metcalf", "Method should be metcalf"
+    assert not result.iloc[0]["standardised"], "Should be raw (not standardised)"
+    assert result.iloc[0]["cutoff"] >= 1.0, "Cutoff should be >= 1.0"
+
+
+def test_gm_scoring_apply_metcalf_standardised():
+    """Test gm_scoring_apply with Metcalf method and standardised scores."""
+    # Create test DataFrame
+    df = pd.DataFrame(
+        {
+            "method": ["metcalf", "metcalf", "other"],
+            "standardised": [False, True, False],
+            "cutoff": [1.5, 2.0, 1.0],
+            "score": [2.0, 2.5, 1.5],
+        }
+    )
+
+    # Test parameters
+    dropdown_menus = ["METCALF"]
+    radiobuttons = ["STANDARDISED"]
+    cutoffs_met = ["1.5"]
+
+    result = gm_scoring_apply(df, dropdown_menus, radiobuttons, cutoffs_met)
+
+    assert len(result) == 1, "Should return one row"
+    assert result.iloc[0]["method"] == "metcalf", "Method should be metcalf"
+    assert result.iloc[0]["standardised"], "Should be standardised"
+    assert result.iloc[0]["cutoff"] >= 1.5, "Cutoff should be >= 1.5"
+
+
+def test_gm_scoring_apply_empty_inputs():
+    """Test gm_scoring_apply with empty inputs."""
+    df = pd.DataFrame(
+        {"method": ["metcalf"], "standardised": [False], "cutoff": [1.0], "score": [2.0]}
+    )
+
+    result = gm_scoring_apply(df, [], [], [])
+
+    assert len(result) == 1, "Should return original DataFrame"
+    assert result.equals(df), "Should return unmodified DataFrame"
