@@ -172,6 +172,7 @@ def process_uploaded_data(file_path: Path | str | None) -> tuple[str | None, str
         Output("gm-scoring-accordion-control", "disabled"),
         Output("gm-scoring-blocks-id", "data", allow_duplicate=True),
         Output("gm-scoring-blocks-container", "children", allow_duplicate=True),
+        Output("gm-results-button", "disabled"),
         Output("gm-table-card-header", "style"),
         Output("gm-table-card-body", "style", allow_duplicate=True),
         Output("mg-tab", "disabled"),
@@ -189,6 +190,7 @@ def disable_tabs_and_reset_blocks(
     bool,
     list[str],
     list[dmc.Grid],
+    bool,
     dict,
     dict[str, str],
     bool,
@@ -203,7 +205,7 @@ def disable_tabs_and_reset_blocks(
     """
     if file_path is None:
         # Disable the tabs, don't change blocks
-        return True, True, [], [], True, [], [], {}, {"display": "block"}, True
+        return True, True, [], [], True, [], [], True, {}, {"display": "block"}, True
 
     # Enable the tabs and reset blocks
     gm_filter_initial_block_id = [str(uuid.uuid4())]
@@ -219,6 +221,7 @@ def disable_tabs_and_reset_blocks(
         False,
         gm_scoring_initial_block_id,
         gm_scoring_new_blocks,
+        False,
         {},
         {"display": "block"},
         False,
@@ -935,7 +938,7 @@ def gm_scoring_apply(
 
 # TODO: add the logic for outputing data in the results table, issue #33
 @app.callback(
-    Input("gm-scoring-apply-button", "n_clicks"),
+    Input("gm-results-button", "n_clicks"),
     State("processed-links-store", "data"),
     State({"type": "gm-scoring-dropdown-menu", "index": ALL}, "value"),
     State({"type": "gm-scoring-radio-items", "index": ALL}, "value"),

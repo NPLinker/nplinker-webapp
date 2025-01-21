@@ -143,7 +143,7 @@ def test_process_uploaded_data_structure():
 def test_disable_tabs(mock_uuid):
     # Test with None as input
     result = disable_tabs_and_reset_blocks(None)
-    assert result == (True, True, [], [], True, [], [], {}, {"display": "block"}, True)
+    assert result == (True, True, [], [], True, [], [], True, {}, {"display": "block"}, True)
 
     # Test with a string as input
     result = disable_tabs_and_reset_blocks(MOCK_FILE_PATH)
@@ -157,6 +157,7 @@ def test_disable_tabs(mock_uuid):
         gm_scoring_accordion_disabled,
         gm_scoring_block_ids,
         gm_scoring_blocks,
+        gm_results_disabled,
         table_header_style,
         table_body_style,
         mg_tab_disabled,
@@ -171,6 +172,7 @@ def test_disable_tabs(mock_uuid):
     assert gm_filter_block_ids == ["test-uuid"]
     assert len(gm_filter_blocks) == 1
     assert isinstance(gm_filter_blocks[0], dmc.Grid)
+    assert gm_results_disabled is False
     assert gm_scoring_block_ids == ["test-uuid"]
     assert len(gm_scoring_blocks) == 1
     assert isinstance(gm_scoring_blocks[0], dmc.Grid)

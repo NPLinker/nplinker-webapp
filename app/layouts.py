@@ -225,15 +225,6 @@ gm_scoring_accordion = dmc.Accordion(
                 dmc.AccordionPanel(
                     [
                         gm_scoring_input_group,
-                        html.Div(
-                            dbc.Button(
-                                "Set Scoring",
-                                id="gm-scoring-apply-button",
-                                color="primary",
-                                className="mt-3",
-                            ),
-                            className="d-flex justify-content-center",
-                        ),
                     ]
                 ),
             ],
@@ -242,6 +233,18 @@ gm_scoring_accordion = dmc.Accordion(
     ],
     className="mt-5 mb-3",
 )
+gm_results = (
+    html.Div(
+        dbc.Button(
+            "Show Results",
+            id="gm-results-button",
+            color="primary",
+            className="mt-3",
+            disabled=True,
+        ),
+        className="d-flex justify-content-center",
+    ),
+)
 # gm tab content
 gm_content = dbc.Row(
     [
@@ -249,6 +252,7 @@ gm_content = dbc.Row(
         dbc.Col(gm_graph, width=10, className="mx-auto"),
         dbc.Col(gm_table, width=10, className="mx-auto"),
         dbc.Col(gm_scoring_accordion, width=10, className="mx-auto dbc"),
+        dbc.Col(gm_results, width=10, className="mx-auto"),
     ]
 )
 # mg tab content
