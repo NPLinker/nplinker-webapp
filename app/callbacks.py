@@ -169,12 +169,12 @@ def process_uploaded_data(file_path: Path | str | None) -> tuple[str | None, str
         Output("gm-filter-accordion-control", "disabled"),
         Output("gm-filter-blocks-id", "data", allow_duplicate=True),
         Output("gm-filter-blocks-container", "children", allow_duplicate=True),
+        Output("gm-table-card-header", "style"),
+        Output("gm-table-card-body", "style", allow_duplicate=True),
         Output("gm-scoring-accordion-control", "disabled"),
         Output("gm-scoring-blocks-id", "data", allow_duplicate=True),
         Output("gm-scoring-blocks-container", "children", allow_duplicate=True),
         Output("gm-results-button", "disabled"),
-        Output("gm-table-card-header", "style"),
-        Output("gm-table-card-body", "style", allow_duplicate=True),
         Output("mg-tab", "disabled"),
     ],
     [Input("file-store", "data")],
@@ -187,12 +187,12 @@ def disable_tabs_and_reset_blocks(
     bool,
     list[str],
     list[dmc.Grid],
+    dict,
+    dict[str, str],
     bool,
     list[str],
     list[dmc.Grid],
     bool,
-    dict,
-    dict[str, str],
     bool,
 ]:
     """Manage tab states and reset blocks based on file upload status.
@@ -205,7 +205,7 @@ def disable_tabs_and_reset_blocks(
     """
     if file_path is None:
         # Disable the tabs, don't change blocks
-        return True, True, [], [], True, [], [], True, {}, {"display": "block"}, True
+        return True, True, [], [], {}, {"display": "block"}, True, [], [], True, True
 
     # Enable the tabs and reset blocks
     gm_filter_initial_block_id = [str(uuid.uuid4())]
@@ -218,12 +218,12 @@ def disable_tabs_and_reset_blocks(
         False,
         gm_filter_initial_block_id,
         gm_filter_new_blocks,
+        {},
+        {"display": "block"},
         False,
         gm_scoring_initial_block_id,
         gm_scoring_new_blocks,
         False,
-        {},
-        {"display": "block"},
         False,
     )
 
