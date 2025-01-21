@@ -233,17 +233,29 @@ gm_scoring_accordion = dmc.Accordion(
     ],
     className="mt-5 mb-3",
 )
-gm_results = (
-    html.Div(
-        dbc.Button(
-            "Show Results",
-            id="gm-results-button",
-            color="primary",
-            className="mt-3",
-            disabled=True,
+gm_results = html.Div(
+    [
+        html.Div(
+            dbc.Button(
+                "Show Results",
+                id="gm-results-button",
+                color="primary",
+                className="mt-3",
+                disabled=True,
+            ),
+            className="d-flex justify-content-center",
         ),
-        className="d-flex justify-content-center",
-    ),
+        html.Div(
+            dbc.Alert(
+                "Your alert message here",
+                id="gm-results-alert",
+                color="warning",
+                className="mt-3 text-center w-75 mx-auto",
+                is_open=False,
+            ),
+            className="d-flex justify-content-center",
+        ),
+    ]
 )
 # gm tab content
 gm_content = dbc.Row(

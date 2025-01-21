@@ -24,6 +24,7 @@ from dash import callback_context as ctx
 from dash import clientside_callback
 from dash import dcc
 from dash import html
+from dash.exceptions import PreventUpdate
 
 
 dash._dash_renderer._set_react_version("18.2.0")  # type: ignore
@@ -137,25 +138,30 @@ def process_uploaded_data(file_path: Path | str | None) -> tuple[str | None, str
                 processed_data["n_bgcs"][len(gcf.bgcs)] = []
             processed_data["n_bgcs"][len(gcf.bgcs)].append(gcf.id)
 
-        processed_links: dict[str, Any] = {
-            "gcf_id": [],
-            "spectrum_id": [],
-            "strains": [],
-            "method": [],
-            "score": [],
-            "cutoff": [],
-            "standardised": [],
-        }
+        # TODO: Verify this works with a proper mockup of the data
+        # You might need to adjust the data unpacking above
+        if links is not None:
+            processed_links: dict[str, Any] = {
+                "gcf_id": [],
+                "spectrum_id": [],
+                "strains": [],
+                "method": [],
+                "score": [],
+                "cutoff": [],
+                "standardised": [],
+            }
 
-        for link in links.links:
-            for method, data in link[2].items():
-                processed_links["gcf_id"].append(link[0].id)
-                processed_links["spectrum_id"].append(link[1].id)
-                processed_links["strains"].append([s.id for s in link[1].strains._strains])
-                processed_links["method"].append(method)
-                processed_links["score"].append(data.value)
-                processed_links["cutoff"].append(data.parameter["cutoff"])
-                processed_links["standardised"].append(data.parameter["standardised"])
+            for link in links.links:
+                for method, data in link[2].items():
+                    processed_links["gcf_id"].append(link[0].id)
+                    processed_links["spectrum_id"].append(link[1].id)
+                    processed_links["strains"].append([s.id for s in link[1].strains._strains])
+                    processed_links["method"].append(method)
+                    processed_links["score"].append(data.value)
+                    processed_links["cutoff"].append(data.parameter["cutoff"])
+                    processed_links["standardised"].append(data.parameter["standardised"])
+        else:
+            processed_links = {}
 
         return json.dumps(processed_data), json.dumps(processed_links)
     except Exception as e:
@@ -938,7 +944,11 @@ def gm_scoring_apply(
 
 # TODO: add the logic for outputing data in the results table, issue #33
 @app.callback(
+    Output("gm-results-alert", "children"),
+    Output("gm-results-alert", "is_open"),
     Input("gm-results-button", "n_clicks"),
+    Input("gm-table-select-all-checkbox", "value"),
+    Input("gm-table", "derived_virtual_selected_rows"),
     State("processed-links-store", "data"),
     State({"type": "gm-scoring-dropdown-menu", "index": ALL}, "value"),
     State({"type": "gm-scoring-radio-items", "index": ALL}, "value"),
@@ -946,27 +956,47 @@ def gm_scoring_apply(
 )
 def gm_update_results_datatable(
     n_clicks: int | None,
-    filtered_data: str,
+    select_all: list | None,
+    selected_rows: list[int] | None,
+    processed_links: str,
     dropdown_menus: list[str],
     radiobuttons: list[str],
     cutoffs_met: list[str],
-):
+) -> tuple[str, bool]:
     """Update the results DataTable based on scoring filters.
 
     Args:
         n_clicks: Number of times the "Show Spectra" button has been clicked.
-        filtered_data: JSON string of filtered data.
+        select_all: Value of the select-all checkbox.
+        selected_rows: Indices of selected rows in the GCF table.
+        processed_links: JSON string of processed links data.
         dropdown_menus: List of selected dropdown menu options.
         radiobuttons: List of selected radio button options.
         cutoffs_met: List of cutoff values for METCALF method.
 
     Returns:
-        None
+        tuple: Alert message and visibility state
     """
+    triggered_id = ctx.triggered_id
+
+    if triggered_id in ["gm-table-select-all-checkbox", "gm-table"]:
+        return "", False
+
+    if n_clicks is None:
+        raise PreventUpdate
+
     try:
-        data = json.loads(filtered_data)
+        if processed_links is None or not processed_links:
+            return (
+                "No processed links available. Provide input data containing links and try again.",
+                True,
+            )
+        if selected_rows is None or len(selected_rows) == 0:
+            return "No GCFs selected. Please select GCFs and try again.", True
+        data = json.loads(processed_links)
         df = pd.DataFrame(data)
     except (json.JSONDecodeError, KeyError, pd.errors.EmptyDataError):
-        return
+        return "", False
     df_results = gm_scoring_apply(df, dropdown_menus, radiobuttons, cutoffs_met)
     print(df_results.head())
+    return "", False
