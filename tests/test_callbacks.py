@@ -20,6 +20,7 @@ from . import DATA_DIR
 
 
 MOCK_FILE_PATH = DATA_DIR / "mock_obj_data.pkl"
+MOCK_FILE_PATH_NO_LINKS = DATA_DIR / "mock_obj_data_no_links.pkl"
 
 
 @pytest.fixture
@@ -82,9 +83,14 @@ def test_process_uploaded_data_invalid_input(input_path):
 
 def test_process_uploaded_data_structure():
     processed_data, processed_links = process_uploaded_data(MOCK_FILE_PATH)
+    processed_data_no_links, processed_links_no_links = process_uploaded_data(
+        MOCK_FILE_PATH_NO_LINKS
+    )
 
     assert processed_data is not None
     assert processed_links is not None
+    assert processed_data_no_links == processed_data
+    assert len(json.loads(processed_links_no_links)) == 0  # type: ignore
 
     processed_data = json.loads(processed_data)
     processed_links = json.loads(processed_links)

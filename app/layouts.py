@@ -119,7 +119,7 @@ gm_filter_accordion = dmc.Accordion(
 gm_graph = dcc.Graph(id="gm-graph", className="mt-5 mb-3", style={"display": "none"})
 # gm_table
 gm_table = dbc.Card(
-    [
+    [  # TODO: Reset the selection table when a new file is uploaded
         dbc.CardHeader(
             [
                 "Data",

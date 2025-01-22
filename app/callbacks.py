@@ -138,10 +138,8 @@ def process_uploaded_data(file_path: Path | str | None) -> tuple[str | None, str
                 processed_data["n_bgcs"][len(gcf.bgcs)] = []
             processed_data["n_bgcs"][len(gcf.bgcs)].append(gcf.id)
 
-        # TODO: Verify this works with a proper mockup of the data
-        # You might need to adjust the data unpacking above
         if links is not None:
-            processed_links: dict[str, Any] = {
+            processed_links: dict[str, Any] | None = {
                 "gcf_id": [],
                 "spectrum_id": [],
                 "strains": [],
@@ -986,14 +984,14 @@ def gm_update_results_datatable(
         raise PreventUpdate
 
     try:
-        if processed_links is None or not processed_links:
+        data = json.loads(processed_links)
+        if len(data) == 0:
             return (
                 "No processed links available. Provide input data containing links and try again.",
                 True,
             )
         if selected_rows is None or len(selected_rows) == 0:
             return "No GCFs selected. Please select GCFs and try again.", True
-        data = json.loads(processed_links)
         df = pd.DataFrame(data)
     except (json.JSONDecodeError, KeyError, pd.errors.EmptyDataError):
         return "", False
