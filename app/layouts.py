@@ -257,6 +257,42 @@ gm_results = html.Div(
         ),
     ]
 )
+
+gm_results_table = dbc.Card(
+    [
+        dbc.CardHeader(
+            ["Candidate Links"],
+            id="gm-results-table-card-header",
+            style={"color": "#888888"},
+        ),
+        dbc.CardBody(
+            [
+                dash_table.DataTable(
+                    id="gm-results-table",
+                    columns=[],
+                    data=[],
+                    editable=False,
+                    filter_action="none",
+                    sort_action="none",
+                    sort_mode="multi",
+                    page_action="native",
+                    page_current=0,
+                    page_size=10,
+                    style_cell={"textAlign": "left", "padding": "5px"},
+                    style_header={
+                        "backgroundColor": "#FF6E42",
+                        "fontWeight": "bold",
+                        "color": "white",
+                    },
+                    style_data={"border": "1px solid #ddd"},
+                ),
+            ],
+            id="gm-results-table-card-body",
+            style={"display": "none"},
+        ),
+    ]
+)
+
 # gm tab content
 gm_content = dbc.Row(
     [
@@ -265,6 +301,7 @@ gm_content = dbc.Row(
         dbc.Col(gm_table, width=10, className="mx-auto"),
         dbc.Col(gm_scoring_accordion, width=10, className="mx-auto dbc"),
         dbc.Col(gm_results, width=10, className="mx-auto"),
+        dbc.Col(gm_results_table, width=10, className="mt-3 mx-auto"),
     ]
 )
 # mg tab content

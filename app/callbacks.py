@@ -24,7 +24,6 @@ from dash import callback_context as ctx
 from dash import clientside_callback
 from dash import dcc
 from dash import html
-from dash.exceptions import PreventUpdate
 
 
 dash._dash_renderer._set_react_version("18.2.0")  # type: ignore
@@ -940,12 +939,15 @@ def gm_scoring_apply(
         return df
 
 
-# TODO: add the logic for outputing data in the results table, issue #33
+# TODO: Add tests
 @app.callback(
     Output("gm-results-alert", "children"),
     Output("gm-results-alert", "is_open"),
+    Output("gm-results-table", "data"),
+    Output("gm-results-table", "columns"),
+    Output("gm-results-table-card-body", "style"),
     Input("gm-results-button", "n_clicks"),
-    Input("gm-table-select-all-checkbox", "value"),
+    Input("gm-table", "derived_virtual_data"),
     Input("gm-table", "derived_virtual_selected_rows"),
     State("processed-links-store", "data"),
     State({"type": "gm-scoring-dropdown-menu", "index": ALL}, "value"),
@@ -954,18 +956,18 @@ def gm_scoring_apply(
 )
 def gm_update_results_datatable(
     n_clicks: int | None,
-    select_all: list | None,
+    virtual_data: list[dict] | None,
     selected_rows: list[int] | None,
     processed_links: str,
     dropdown_menus: list[str],
     radiobuttons: list[str],
     cutoffs_met: list[str],
-) -> tuple[str, bool]:
+) -> tuple[str, bool, list[dict], list[dict], dict]:
     """Update the results DataTable based on scoring filters.
 
     Args:
-        n_clicks: Number of times the "Show Spectra" button has been clicked.
-        select_all: Value of the select-all checkbox.
+        n_clicks: Number of times the "Show Results" button has been clicked.
+        virtual_data: Current filtered data from the GCF table.
         selected_rows: Indices of selected rows in the GCF table.
         processed_links: JSON string of processed links data.
         dropdown_menus: List of selected dropdown menu options.
@@ -973,28 +975,65 @@ def gm_update_results_datatable(
         cutoffs_met: List of cutoff values for METCALF method.
 
     Returns:
-        tuple: Alert message and visibility state
+        Tuple containing alert message, visibility state, table data and settings.
     """
     triggered_id = ctx.triggered_id
 
     if triggered_id in ["gm-table-select-all-checkbox", "gm-table"]:
-        return "", False
+        return "", False, [], [], {"display": "none"}
 
     if n_clicks is None:
-        raise PreventUpdate
+        return "", False, [], [], {"display": "none"}
+
+    if not selected_rows:
+        return (
+            "No GCFs selected. Please select GCFs and try again.",
+            True,
+            [],
+            [],
+            {"display": "none"},
+        )
+
+    if not virtual_data:
+        return "No data available.", True, [], [], {"display": "none"}
 
     try:
-        data = json.loads(processed_links)
-        if len(data) == 0:
-            return (
-                "No processed links available. Provide input data containing links and try again.",
-                True,
-            )
-        if selected_rows is None or len(selected_rows) == 0:
-            return "No GCFs selected. Please select GCFs and try again.", True
-        df = pd.DataFrame(data)
-    except (json.JSONDecodeError, KeyError, pd.errors.EmptyDataError):
-        return "", False
-    df_results = gm_scoring_apply(df, dropdown_menus, radiobuttons, cutoffs_met)
-    print(df_results.head())
-    return "", False
+        links_data = json.loads(processed_links)
+        if len(links_data) == 0:
+            return "No processed links available.", True, [], [], {"display": "none"}
+
+        # Get selected GCF IDs
+        selected_gcfs = [virtual_data[i]["GCF ID"] for i in selected_rows]
+
+        # Convert links data to DataFrame
+        links_df = pd.DataFrame(links_data)
+
+        # Apply scoring filters
+        filtered_df = gm_scoring_apply(links_df, dropdown_menus, radiobuttons, cutoffs_met)
+
+        # Filter for selected GCFs and aggregate results
+        results = []
+        for gcf_id in selected_gcfs:
+            gcf_links = filtered_df[filtered_df["gcf_id"] == gcf_id]
+            if not gcf_links.empty:
+                results.append(
+                    {
+                        "GCF ID": gcf_id,
+                        "# Links": len(gcf_links),
+                        "Average Score": round(gcf_links["score"].mean(), 2),
+                    }
+                )
+
+        if not results:
+            return "No matching links found for selected GCFs.", True, [], [], {"display": "none"}
+
+        columns = [
+            {"name": "GCF ID", "id": "GCF ID"},
+            {"name": "# Links", "id": "# Links", "type": "numeric"},
+            {"name": "Average Score", "id": "Average Score", "type": "numeric"},
+        ]
+
+        return "", False, results, columns, {"display": "block"}
+
+    except Exception as e:
+        return f"Error processing results: {str(e)}", True, [], [], {"display": "none"}
