@@ -737,7 +737,7 @@ def gm_scoring_create_initial_block(block_id: str) -> dmc.Grid:
                         id={"type": "gm-scoring-dropdown-ids-cutoff-met", "index": block_id},
                         label="Cutoff",
                         placeholder="Insert cutoff value as a number",
-                        value="1",
+                        value="0.05",
                         className="custom-textinput",
                     )
                 ],
@@ -856,7 +856,7 @@ def gm_scoring_display_blocks(
                             },
                             label="Cutoff",
                             placeholder="Insert cutoff value as a number",
-                            value="1",
+                            value="0.05",
                             className="custom-textinput",
                         ),
                     ],
@@ -902,7 +902,7 @@ def gm_scoring_update_placeholder(
         # Callback was not triggered by user interaction, don't change anything
         raise dash.exceptions.PreventUpdate
     if selected_value == "METCALF":
-        return ({"display": "block"}, "Cutoff", "1")
+        return ({"display": "block"}, "Cutoff", "0.05")
     else:
         # This case should never occur due to the Literal type, but it satisfies mypy
         return ({"display": "none"}, "", "")
