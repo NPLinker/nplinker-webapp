@@ -946,6 +946,7 @@ def gm_scoring_apply(
     Output("gm-results-table", "data"),
     Output("gm-results-table", "columns"),
     Output("gm-results-table-card-body", "style"),
+    Output("gm-results-table-card-header", "style"),
     Input("gm-results-button", "n_clicks"),
     Input("gm-table", "derived_virtual_data"),
     Input("gm-table", "derived_virtual_selected_rows"),
@@ -962,7 +963,7 @@ def gm_update_results_datatable(
     dropdown_menus: list[str],
     radiobuttons: list[str],
     cutoffs_met: list[str],
-) -> tuple[str, bool, list[dict], list[dict], dict]:
+) -> tuple[str, bool, list[dict], list[dict], dict, dict]:
     """Update the results DataTable based on scoring filters.
 
     Args:
@@ -975,15 +976,15 @@ def gm_update_results_datatable(
         cutoffs_met: List of cutoff values for METCALF method.
 
     Returns:
-        Tuple containing alert message, visibility state, table data and settings.
+        Tuple containing alert message, visibility state, table data and settings, and header style.
     """
     triggered_id = ctx.triggered_id
 
     if triggered_id in ["gm-table-select-all-checkbox", "gm-table"]:
-        return "", False, [], [], {"display": "none"}
+        return "", False, [], [], {"display": "none"}, {"color": "#888888"}
 
     if n_clicks is None:
-        return "", False, [], [], {"display": "none"}
+        return "", False, [], [], {"display": "none"}, {"color": "#888888"}
 
     if not selected_rows:
         return (
@@ -992,15 +993,23 @@ def gm_update_results_datatable(
             [],
             [],
             {"display": "none"},
+            {"color": "#888888"},
         )
 
     if not virtual_data:
-        return "No data available.", True, [], [], {"display": "none"}
+        return "No data available.", True, [], [], {"display": "none"}, {"color": "#888888"}
 
     try:
         links_data = json.loads(processed_links)
         if len(links_data) == 0:
-            return "No processed links available.", True, [], [], {"display": "none"}
+            return (
+                "No processed links available.",
+                True,
+                [],
+                [],
+                {"display": "none"},
+                {"color": "#888888"},
+            )
 
         # Get selected GCF IDs
         selected_gcfs = [virtual_data[i]["GCF ID"] for i in selected_rows]
@@ -1016,24 +1025,41 @@ def gm_update_results_datatable(
         for gcf_id in selected_gcfs:
             gcf_links = filtered_df[filtered_df["gcf_id"] == gcf_id]
             if not gcf_links.empty:
+                top_spectrum = gcf_links.loc[gcf_links["score"].idxmax()]
                 results.append(
                     {
                         "GCF ID": gcf_id,
                         "# Links": len(gcf_links),
+                        "Top 1 Spectrum ID": top_spectrum["spectrum_id"],
                         "Average Score": round(gcf_links["score"].mean(), 2),
                     }
                 )
 
         if not results:
-            return "No matching links found for selected GCFs.", True, [], [], {"display": "none"}
+            return (
+                "No matching links found for selected GCFs.",
+                True,
+                [],
+                [],
+                {"display": "none"},
+                {"color": "#888888"},
+            )
 
         columns = [
             {"name": "GCF ID", "id": "GCF ID"},
             {"name": "# Links", "id": "# Links", "type": "numeric"},
+            {"name": "Top 1 Spectrum ID", "id": "Top 1 Spectrum ID"},
             {"name": "Average Score", "id": "Average Score", "type": "numeric"},
         ]
 
-        return "", False, results, columns, {"display": "block"}
+        return "", False, results, columns, {"display": "block"}, {}
 
     except Exception as e:
-        return f"Error processing results: {str(e)}", True, [], [], {"display": "none"}
+        return (
+            f"Error processing results: {str(e)}",
+            True,
+            [],
+            [],
+            {"display": "none"},
+            {"color": "#888888"},
+        )
