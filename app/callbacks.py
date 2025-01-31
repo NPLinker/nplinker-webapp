@@ -947,9 +947,9 @@ def gm_scoring_apply(
 
 # TODO: Check out data are passed back to the DataTable both here and in the other callback
 # Check whether you're doing unnecessary work and uniform the logic
-# TODO: Check whether is possible to squeeze long tooltips, and thus make them persistent, allow user to copy their text
-# TODO: Check whether is possible to include hyperlinks in the tooltips
-# TODO: Check whether is possible to include a plot in the tooltips
+# TODO: (#35) Check whether is possible to squeeze long tooltips, and thus make them persistent, allow user to copy their text
+# TODO: (#35) Check whether is possible to include hyperlinks in the tooltips
+# TODO: (#35) Check whether is possible to include a plot in the tooltips
 # TODO: Add tests
 @app.callback(
     Output("gm-results-alert", "children"),
