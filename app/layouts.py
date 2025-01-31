@@ -285,6 +285,32 @@ gm_results_table = dbc.Card(
                         "color": "white",
                     },
                     style_data={"border": "1px solid #ddd"},
+                    style_data_conditional=[
+                        {
+                            "if": {"state": "selected"},
+                            "backgroundColor": "white",
+                            "border": "1px solid #ddd",
+                        }
+                    ],
+                    style_cell_conditional=[{"if": {"column_id": "selector"}, "width": "30px"}],
+                    tooltip_delay=0,
+                    tooltip_duration=None,
+                    css=[
+                        {
+                            "selector": ".dash-table-tooltip",
+                            "rule": """
+                                background-color: #ffd8cc;
+                                font-family: monospace;
+                                font-size: 12px;
+                                max-width: none !important;
+                                white-space: pre-wrap;
+                                padding: 8px;
+                                border: 1px solid #FF6E42;
+                                box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+                            """,
+                        }
+                    ],
+                    tooltip={"type": "markdown"},
                 ),
             ],
             id="gm-results-table-card-body",

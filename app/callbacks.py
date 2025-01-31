@@ -24,6 +24,7 @@ from dash import callback_context as ctx
 from dash import clientside_callback
 from dash import dcc
 from dash import html
+from nplinker.metabolomics.spectrum import Spectrum
 
 
 dash._dash_renderer._set_react_version("18.2.0")  # type: ignore
@@ -126,7 +127,7 @@ def process_uploaded_data(file_path: Path | str | None) -> tuple[str | None, str
                 {
                     "GCF ID": gcf.id,
                     "# BGCs": len(gcf.bgcs),
-                    "BGC Classes": list(set(gcf_bgc_classes)),  # Using set to get unique classes
+                    "BGC Classes": list(set(gcf_bgc_classes)),
                     "BGC IDs": list(bgc_ids),
                     "BGC smiles": list(bgc_smiles),
                     "strains": strains,
@@ -140,8 +141,7 @@ def process_uploaded_data(file_path: Path | str | None) -> tuple[str | None, str
         if links is not None:
             processed_links: dict[str, Any] = {
                 "gcf_id": [],
-                "spectrum_id": [],
-                "strains": [],
+                "spectrum": [],
                 "method": [],
                 "score": [],
                 "cutoff": [],
@@ -149,14 +149,21 @@ def process_uploaded_data(file_path: Path | str | None) -> tuple[str | None, str
             }
 
             for link in links.links:
-                for method, data in link[2].items():
+                if isinstance(link[1], Spectrum):  # Then link[0] is a GCF (GCF -> Spectrum)
                     processed_links["gcf_id"].append(link[0].id)
-                    processed_links["spectrum_id"].append(link[1].id)
-                    processed_links["strains"].append([s.id for s in link[1].strains._strains])
-                    processed_links["method"].append(method)
-                    processed_links["score"].append(data.value)
-                    processed_links["cutoff"].append(data.parameter["cutoff"])
-                    processed_links["standardised"].append(data.parameter["standardised"])
+                    processed_links["spectrum"].append(
+                        {
+                            "id": link[1].id,
+                            "strains": [s.id for s in link[1].strains._strains],
+                            "precursor_mz": link[1].precursor_mz,
+                            "gnps_id": link[1].gnps_id,
+                        }
+                    )
+                    for method, data in link[2].items():
+                        processed_links["method"].append(method)
+                        processed_links["score"].append(data.value)
+                        processed_links["cutoff"].append(data.parameter["cutoff"])
+                        processed_links["standardised"].append(data.parameter["standardised"])
         else:
             processed_links = {}
 
@@ -674,7 +681,6 @@ def gm_table_select_rows(
 
     selected_rows_data = df.iloc[selected_rows]
 
-    # TODO: to be removed later when the scoring part will be implemented
     output1 = f"Total rows: {len(df)}"
     output2 = f"Selected rows: {len(selected_rows)}\nSelected GCF IDs: {', '.join(selected_rows_data['GCF ID'].astype(str))}"
 
@@ -939,12 +945,18 @@ def gm_scoring_apply(
         return df
 
 
+# TODO: Check out data are passed back to the DataTable both here and in the other callback
+# Check whether you're doing unnecessary work and uniform the logic
+# TODO: Check whether is possible to squeeze long tooltips, and thus make them persistent, allow user to copy their text
+# TODO: Check whether is possible to include hyperlinks in the tooltips
+# TODO: Check whether is possible to include a plot in the tooltips
 # TODO: Add tests
 @app.callback(
     Output("gm-results-alert", "children"),
     Output("gm-results-alert", "is_open"),
     Output("gm-results-table", "data"),
     Output("gm-results-table", "columns"),
+    Output("gm-results-table", "tooltip_data"),
     Output("gm-results-table-card-body", "style"),
     Output("gm-results-table-card-header", "style"),
     Input("gm-results-button", "n_clicks"),
@@ -963,7 +975,7 @@ def gm_update_results_datatable(
     dropdown_menus: list[str],
     radiobuttons: list[str],
     cutoffs_met: list[str],
-) -> tuple[str, bool, list[dict], list[dict], dict, dict]:
+) -> tuple[str, bool, list[dict], list[dict], list[dict], dict, dict]:
     """Update the results DataTable based on scoring filters.
 
     Args:
@@ -981,10 +993,10 @@ def gm_update_results_datatable(
     triggered_id = ctx.triggered_id
 
     if triggered_id in ["gm-table-select-all-checkbox", "gm-table"]:
-        return "", False, [], [], {"display": "none"}, {"color": "#888888"}
+        return "", False, [], [], [], {"display": "none"}, {"color": "#888888"}
 
     if n_clicks is None:
-        return "", False, [], [], {"display": "none"}, {"color": "#888888"}
+        return "", False, [], [], [], {"display": "none"}, {"color": "#888888"}
 
     if not selected_rows:
         return (
@@ -992,12 +1004,13 @@ def gm_update_results_datatable(
             True,
             [],
             [],
+            [],
             {"display": "none"},
             {"color": "#888888"},
         )
 
     if not virtual_data:
-        return "No data available.", True, [], [], {"display": "none"}, {"color": "#888888"}
+        return "No data available.", True, [], [], [], {"display": "none"}, {"color": "#888888"}
 
     try:
         links_data = json.loads(processed_links)
@@ -1005,6 +1018,7 @@ def gm_update_results_datatable(
             return (
                 "No processed links available.",
                 True,
+                [],
                 [],
                 [],
                 {"display": "none"},
@@ -1030,7 +1044,13 @@ def gm_update_results_datatable(
                     {
                         "GCF ID": gcf_id,
                         "# Links": len(gcf_links),
-                        "Top 1 Spectrum ID": top_spectrum["spectrum_id"],
+                        "spectrums": gcf_links["spectrum"].tolist(),
+                        "spectrum_scores": gcf_links["score"].tolist(),
+                        "Top 1 Spectrum ID": top_spectrum["spectrum"]["id"],
+                        "top_spectrum_strain": top_spectrum["spectrum"]["strains"],
+                        "top_spectrum_score": top_spectrum["score"],
+                        "top_spectrum_precursor_mz": top_spectrum["spectrum"]["precursor_mz"],
+                        "top_spectrum_gnps_id": top_spectrum["spectrum"]["gnps_id"],
                         "Average Score": round(gcf_links["score"].mean(), 2),
                     }
                 )
@@ -1041,8 +1061,44 @@ def gm_update_results_datatable(
                 True,
                 [],
                 [],
+                [],
                 {"display": "none"},
                 {"color": "#888888"},
+            )
+
+        keys_to_remove = [
+            "spectrums",
+            "top_spectrum_strain",
+            "top_spectrum_score",
+            "top_spectrum_precursor_mz",
+            "top_spectrum_gnps_id",
+            "spectrum_scores",
+        ]
+
+        results_display = [
+            {k: v for k, v in result.items() if k not in keys_to_remove} for result in results
+        ]
+
+        # Prepare tooltip data
+        tooltip_data = []
+        for result in results:
+            spectrums_table = "| Spectrum ID | Score |\n|------------|--------|\n"
+            for spectrum, score in zip(result["spectrums"], result["spectrum_scores"]):
+                spectrums_table += f"| {spectrum['id']} | {score} |\n"
+
+            tooltip_data.append(
+                {
+                    "# Links": {"value": spectrums_table, "type": "markdown"},
+                    "Top 1 Spectrum ID": {
+                        "value": (
+                            f"Spectrum ID: {result['Top 1 Spectrum ID']}\n"
+                            f"Precursor m/z: {result['top_spectrum_precursor_mz']}\n"
+                            f"GNPS ID: {result['top_spectrum_gnps_id']}\n"
+                            f"Top spectrum score: {result['top_spectrum_score']}"
+                        ),
+                        "type": "markdown",
+                    },
+                }
             )
 
         columns = [
@@ -1052,12 +1108,13 @@ def gm_update_results_datatable(
             {"name": "Average Score", "id": "Average Score", "type": "numeric"},
         ]
 
-        return "", False, results, columns, {"display": "block"}, {}
+        return "", False, results_display, columns, tooltip_data, {"display": "block"}, {}
 
     except Exception as e:
         return (
             f"Error processing results: {str(e)}",
             True,
+            [],
             [],
             [],
             {"display": "none"},
