@@ -50,7 +50,6 @@ def sample_processed_data():
                     ["NRPS"],
                 ],
                 "BGC IDs": ["BGC_1", "BGC_2", "BGC_3"],
-                "BGC smiles": ["CCO", "CCN", "N/A"],
                 "strains": ["Strain_1", "Strain_2", "Strain_3"],
             },
             {
@@ -58,7 +57,6 @@ def sample_processed_data():
                 "# BGCs": 2,
                 "BGC Classes": [["RiPP"], ["Terpene"]],
                 "BGC IDs": ["BGC_1", "BGC_3"],
-                "BGC smiles": ["CCO", "N/A"],
                 "strains": ["Strain_3"],
             },
         ]

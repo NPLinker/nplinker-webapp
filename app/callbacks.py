@@ -128,7 +128,6 @@ def process_uploaded_data(file_path: Path | str | None) -> tuple[str | None, str
                     "# BGCs": len(gcf.bgcs),
                     "BGC Classes": [bgc_to_class[bgc.id] for bgc in gcf.bgcs],
                     "BGC IDs": list(bgc_ids),
-                    "BGC smiles": list(bgc_smiles),
                     "strains": strains,
                 }
             )
