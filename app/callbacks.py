@@ -114,12 +114,8 @@ def process_uploaded_data(file_path: Path | str | None) -> tuple[str | None, str
         processed_data: dict[str, Any] = {"n_bgcs": {}, "gcf_data": []}
 
         for gcf in gcfs:
-            bgc_data = [
-                (bgc.id, bgc.smiles[0] if bgc.smiles and bgc.smiles[0] is not None else "N/A")
-                for bgc in gcf.bgcs
-            ]
-            bgc_data.sort(key=lambda x: x[0])
-            bgc_ids, bgc_smiles = zip(*bgc_data)
+            bgc_ids = [bgc.id for bgc in gcf.bgcs]
+            bgc_ids.sort()
             strains = [s.id for s in gcf.strains._strains]
             strains.sort()
             processed_data["gcf_data"].append(
