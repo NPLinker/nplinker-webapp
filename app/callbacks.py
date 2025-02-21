@@ -1137,7 +1137,10 @@ def gm_update_results_datatable(
         for gcf_id in selected_gcfs:
             gcf_links = filtered_df[filtered_df["gcf_id"] == gcf_id]
             if not gcf_links.empty:
-                top_spectrum = gcf_links.loc[gcf_links["score"].idxmax()]
+                # Sort by score in descending order
+                gcf_links = gcf_links.sort_values("score", ascending=False)
+
+                top_spectrum = gcf_links.iloc[0]
                 result = {
                     # Mandatory fields
                     "GCF ID": gcf_id,
@@ -1178,7 +1181,6 @@ def gm_update_results_datatable(
         # Prepare display data with only visible columns
         results_display = []
         for result in results:
-            # Always include all fields in the display data
             display_row = {
                 "GCF ID": result["GCF ID"],
                 "# Links": result["# Links"],
@@ -1192,15 +1194,27 @@ def gm_update_results_datatable(
             }
             results_display.append(display_row)
 
-        # Prepare tooltip data
+        # Prepare tooltip data with truncation
         tooltip_data = []
         for result in results:
-            # Create spectrums table for tooltip
-            spectrums_table = "| Spectrum ID | Score |\n|------------|--------|\n"
-            for spectrum, score in zip(result["spectrums"], result["spectrum_scores"]):
-                spectrums_table += f"| {spectrum['id']} | {score} |\n"
+            # Show only top 5 spectrums in tooltip
+            max_tooltip_entries = 5
+            total_entries = len(result["spectrums"])
 
-            # Create tooltip data for this row
+            spectrums_table = "| Spectrum ID | Score |\n|------------|--------|\n"
+
+            # Add top entries
+            for spectrum, score in zip(
+                result["spectrums"][:max_tooltip_entries],
+                result["spectrum_scores"][:max_tooltip_entries],
+            ):
+                spectrums_table += f"| {spectrum['id']} | {round(score, 4)} |\n"
+
+            # Add indication of more entries if applicable
+            if total_entries > max_tooltip_entries:
+                remaining = total_entries - max_tooltip_entries
+                spectrums_table += f"\n... {remaining} more entries ..."
+
             row_tooltip = {
                 "# Links": {"value": spectrums_table, "type": "markdown"},
             }
