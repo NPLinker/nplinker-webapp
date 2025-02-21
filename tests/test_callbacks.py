@@ -128,8 +128,7 @@ def test_process_uploaded_data_structure():
     # Check processed_links structure
     expected_link_keys = [
         "gcf_id",
-        "spectrum_id",
-        "strains",
+        "spectrum",
         "method",
         "score",
         "cutoff",
