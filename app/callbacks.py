@@ -1033,6 +1033,7 @@ def update_columns(selected_columns, n_clicks, processed_links, virtual_data, se
     Output("gm-results-table", "tooltip_data"),
     Output("gm-results-table-card-body", "style"),
     Output("gm-results-table-card-header", "style"),
+    Output("gm-results-table-column-settings-button", "disabled"),
     Input("gm-results-button", "n_clicks"),
     Input("gm-table", "derived_virtual_data"),
     Input("gm-table", "derived_virtual_selected_rows"),
@@ -1051,7 +1052,7 @@ def gm_update_results_datatable(
     radiobuttons: list[str],
     cutoffs_met: list[str],
     visible_columns: list[str] | None,
-) -> tuple[str, bool, list[dict], list[dict], dict, dict]:
+) -> tuple[str, bool, list[dict], list[dict], dict, dict, bool]:
     """Update the results DataTable based on scoring filters.
 
     Args:
@@ -1070,10 +1071,10 @@ def gm_update_results_datatable(
     triggered_id = ctx.triggered_id
 
     if triggered_id in ["gm-table-select-all-checkbox", "gm-table"]:
-        return "", False, [], [], {"display": "none"}, {"color": "#888888"}
+        return "", False, [], [], {"display": "none"}, {"color": "#888888"}, True
 
     if n_clicks is None:
-        return "", False, [], [], {"display": "none"}, {"color": "#888888"}
+        return "", False, [], [], {"display": "none"}, {"color": "#888888"}, True
 
     if not selected_rows:
         return (
@@ -1083,10 +1084,11 @@ def gm_update_results_datatable(
             [],
             {"display": "none"},
             {"color": "#888888"},
+            True,
         )
 
     if not virtual_data:
-        return "No data available.", True, [], [], {"display": "none"}, {"color": "#888888"}
+        return "No data available.", True, [], [], {"display": "none"}, {"color": "#888888"}, True
 
     try:
         links_data = json.loads(processed_links)
@@ -1098,6 +1100,7 @@ def gm_update_results_datatable(
                 [],
                 {"display": "none"},
                 {"color": "#888888"},
+                True,
             )
 
         # Get selected GCF IDs
@@ -1140,6 +1143,7 @@ def gm_update_results_datatable(
                 [],
                 {"display": "none"},
                 {"color": "#888888"},
+                True,
             )
 
         # Prepare display data with only visible columns
@@ -1192,6 +1196,7 @@ def gm_update_results_datatable(
             tooltip_data,
             {"display": "block"},
             {},
+            False,
         )
 
     except Exception as e:
@@ -1202,4 +1207,5 @@ def gm_update_results_datatable(
             [],
             {"display": "none"},
             {"color": "#888888"},
+            True,
         )
