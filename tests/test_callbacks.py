@@ -44,7 +44,11 @@ def sample_processed_data():
             {
                 "GCF ID": "GCF_1",
                 "# BGCs": 3,
-                "BGC Classes": ["NRPS", "PKS"],
+                "BGC Classes": [
+                    ["NRPS"],
+                    ["PKS"],
+                    ["NRPS"],
+                ],
                 "BGC IDs": ["BGC_1", "BGC_2", "BGC_3"],
                 "BGC smiles": ["CCO", "CCN", "N/A"],
                 "strains": ["Strain_1", "Strain_2", "Strain_3"],
@@ -52,7 +56,7 @@ def sample_processed_data():
             {
                 "GCF ID": "GCF_2",
                 "# BGCs": 2,
-                "BGC Classes": ["RiPP", "Terpene"],
+                "BGC Classes": [["RiPP"], ["Terpene"]],
                 "BGC IDs": ["BGC_1", "BGC_3"],
                 "BGC smiles": ["CCO", "N/A"],
                 "strains": ["Strain_3"],
@@ -124,6 +128,11 @@ def test_process_uploaded_data_structure():
         assert isinstance(gcf["GCF ID"], str)
         assert isinstance(gcf["# BGCs"], int)
         assert isinstance(gcf["BGC Classes"], list)
+        # Verify nested list structure for BGC Classes
+        for bgc_class in gcf["BGC Classes"]:
+            assert isinstance(bgc_class, list)
+            for cls in bgc_class:
+                assert isinstance(cls, str)
 
     # Check processed_links structure
     expected_link_keys = [
@@ -215,10 +224,13 @@ def test_gm_filter_apply(sample_processed_data):
     assert set(filtered_df["GCF ID"]) == set(gcf_ids)
 
     # Test BGC_CLASS filter
-    bgc_class = df["BGC Classes"].iloc[0][0]  # Get the first BGC class from the first row
+    bgc_class = df["BGC Classes"].iloc[0][0][0]  # Get first class from nested structure
     filtered_df = gm_filter_apply(df, ["BGC_CLASS"], [""], [[bgc_class]])
     assert len(filtered_df) > 0
-    assert all(bgc_class in classes for classes in filtered_df["BGC Classes"])
+    assert any(
+        bgc_class in [cls for sublist in classes for cls in sublist]
+        for classes in filtered_df["BGC Classes"]
+    )
 
     # Test no filter
     filtered_df = gm_filter_apply(df, [], [], [])
@@ -247,9 +259,11 @@ def test_gm_table_update_datatable(sample_processed_data):
         assert data[1]["GCF ID"] == "GCF_2"
 
         # Check columns
-        assert len(columns) == 2
+        assert len(columns) == 4
         assert columns[0]["name"] == "GCF ID"
         assert columns[1]["name"] == "# BGCs"
+        assert columns[2]["name"] == "BGC Classes"
+        assert columns[3]["name"] == "MiBIG IDs"
 
         # Check style
         assert style == {"display": "block"}

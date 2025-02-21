@@ -114,7 +114,6 @@ def process_uploaded_data(file_path: Path | str | None) -> tuple[str | None, str
         processed_data: dict[str, Any] = {"n_bgcs": {}, "gcf_data": []}
 
         for gcf in gcfs:
-            gcf_bgc_classes = [cls for bgc in gcf.bgcs for cls in bgc_to_class[bgc.id]]
             bgc_data = [
                 (bgc.id, bgc.smiles[0] if bgc.smiles and bgc.smiles[0] is not None else "N/A")
                 for bgc in gcf.bgcs
@@ -127,7 +126,7 @@ def process_uploaded_data(file_path: Path | str | None) -> tuple[str | None, str
                 {
                     "GCF ID": gcf.id,
                     "# BGCs": len(gcf.bgcs),
-                    "BGC Classes": list(set(gcf_bgc_classes)),
+                    "BGC Classes": [bgc_to_class[bgc.id] for bgc in gcf.bgcs],
                     "BGC IDs": list(bgc_ids),
                     "BGC smiles": list(bgc_smiles),
                     "strains": strains,
@@ -522,8 +521,12 @@ def gm_filter_apply(
                 mask = df["GCF ID"].astype(str).isin(gcf_ids)
                 masks.append(mask)
         elif menu == "BGC_CLASS" and bgc_classes:
+            # Get unique classes for filtering
             mask = df["BGC Classes"].apply(
-                lambda x: any(bc.lower() in [y.lower() for y in x] for bc in bgc_classes)
+                lambda x: any(
+                    bc.lower() in {item.lower() for sublist in x for item in sublist}
+                    for bc in bgc_classes
+                )
             )
             masks.append(mask)
 
@@ -591,14 +594,25 @@ def gm_table_update_datatable(
         new_checkbox_value = checkbox_value if checkbox_value is not None else []
 
     # Prepare the data for display
-    display_df = filtered_df[["GCF ID", "# BGCs", "BGC IDs", "BGC smiles", "strains"]]
-    display_data = display_df[["GCF ID", "# BGCs"]].to_dict("records")
+    filtered_df["BGC Classes Display"] = filtered_df["BGC Classes"].apply(
+        lambda x: ", ".join({item for sublist in x for item in sublist})  # Unique flattened classes
+    )
+    filtered_df["MiBIG IDs"] = filtered_df["strains"].apply(
+        lambda x: ", ".join([s for s in x if s.startswith("BGC")]) or "None"
+    )
+
+    display_data = filtered_df[["GCF ID", "# BGCs", "BGC Classes Display", "MiBIG IDs"]].to_dict(
+        "records"
+    )
 
     # Prepare tooltip data
     tooltip_data = []
-    for _, row in display_df.iterrows():
-        bgc_ids_smiles_markdown = "| BGC IDs | SMILES |\n|---------|--------|\n" + "\n".join(
-            [f"| {id} | {smiles} |" for id, smiles in zip(row["BGC IDs"], row["BGC smiles"])]
+    for _, row in filtered_df.iterrows():
+        bgc_tooltip_markdown = "| BGC ID | Class |\n|---------|--------|\n" + "\n".join(
+            [
+                f"| {bgc_id} | {', '.join(bgc_class)} |"
+                for bgc_id, bgc_class in zip(row["BGC IDs"], row["BGC Classes"])
+            ]
         )
         strains_markdown = "| Strains |\n|----------|\n" + "\n".join(
             [f"| {strain} |" for strain in row["strains"]]
@@ -606,7 +620,7 @@ def gm_table_update_datatable(
 
         tooltip_data.append(
             {
-                "# BGCs": {"value": bgc_ids_smiles_markdown, "type": "markdown"},
+                "# BGCs": {"value": bgc_tooltip_markdown, "type": "markdown"},
                 "GCF ID": {"value": strains_markdown, "type": "markdown"},
             }
         )
@@ -614,6 +628,8 @@ def gm_table_update_datatable(
     columns = [
         {"name": "GCF ID", "id": "GCF ID"},
         {"name": "# BGCs", "id": "# BGCs", "type": "numeric"},
+        {"name": "BGC Classes", "id": "BGC Classes Display"},
+        {"name": "MiBIG IDs", "id": "MiBIG IDs"},
     ]
 
     return display_data, columns, tooltip_data, {"display": "block"}, [], new_checkbox_value
