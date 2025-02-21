@@ -261,7 +261,41 @@ gm_results = html.Div(
 gm_results_table = dbc.Card(
     [
         dbc.CardHeader(
-            ["Candidate Links"],
+            [
+                "Candidate Links",
+                dbc.Button(
+                    "Columns settings",
+                    id="gm-results-table-column-settings-button",
+                    color="secondary",
+                    size="sm",
+                    className="float-end",
+                ),
+                dbc.Modal(
+                    [
+                        dbc.ModalHeader("Select columns to display"),
+                        dbc.ModalBody(
+                            dbc.Checklist(
+                                id="gm-results-table-column-toggle",
+                                options=[
+                                    {"label": "Top 1 Spectrum ID", "value": "Top 1 Spectrum ID"},
+                                    # Add any future optional columns here
+                                ],
+                                value=["Top 1 Spectrum ID"],  # Default visible columns
+                                switch=True,
+                            )
+                        ),
+                        dbc.ModalFooter(
+                            dbc.Button(
+                                "Close",
+                                id="gm-results-table-column-settings-close",
+                                className="ms-auto",
+                            )
+                        ),
+                    ],
+                    id="gm-results-table-column-settings-modal",
+                    is_open=False,
+                ),
+            ],
             id="gm-results-table-card-header",
             style={"color": "#888888"},
         ),
@@ -318,7 +352,6 @@ gm_results_table = dbc.Card(
         ),
     ]
 )
-
 # gm tab content
 gm_content = dbc.Row(
     [

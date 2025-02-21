@@ -945,6 +945,81 @@ def gm_scoring_apply(
         return df
 
 
+@app.callback(
+    Output("gm-results-table-column-settings-modal", "is_open"),
+    [
+        Input("gm-results-table-column-settings-button", "n_clicks"),
+        Input("gm-results-table-column-settings-close", "n_clicks"),
+    ],
+    [State("gm-results-table-column-settings-modal", "is_open")],
+)
+def toggle_column_settings_modal(n1, n2, is_open):
+    """Toggle the visibility of the column settings modal.
+
+    Args:
+        n1: Number of clicks on the open button.
+        n2: Number of clicks on the close button.
+        is_open: Current state of the modal (open or closed).
+
+    Returns:
+        The new state of the modal (open or closed).
+    """
+    if n1 or n2:
+        return not is_open
+    return is_open
+
+
+@app.callback(
+    Output("gm-results-table", "columns"),
+    [
+        Input("gm-results-table-column-toggle", "value"),
+        Input("gm-results-button", "n_clicks"),  # Add this to handle initial table load
+    ],
+    [
+        State("processed-links-store", "data"),
+        State("gm-table", "derived_virtual_data"),
+        State("gm-table", "derived_virtual_selected_rows"),
+    ],
+)
+def update_columns(selected_columns, n_clicks, processed_links, virtual_data, selected_rows):
+    """Update the columns of the results table based on user selections.
+
+    Args:
+        selected_columns: List of selected columns to display.
+        n_clicks: Number of times the "Show Results" button has been clicked.
+        processed_links: JSON string of processed links data.
+        virtual_data: Current filtered data from the GCF table.
+        selected_rows: Indices of selected rows in the GCF table.
+
+    Returns:
+        List of column definitions for the results table.
+    """
+    # Define the mandatory columns that will always be shown
+    mandatory_columns = [
+        {"name": "GCF ID", "id": "GCF ID"},
+        {"name": "# Links", "id": "# Links", "type": "numeric"},
+        {"name": "Average Score", "id": "Average Score", "type": "numeric"},
+    ]
+
+    # Define the optional columns that can be toggled
+    optional_columns = {
+        "Top 1 Spectrum ID": {"name": "Top 1 Spectrum ID", "id": "Top 1 Spectrum ID"},
+        # Add any future optional columns here
+    }
+
+    # If this is the initial load (no button clicks), return just mandatory columns
+    if not n_clicks:
+        return mandatory_columns
+
+    # Add selected optional columns to the mandatory ones
+    columns = mandatory_columns.copy()
+    for col in selected_columns or []:
+        if col in optional_columns:
+            columns.append(optional_columns[col])
+
+    return columns
+
+
 # TODO: Check out data are passed back to the DataTable both here and in the other callback
 # Check whether you're doing unnecessary work and uniform the logic
 # TODO: (#35) Check whether is possible to squeeze long tooltips, and thus make them persistent, allow user to copy their text
@@ -955,7 +1030,6 @@ def gm_scoring_apply(
     Output("gm-results-alert", "children"),
     Output("gm-results-alert", "is_open"),
     Output("gm-results-table", "data"),
-    Output("gm-results-table", "columns"),
     Output("gm-results-table", "tooltip_data"),
     Output("gm-results-table-card-body", "style"),
     Output("gm-results-table-card-header", "style"),
@@ -966,6 +1040,7 @@ def gm_scoring_apply(
     State({"type": "gm-scoring-dropdown-menu", "index": ALL}, "value"),
     State({"type": "gm-scoring-radio-items", "index": ALL}, "value"),
     State({"type": "gm-scoring-dropdown-ids-cutoff-met", "index": ALL}, "value"),
+    State("gm-results-table-column-toggle", "value"),
 )
 def gm_update_results_datatable(
     n_clicks: int | None,
@@ -975,7 +1050,8 @@ def gm_update_results_datatable(
     dropdown_menus: list[str],
     radiobuttons: list[str],
     cutoffs_met: list[str],
-) -> tuple[str, bool, list[dict], list[dict], list[dict], dict, dict]:
+    visible_columns: list[str] | None,
+) -> tuple[str, bool, list[dict], list[dict], dict, dict]:
     """Update the results DataTable based on scoring filters.
 
     Args:
@@ -986,6 +1062,7 @@ def gm_update_results_datatable(
         dropdown_menus: List of selected dropdown menu options.
         radiobuttons: List of selected radio button options.
         cutoffs_met: List of cutoff values for METCALF method.
+        visible_columns: List of column names that should be displayed.
 
     Returns:
         Tuple containing alert message, visibility state, table data and settings, and header style.
@@ -993,10 +1070,10 @@ def gm_update_results_datatable(
     triggered_id = ctx.triggered_id
 
     if triggered_id in ["gm-table-select-all-checkbox", "gm-table"]:
-        return "", False, [], [], [], {"display": "none"}, {"color": "#888888"}
+        return "", False, [], [], {"display": "none"}, {"color": "#888888"}
 
     if n_clicks is None:
-        return "", False, [], [], [], {"display": "none"}, {"color": "#888888"}
+        return "", False, [], [], {"display": "none"}, {"color": "#888888"}
 
     if not selected_rows:
         return (
@@ -1004,13 +1081,12 @@ def gm_update_results_datatable(
             True,
             [],
             [],
-            [],
             {"display": "none"},
             {"color": "#888888"},
         )
 
     if not virtual_data:
-        return "No data available.", True, [], [], [], {"display": "none"}, {"color": "#888888"}
+        return "No data available.", True, [], [], {"display": "none"}, {"color": "#888888"}
 
     try:
         links_data = json.loads(processed_links)
@@ -1018,7 +1094,6 @@ def gm_update_results_datatable(
             return (
                 "No processed links available.",
                 True,
-                [],
                 [],
                 [],
                 {"display": "none"},
@@ -1040,20 +1115,22 @@ def gm_update_results_datatable(
             gcf_links = filtered_df[filtered_df["gcf_id"] == gcf_id]
             if not gcf_links.empty:
                 top_spectrum = gcf_links.loc[gcf_links["score"].idxmax()]
-                results.append(
-                    {
-                        "GCF ID": gcf_id,
-                        "# Links": len(gcf_links),
-                        "spectrums": gcf_links["spectrum"].tolist(),
-                        "spectrum_scores": gcf_links["score"].tolist(),
-                        "Top 1 Spectrum ID": top_spectrum["spectrum"]["id"],
-                        "top_spectrum_strain": top_spectrum["spectrum"]["strains"],
-                        "top_spectrum_score": top_spectrum["score"],
-                        "top_spectrum_precursor_mz": top_spectrum["spectrum"]["precursor_mz"],
-                        "top_spectrum_gnps_id": top_spectrum["spectrum"]["gnps_id"],
-                        "Average Score": round(gcf_links["score"].mean(), 2),
-                    }
-                )
+                result = {
+                    # Mandatory fields
+                    "GCF ID": gcf_id,
+                    "# Links": len(gcf_links),
+                    "Average Score": round(gcf_links["score"].mean(), 2),
+                    # Optional fields
+                    "Top 1 Spectrum ID": top_spectrum["spectrum"]["id"],
+                    # Store additional data for tooltips
+                    "spectrums": gcf_links["spectrum"].tolist(),
+                    "spectrum_scores": gcf_links["score"].tolist(),
+                    "top_spectrum_strain": top_spectrum["spectrum"]["strains"],
+                    "top_spectrum_score": top_spectrum["score"],
+                    "top_spectrum_precursor_mz": top_spectrum["spectrum"]["precursor_mz"],
+                    "top_spectrum_gnps_id": top_spectrum["spectrum"]["gnps_id"],
+                }
+                results.append(result)
 
         if not results:
             return (
@@ -1061,60 +1138,66 @@ def gm_update_results_datatable(
                 True,
                 [],
                 [],
-                [],
                 {"display": "none"},
                 {"color": "#888888"},
             )
 
-        keys_to_remove = [
-            "spectrums",
-            "top_spectrum_strain",
-            "top_spectrum_score",
-            "top_spectrum_precursor_mz",
-            "top_spectrum_gnps_id",
-            "spectrum_scores",
-        ]
+        # Prepare display data with only visible columns
+        results_display = []
+        for result in results:
+            # Start with mandatory fields
+            display_row = {
+                "GCF ID": result["GCF ID"],
+                "# Links": result["# Links"],
+                "Average Score": result["Average Score"],
+            }
 
-        results_display = [
-            {k: v for k, v in result.items() if k not in keys_to_remove} for result in results
-        ]
+            # Add optional columns if they're selected to be visible
+            if visible_columns and "Top 1 Spectrum ID" in visible_columns:
+                display_row["Top 1 Spectrum ID"] = result["Top 1 Spectrum ID"]
+
+            results_display.append(display_row)
 
         # Prepare tooltip data
         tooltip_data = []
         for result in results:
+            # Create spectrums table for tooltip
             spectrums_table = "| Spectrum ID | Score |\n|------------|--------|\n"
             for spectrum, score in zip(result["spectrums"], result["spectrum_scores"]):
                 spectrums_table += f"| {spectrum['id']} | {score} |\n"
 
-            tooltip_data.append(
-                {
-                    "# Links": {"value": spectrums_table, "type": "markdown"},
-                    "Top 1 Spectrum ID": {
-                        "value": (
-                            f"Spectrum ID: {result['Top 1 Spectrum ID']}\n"
-                            f"Precursor m/z: {result['top_spectrum_precursor_mz']}\n"
-                            f"GNPS ID: {result['top_spectrum_gnps_id']}\n"
-                            f"Top spectrum score: {result['top_spectrum_score']}"
-                        ),
-                        "type": "markdown",
-                    },
+            # Create tooltip data for this row
+            row_tooltip = {
+                "# Links": {"value": spectrums_table, "type": "markdown"},
+            }
+
+            # Add tooltip for Top 1 Spectrum ID if it's visible
+            if visible_columns and "Top 1 Spectrum ID" in visible_columns:
+                row_tooltip["Top 1 Spectrum ID"] = {
+                    "value": (
+                        f"Spectrum ID: {result['Top 1 Spectrum ID']}\n"
+                        f"Precursor m/z: {result['top_spectrum_precursor_mz']}\n"
+                        f"GNPS ID: {result['top_spectrum_gnps_id']}\n"
+                        f"Top spectrum score: {result['top_spectrum_score']}"
+                    ),
+                    "type": "markdown",
                 }
-            )
 
-        columns = [
-            {"name": "GCF ID", "id": "GCF ID"},
-            {"name": "# Links", "id": "# Links", "type": "numeric"},
-            {"name": "Top 1 Spectrum ID", "id": "Top 1 Spectrum ID"},
-            {"name": "Average Score", "id": "Average Score", "type": "numeric"},
-        ]
+            tooltip_data.append(row_tooltip)
 
-        return "", False, results_display, columns, tooltip_data, {"display": "block"}, {}
+        return (
+            "",
+            False,
+            results_display,
+            tooltip_data,
+            {"display": "block"},
+            {},
+        )
 
     except Exception as e:
         return (
             f"Error processing results: {str(e)}",
             True,
-            [],
             [],
             [],
             {"display": "none"},
