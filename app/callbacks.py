@@ -114,16 +114,21 @@ def process_uploaded_data(file_path: Path | str | None) -> tuple[str | None, str
         processed_data: dict[str, Any] = {"n_bgcs": {}, "gcf_data": []}
 
         for gcf in gcfs:
-            bgc_ids = [bgc.id for bgc in gcf.bgcs]
-            bgc_ids.sort()
-            strains = [s.id for s in gcf.strains._strains]
-            strains.sort()
+            # Create pairs of (bgc_id, bgc) and sort by ID to maintain correspondence
+            bgc_pairs = [(bgc.id, bgc) for bgc in gcf.bgcs]
+            bgc_pairs.sort(key=lambda x: x[0])  # Sort by BGC ID
+
+            bgc_ids = [pair[0] for pair in bgc_pairs]  # Get sorted IDs
+            bgc_classes = [bgc_to_class[pair[0]] for pair in bgc_pairs]  # Get corresponding classes
+
+            strains = sorted([s.id for s in gcf.strains._strains])
+
             processed_data["gcf_data"].append(
                 {
                     "GCF ID": gcf.id,
                     "# BGCs": len(gcf.bgcs),
-                    "BGC Classes": [bgc_to_class[bgc.id] for bgc in gcf.bgcs],
-                    "BGC IDs": list(bgc_ids),
+                    "BGC Classes": bgc_classes,
+                    "BGC IDs": bgc_ids,
                     "strains": strains,
                 }
             )
@@ -148,7 +153,7 @@ def process_uploaded_data(file_path: Path | str | None) -> tuple[str | None, str
                     processed_links["spectrum"].append(
                         {
                             "id": link[1].id,
-                            "strains": [s.id for s in link[1].strains._strains],
+                            "strains": sorted([s.id for s in link[1].strains._strains]),
                             "precursor_mz": link[1].precursor_mz,
                             "gnps_id": link[1].gnps_id,
                         }
