@@ -287,6 +287,8 @@ gm_results_table = dbc.Card(
                                         "value": "Top Spectrum GNPS ID",
                                     },
                                     {"label": "Top Spectrum Score", "value": "Top Spectrum Score"},
+                                    {"label": "MiBIG IDs", "value": "MiBIG IDs"},
+                                    {"label": "BGC Classes", "value": "BGC Classes"},
                                 ],
                                 value=["Top Spectrum ID"],  # Default visible columns
                                 switch=True,

@@ -1024,6 +1024,8 @@ def update_columns(selected_columns: list[str] | None, n_clicks: int | None) -> 
             "name": "Top Spectrum Score",
             "id": "Top Spectrum Score",
         },
+        "MiBIG IDs": {"name": "MiBIG IDs", "id": "MiBIG IDs"},
+        "BGC Classes": {"name": "BGC Classes", "id": "BGC Classes"},
     }
 
     return mandatory_columns + [optional_columns[col] for col in (selected_columns or [])]
@@ -1112,8 +1114,15 @@ def gm_update_results_datatable(
                 True,
             )
 
-        # Get selected GCF IDs
-        selected_gcfs = [virtual_data[i]["GCF ID"] for i in selected_rows]
+        # Get selected GCF IDs and their corresponding data
+        selected_gcfs = {
+            row["GCF ID"]: {
+                "MiBIG IDs": row["MiBIG IDs"],
+                "BGC Classes": row["BGC Classes Display"],
+            }
+            for i, row in enumerate(virtual_data)
+            if i in selected_rows
+        }
 
         # Convert links data to DataFrame
         links_df = pd.DataFrame(links_data)
@@ -1145,6 +1154,8 @@ def gm_update_results_datatable(
                     "Top Spectrum Score": round(top_spectrum.get("score", "None"), 4)
                     if top_spectrum.get("score") is not None
                     else "None",
+                    "MiBIG IDs": selected_gcfs[gcf_id]["MiBIG IDs"],
+                    "BGC Classes": selected_gcfs[gcf_id]["BGC Classes"],
                     # Store additional data for tooltips
                     "spectrums": gcf_links["spectrum"].tolist(),
                     "spectrum_scores": gcf_links["score"].tolist(),
@@ -1174,6 +1185,8 @@ def gm_update_results_datatable(
                 "Top Spectrum Precursor m/z": result["Top Spectrum Precursor m/z"],
                 "Top Spectrum GNPS ID": result["Top Spectrum GNPS ID"],
                 "Top Spectrum Score": result["Top Spectrum Score"],
+                "MiBIG IDs": result["MiBIG IDs"],
+                "BGC Classes": result["BGC Classes"],
             }
             results_display.append(display_row)
 
