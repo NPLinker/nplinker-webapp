@@ -1015,6 +1015,7 @@ def update_columns(selected_columns: list[str] | None, n_clicks: int | None) -> 
         "Top Spectrum Precursor m/z": {
             "name": "Top Spectrum Precursor m/z",
             "id": "Top Spectrum Precursor m/z",
+            "type": "numeric",
         },
         "Top Spectrum GNPS ID": {
             "name": "Top Spectrum GNPS ID",
@@ -1023,6 +1024,7 @@ def update_columns(selected_columns: list[str] | None, n_clicks: int | None) -> 
         "Top Spectrum Score": {
             "name": "Top Spectrum Score",
             "id": "Top Spectrum Score",
+            "type": "numeric",
         },
         "MiBIG IDs": {"name": "MiBIG IDs", "id": "MiBIG IDs"},
         "BGC Classes": {"name": "BGC Classes", "id": "BGC Classes"},

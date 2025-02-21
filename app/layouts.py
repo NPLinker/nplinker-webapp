@@ -317,8 +317,10 @@ gm_results_table = dbc.Card(
                     data=[],
                     editable=False,
                     filter_action="none",
-                    sort_action="none",
-                    sort_mode="multi",
+                    sort_action="native",
+                    sort_mode="single",  # Allow sorting by one column at a time
+                    sort_as_null=["None", ""],  # Treat these values as null for sorting
+                    sort_by=[],
                     page_action="native",
                     page_current=0,
                     page_size=10,
@@ -353,21 +355,45 @@ gm_results_table = dbc.Card(
                     ],
                     tooltip_delay=0,
                     tooltip_duration=None,
-                    css=[
-                        {
-                            "selector": ".dash-table-tooltip",
-                            "rule": """
-                                background-color: #ffd8cc;
-                                font-family: monospace;
-                                font-size: 12px;
-                                max-width: none !important;
-                                white-space: pre-wrap;
-                                padding: 8px;
-                                border: 1px solid #FF6E42;
-                                box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
-                            """,
-                        }
-                    ],
+                    css=(
+                        [
+                            {
+                                "selector": ".dash-table-tooltip",
+                                "rule": """
+            background-color: #ffd8cc;
+            font-family: monospace;
+            font-size: 12px;
+            max-width: none !important;
+            white-space: pre-wrap;
+            padding: 8px;
+            border: 1px solid #FF6E42;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+        """,
+                            }
+                        ]
+                        + [
+                            {
+                                "selector": f'th[data-dash-column="{col}"] span.column-header--sort',
+                                "rule": "display: none",
+                            }
+                            for col in [
+                                "GCF ID",
+                                "# Links",
+                                "Average Score",
+                                "Top Spectrum ID",
+                                "Top Spectrum GNPS ID",
+                                "MiBIG IDs",
+                                "BGC Classes",
+                            ]
+                        ]
+                        + [
+                            # Style sort arrow hover state
+                            {
+                                "selector": ".column-header--sort:hover",
+                                "rule": "color: white !important;",
+                            }
+                        ]
+                    ),
                     tooltip={"type": "markdown"},
                 ),
             ],
