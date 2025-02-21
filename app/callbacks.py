@@ -973,23 +973,15 @@ def toggle_column_settings_modal(n1, n2, is_open):
     Output("gm-results-table", "columns"),
     [
         Input("gm-results-table-column-toggle", "value"),
-        Input("gm-results-button", "n_clicks"),  # Add this to handle initial table load
-    ],
-    [
-        State("processed-links-store", "data"),
-        State("gm-table", "derived_virtual_data"),
-        State("gm-table", "derived_virtual_selected_rows"),
+        Input("gm-results-button", "n_clicks"),
     ],
 )
-def update_columns(selected_columns, n_clicks, processed_links, virtual_data, selected_rows):
+def update_columns(selected_columns: list[str] | None, n_clicks: int | None) -> list[dict]:
     """Update the columns of the results table based on user selections.
 
     Args:
         selected_columns: List of selected columns to display.
         n_clicks: Number of times the "Show Results" button has been clicked.
-        processed_links: JSON string of processed links data.
-        virtual_data: Current filtered data from the GCF table.
-        selected_rows: Indices of selected rows in the GCF table.
 
     Returns:
         List of column definitions for the results table.
@@ -1003,21 +995,22 @@ def update_columns(selected_columns, n_clicks, processed_links, virtual_data, se
 
     # Define the optional columns that can be toggled
     optional_columns = {
-        "Top 1 Spectrum ID": {"name": "Top 1 Spectrum ID", "id": "Top 1 Spectrum ID"},
-        # Add any future optional columns here
+        "Top Spectrum ID": {"name": "Top Spectrum ID", "id": "Top Spectrum ID"},
+        "Top Spectrum Precursor m/z": {
+            "name": "Top Spectrum Precursor m/z",
+            "id": "Top Spectrum Precursor m/z",
+        },
+        "Top Spectrum GNPS ID": {
+            "name": "Top Spectrum GNPS ID",
+            "id": "Top Spectrum GNPS ID",
+        },
+        "Top Spectrum Score": {
+            "name": "Top Spectrum Score",
+            "id": "Top Spectrum Score",
+        },
     }
 
-    # If this is the initial load (no button clicks), return just mandatory columns
-    if not n_clicks:
-        return mandatory_columns
-
-    # Add selected optional columns to the mandatory ones
-    columns = mandatory_columns.copy()
-    for col in selected_columns or []:
-        if col in optional_columns:
-            columns.append(optional_columns[col])
-
-    return columns
+    return mandatory_columns + [optional_columns[col] for col in (selected_columns or [])]
 
 
 # TODO: Check out data are passed back to the DataTable both here and in the other callback
@@ -1123,15 +1116,22 @@ def gm_update_results_datatable(
                     "GCF ID": gcf_id,
                     "# Links": len(gcf_links),
                     "Average Score": round(gcf_links["score"].mean(), 2),
-                    # Optional fields
-                    "Top 1 Spectrum ID": top_spectrum["spectrum"]["id"],
+                    # Optional fields with None handling
+                    "Top Spectrum ID": top_spectrum["spectrum"].get("id", "None"),
+                    "Top Spectrum Precursor m/z": round(
+                        top_spectrum["spectrum"].get("precursor_mz", "None"), 4
+                    )
+                    if top_spectrum["spectrum"].get("precursor_mz") is not None
+                    else "None",
+                    "Top Spectrum GNPS ID": top_spectrum["spectrum"].get("gnps_id", "None")
+                    if top_spectrum["spectrum"].get("gnps_id") is not None
+                    else "None",
+                    "Top Spectrum Score": round(top_spectrum.get("score", "None"), 4)
+                    if top_spectrum.get("score") is not None
+                    else "None",
                     # Store additional data for tooltips
                     "spectrums": gcf_links["spectrum"].tolist(),
                     "spectrum_scores": gcf_links["score"].tolist(),
-                    "top_spectrum_strain": top_spectrum["spectrum"]["strains"],
-                    "top_spectrum_score": top_spectrum["score"],
-                    "top_spectrum_precursor_mz": top_spectrum["spectrum"]["precursor_mz"],
-                    "top_spectrum_gnps_id": top_spectrum["spectrum"]["gnps_id"],
                 }
                 results.append(result)
 
@@ -1149,17 +1149,16 @@ def gm_update_results_datatable(
         # Prepare display data with only visible columns
         results_display = []
         for result in results:
-            # Start with mandatory fields
+            # Always include all fields in the display data
             display_row = {
                 "GCF ID": result["GCF ID"],
                 "# Links": result["# Links"],
                 "Average Score": result["Average Score"],
+                "Top Spectrum ID": result["Top Spectrum ID"],
+                "Top Spectrum Precursor m/z": result["Top Spectrum Precursor m/z"],
+                "Top Spectrum GNPS ID": result["Top Spectrum GNPS ID"],
+                "Top Spectrum Score": result["Top Spectrum Score"],
             }
-
-            # Add optional columns if they're selected to be visible
-            if visible_columns and "Top 1 Spectrum ID" in visible_columns:
-                display_row["Top 1 Spectrum ID"] = result["Top 1 Spectrum ID"]
-
             results_display.append(display_row)
 
         # Prepare tooltip data
@@ -1174,19 +1173,6 @@ def gm_update_results_datatable(
             row_tooltip = {
                 "# Links": {"value": spectrums_table, "type": "markdown"},
             }
-
-            # Add tooltip for Top 1 Spectrum ID if it's visible
-            if visible_columns and "Top 1 Spectrum ID" in visible_columns:
-                row_tooltip["Top 1 Spectrum ID"] = {
-                    "value": (
-                        f"Spectrum ID: {result['Top 1 Spectrum ID']}\n"
-                        f"Precursor m/z: {result['top_spectrum_precursor_mz']}\n"
-                        f"GNPS ID: {result['top_spectrum_gnps_id']}\n"
-                        f"Top spectrum score: {result['top_spectrum_score']}"
-                    ),
-                    "type": "markdown",
-                }
-
             tooltip_data.append(row_tooltip)
 
         return (

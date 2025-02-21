@@ -277,10 +277,18 @@ gm_results_table = dbc.Card(
                             dbc.Checklist(
                                 id="gm-results-table-column-toggle",
                                 options=[
-                                    {"label": "Top 1 Spectrum ID", "value": "Top 1 Spectrum ID"},
-                                    # Add any future optional columns here
+                                    {"label": "Top Spectrum ID", "value": "Top Spectrum ID"},
+                                    {
+                                        "label": "Top Spectrum Precursor m/z",
+                                        "value": "Top Spectrum Precursor m/z",
+                                    },
+                                    {
+                                        "label": "Top Spectrum GNPS ID",
+                                        "value": "Top Spectrum GNPS ID",
+                                    },
+                                    {"label": "Top Spectrum Score", "value": "Top Spectrum Score"},
                                 ],
-                                value=["Top 1 Spectrum ID"],  # Default visible columns
+                                value=["Top Spectrum ID"],  # Default visible columns
                                 switch=True,
                             )
                         ),
@@ -312,13 +320,28 @@ gm_results_table = dbc.Card(
                     page_action="native",
                     page_current=0,
                     page_size=10,
-                    style_cell={"textAlign": "left", "padding": "5px"},
+                    style_table={"width": "100%"},
+                    style_cell={
+                        "textAlign": "left",
+                        "padding": "5px",
+                        "overflow": "hidden",
+                        "textOverflow": "ellipsis",
+                        "minWidth": "80px",
+                        "width": "auto",
+                        "maxWidth": "auto",
+                    },
                     style_header={
                         "backgroundColor": "#FF6E42",
                         "fontWeight": "bold",
                         "color": "white",
+                        "whiteSpace": "normal",
+                        "height": "auto",
                     },
-                    style_data={"border": "1px solid #ddd"},
+                    style_data={
+                        "border": "1px solid #ddd",
+                        "whiteSpace": "normal",
+                        "height": "auto",
+                    },
                     style_data_conditional=[
                         {
                             "if": {"state": "selected"},
@@ -326,7 +349,6 @@ gm_results_table = dbc.Card(
                             "border": "1px solid #ddd",
                         }
                     ],
-                    style_cell_conditional=[{"if": {"column_id": "selector"}, "width": "30px"}],
                     tooltip_delay=0,
                     tooltip_duration=None,
                     css=[
