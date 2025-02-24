@@ -402,6 +402,31 @@ gm_results_table = dbc.Card(
         ),
     ]
 )
+gm_results_download = html.Div(
+    [
+        html.Div(
+            dbc.Button(
+                "Download Results (Excel)",
+                id="gm-download-button",
+                color="primary",
+                className="mt-3",
+                disabled=True,
+            ),
+            className="d-flex justify-content-center",
+        ),
+        html.Div(
+            dbc.Alert(
+                "Error downloading results",
+                id="gm-download-alert",
+                color="warning",
+                className="mt-3 text-center w-75 mx-auto",
+                is_open=False,
+            ),
+            className="d-flex justify-content-center",
+        ),
+        dcc.Download(id="download-excel"),
+    ]
+)
 # gm tab content
 gm_content = dbc.Row(
     [
@@ -411,6 +436,7 @@ gm_content = dbc.Row(
         dbc.Col(gm_scoring_accordion, width=10, className="mx-auto dbc"),
         dbc.Col(gm_results, width=10, className="mx-auto"),
         dbc.Col(gm_results_table, width=10, className="mt-3 mx-auto"),
+        dbc.Col(gm_results_download, width=10, className="mt-3 mx-auto"),
     ]
 )
 # mg tab content

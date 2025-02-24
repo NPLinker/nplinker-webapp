@@ -1,3 +1,4 @@
+import io
 import json
 import os
 import pickle
@@ -1054,7 +1055,6 @@ def update_columns(selected_columns: list[str] | None, n_clicks: int | None) -> 
     State({"type": "gm-scoring-dropdown-menu", "index": ALL}, "value"),
     State({"type": "gm-scoring-radio-items", "index": ALL}, "value"),
     State({"type": "gm-scoring-dropdown-ids-cutoff-met", "index": ALL}, "value"),
-    State("gm-results-table-column-toggle", "value"),
 )
 def gm_update_results_datatable(
     n_clicks: int | None,
@@ -1064,7 +1064,6 @@ def gm_update_results_datatable(
     dropdown_menus: list[str],
     radiobuttons: list[str],
     cutoffs_met: list[str],
-    visible_columns: list[str] | None,
 ) -> tuple[str, bool, list[dict], list[dict], dict, dict, bool]:
     """Update the results DataTable based on scoring filters.
 
@@ -1076,7 +1075,6 @@ def gm_update_results_datatable(
         dropdown_menus: List of selected dropdown menu options.
         radiobuttons: List of selected radio button options.
         cutoffs_met: List of cutoff values for METCALF method.
-        visible_columns: List of column names that should be displayed.
 
     Returns:
         Tuple containing alert message, visibility state, table data and settings, and header style.
@@ -1143,27 +1141,31 @@ def gm_update_results_datatable(
                 top_spectrum = gcf_links.iloc[0]
                 result = {
                     # Mandatory fields
-                    "GCF ID": gcf_id,
+                    "GCF ID": int(gcf_id),
                     "# Links": len(gcf_links),
                     "Average Score": round(gcf_links["score"].mean(), 2),
                     # Optional fields with None handling
-                    "Top Spectrum ID": top_spectrum["spectrum"].get("id", "None"),
+                    "Top Spectrum ID": int(top_spectrum["spectrum"].get("id", float("nan"))),
                     "Top Spectrum Precursor m/z": round(
-                        top_spectrum["spectrum"].get("precursor_mz", "None"), 4
+                        top_spectrum["spectrum"].get("precursor_mz", float("nan")), 4
                     )
                     if top_spectrum["spectrum"].get("precursor_mz") is not None
-                    else "None",
+                    else float("nan"),
                     "Top Spectrum GNPS ID": top_spectrum["spectrum"].get("gnps_id", "None")
                     if top_spectrum["spectrum"].get("gnps_id") is not None
                     else "None",
-                    "Top Spectrum Score": round(top_spectrum.get("score", "None"), 4)
+                    "Top Spectrum Score": round(top_spectrum.get("score", float("nan")), 4)
                     if top_spectrum.get("score") is not None
-                    else "None",
+                    else float("nan"),
                     "MiBIG IDs": selected_gcfs[gcf_id]["MiBIG IDs"],
                     "BGC Classes": selected_gcfs[gcf_id]["BGC Classes"],
-                    # Store additional data for tooltips
-                    "spectrums": gcf_links["spectrum"].tolist(),
-                    "spectrum_scores": gcf_links["score"].tolist(),
+                    # Store all spectrum data for later use (download, etc.)
+                    "spectrum_ids_str": "|".join(
+                        [str(s.get("id", "")) for s in gcf_links["spectrum"]]
+                    ),
+                    "spectrum_scores_str": "|".join(
+                        [str(score) for score in gcf_links["score"].tolist()]
+                    ),
                 }
                 results.append(result)
 
@@ -1178,37 +1180,29 @@ def gm_update_results_datatable(
                 True,
             )
 
-        # Prepare display data with only visible columns
-        results_display = []
-        for result in results:
-            display_row = {
-                "GCF ID": result["GCF ID"],
-                "# Links": result["# Links"],
-                "Average Score": result["Average Score"],
-                "Top Spectrum ID": result["Top Spectrum ID"],
-                "Top Spectrum Precursor m/z": result["Top Spectrum Precursor m/z"],
-                "Top Spectrum GNPS ID": result["Top Spectrum GNPS ID"],
-                "Top Spectrum Score": result["Top Spectrum Score"],
-                "MiBIG IDs": result["MiBIG IDs"],
-                "BGC Classes": result["BGC Classes"],
-            }
-            results_display.append(display_row)
-
-        # Prepare tooltip data with truncation
+        # Prepare tooltip data
         tooltip_data = []
         for result in results:
+            spectrum_ids = (
+                result["spectrum_ids_str"].split("|") if result["spectrum_ids_str"] else []
+            )
+            spectrum_scores = (
+                [float(s) for s in result["spectrum_scores_str"].split("|")]
+                if result["spectrum_scores_str"]
+                else []
+            )
             # Show only top 5 spectrums in tooltip
             max_tooltip_entries = 5
-            total_entries = len(result["spectrums"])
+            total_entries = len(result["spectrum_ids_str"])
 
             spectrums_table = "| Spectrum ID | Score |\n|------------|--------|\n"
 
             # Add top entries
-            for spectrum, score in zip(
-                result["spectrums"][:max_tooltip_entries],
-                result["spectrum_scores"][:max_tooltip_entries],
+            for spectrum_id, score in zip(
+                spectrum_ids[:max_tooltip_entries],
+                spectrum_scores[:max_tooltip_entries],
             ):
-                spectrums_table += f"| {spectrum['id']} | {round(score, 4)} |\n"
+                spectrums_table += f"| {spectrum_id} | {round(score, 4)} |\n"
 
             # Add indication of more entries if applicable
             if total_entries > max_tooltip_entries:
@@ -1223,7 +1217,7 @@ def gm_update_results_datatable(
         return (
             "",
             False,
-            results_display,
+            results,
             tooltip_data,
             {"display": "block"},
             {},
@@ -1240,3 +1234,82 @@ def gm_update_results_datatable(
             {"color": "#888888"},
             True,
         )
+
+
+@app.callback(
+    [
+        Output("gm-download-button", "disabled"),
+        Output("gm-download-alert", "is_open"),
+        Output("gm-download-alert", "children"),
+    ],
+    [
+        Input("gm-results-table", "data"),
+    ],
+)
+def toggle_download_button(table_data):
+    """Enable/disable download button based on data availability."""
+    if not table_data:
+        return True, False, ""
+    return False, False, ""
+
+
+@app.callback(
+    [
+        Output("download-excel", "data"),
+        Output("gm-download-alert", "is_open", allow_duplicate=True),
+        Output("gm-download-alert", "children", allow_duplicate=True),
+    ],
+    Input("gm-download-button", "n_clicks"),
+    [
+        State("gm-results-table", "data"),
+    ],
+    prevent_initial_call=True,
+)
+def generate_excel(n_clicks, table_data):
+    """Generate Excel file with two sheets: full results and detailed spectrum data."""
+    if not ctx.triggered or not table_data:
+        return None, False, ""
+
+    try:
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
+            # Sheet 1: Best candidate links table
+            results_df = pd.DataFrame(table_data)
+
+            # Filter out only the internal fields used for tooltips and processing
+            internal_fields = ["spectrum_ids_str", "spectrum_scores_str"]
+            export_columns = [col for col in results_df.columns if col not in internal_fields]
+
+            # Use all non-internal columns
+            results_df = results_df[export_columns]
+            results_df.to_excel(writer, sheet_name="Best Candidate Links", index=False)
+
+            # Sheet 2: Detailed spectrum data
+            detailed_data = []
+            for row in table_data:
+                gcf_id = row["GCF ID"]
+                spectrum_ids = (
+                    row.get("spectrum_ids_str", "").split("|")
+                    if row.get("spectrum_ids_str")
+                    else []
+                )
+                scores = (
+                    [float(s) for s in row.get("spectrum_scores_str", "").split("|")]
+                    if row.get("spectrum_scores_str")
+                    else []
+                )
+
+                # Add all spectrum entries without truncation
+                for spectrum_id, score in zip(spectrum_ids, scores):
+                    detailed_data.append(
+                        {"GCF ID": gcf_id, "Spectrum ID": int(spectrum_id), "Score": score}
+                    )
+
+            detailed_df = pd.DataFrame(detailed_data)
+            detailed_df.to_excel(writer, sheet_name="All Candidate Links", index=False)
+
+        # Prepare the file for download
+        excel_data = output.getvalue()
+        return dcc.send_bytes(excel_data, "nplinker_genom_to_metabol.xlsx"), False, ""
+    except Exception as e:
+        return None, True, f"Error generating Excel file: {str(e)}"
