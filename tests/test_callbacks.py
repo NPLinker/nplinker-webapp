@@ -8,6 +8,7 @@ import pandas as pd
 import pytest
 from dash_uploader import UploadStatus
 from app.callbacks import disable_tabs_and_reset_blocks
+from app.callbacks import generate_excel
 from app.callbacks import gm_filter_add_block
 from app.callbacks import gm_filter_apply
 from app.callbacks import gm_scoring_apply
@@ -15,6 +16,7 @@ from app.callbacks import gm_table_select_rows
 from app.callbacks import gm_table_toggle_selection
 from app.callbacks import gm_table_update_datatable
 from app.callbacks import process_uploaded_data
+from app.callbacks import toggle_download_button
 from app.callbacks import upload_data
 from . import DATA_DIR
 
@@ -390,3 +392,35 @@ def test_gm_scoring_apply_empty_inputs():
 
     assert len(result) == 1, "Should return original DataFrame"
     assert result.equals(df), "Should return unmodified DataFrame"
+
+
+def test_toggle_download_button():
+    """Test the toggle_download_button function with different inputs."""
+    # Test with empty table data - should disable the button
+    result = toggle_download_button([])
+    assert result == (True, False, "")
+
+    # Test with populated table data - should enable the button
+    sample_data = [{"GCF ID": 1, "# Links": 5}]
+    result = toggle_download_button(sample_data)
+    assert result == (False, False, "")
+
+
+def test_generate_excel_error_handling():
+    """Test the generate_excel function error handling."""
+    table_data = [{"GCF ID": 1, "spectrum_ids_str": "123"}]
+
+    with (
+        patch("app.callbacks.ctx") as mock_ctx,
+        patch("app.callbacks.pd.ExcelWriter") as mock_writer,
+    ):
+        mock_ctx.triggered = True
+        # Simulate an error during Excel generation
+        mock_writer.side_effect = Exception("Excel write error")
+
+        result = generate_excel(1, table_data)
+
+        # Should return an error message
+        assert result[0] is None
+        assert result[1] is True  # Alert is open
+        assert "Error generating Excel file" in result[2]
