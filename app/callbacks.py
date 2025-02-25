@@ -14,6 +14,8 @@ import pandas as pd
 import plotly.graph_objects as go
 from config import GM_FILTER_DROPDOWN_BGC_CLASS_OPTIONS
 from config import GM_FILTER_DROPDOWN_MENU_OPTIONS
+from config import GM_RESULTS_TABLE_MANDATORY_COLUMNS
+from config import GM_RESULTS_TABLE_OPTIONAL_COLUMNS
 from config import GM_SCORING_DROPDOWN_MENU_OPTIONS
 from dash import ALL
 from dash import MATCH
@@ -1008,39 +1010,25 @@ def update_columns(selected_columns: list[str] | None, n_clicks: int | None) -> 
     Returns:
         List of column definitions for the results table.
     """
-    # Define the mandatory columns that will always be shown
-    mandatory_columns = [
-        {"name": "GCF ID", "id": "GCF ID"},
-        {"name": "# Links", "id": "# Links", "type": "numeric"},
-        {"name": "Average Score", "id": "Average Score", "type": "numeric"},
-    ]
+    # Start with mandatory columns
+    columns = GM_RESULTS_TABLE_MANDATORY_COLUMNS.copy()
 
-    # Define the optional columns that can be toggled
-    optional_columns = {
-        "Top Spectrum ID": {"name": "Top Spectrum ID", "id": "Top Spectrum ID"},
-        "Top Spectrum Precursor m/z": {
-            "name": "Top Spectrum Precursor m/z",
-            "id": "Top Spectrum Precursor m/z",
-            "type": "numeric",
-        },
-        "Top Spectrum GNPS ID": {
-            "name": "Top Spectrum GNPS ID",
-            "id": "Top Spectrum GNPS ID",
-        },
-        "Top Spectrum Score": {
-            "name": "Top Spectrum Score",
-            "id": "Top Spectrum Score",
-            "type": "numeric",
-        },
-        "MiBIG IDs": {"name": "MiBIG IDs", "id": "MiBIG IDs"},
-        "BGC Classes": {"name": "BGC Classes", "id": "BGC Classes"},
-    }
+    # Create a dictionary for optional columns lookup
+    optional_columns_dict = {col["id"]: col for col in GM_RESULTS_TABLE_OPTIONAL_COLUMNS}
 
-    return mandatory_columns + [optional_columns[col] for col in (selected_columns or [])]
+    # Add the selected columns in the order they appear in selected_columns
+    if selected_columns:
+        columns.extend(
+            [
+                optional_columns_dict[col_id]
+                for col_id in selected_columns
+                if col_id in optional_columns_dict
+            ]
+        )
+
+    return columns
 
 
-# TODO: Check out data are passed back to the DataTable both here and in the other callback
-# Check whether you're doing unnecessary work and uniform the logic
 @app.callback(
     Output("gm-results-alert", "children"),
     Output("gm-results-alert", "is_open"),

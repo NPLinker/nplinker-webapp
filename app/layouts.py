@@ -2,6 +2,7 @@ import uuid
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 import dash_uploader as du
+from config import GM_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS
 from dash import dash_table
 from dash import dcc
 from dash import html
@@ -276,21 +277,8 @@ gm_results_table = dbc.Card(
                         dbc.ModalBody(
                             dbc.Checklist(
                                 id="gm-results-table-column-toggle",
-                                options=[
-                                    {"label": "Top Spectrum ID", "value": "Top Spectrum ID"},
-                                    {
-                                        "label": "Top Spectrum Precursor m/z",
-                                        "value": "Top Spectrum Precursor m/z",
-                                    },
-                                    {
-                                        "label": "Top Spectrum GNPS ID",
-                                        "value": "Top Spectrum GNPS ID",
-                                    },
-                                    {"label": "Top Spectrum Score", "value": "Top Spectrum Score"},
-                                    {"label": "MiBIG IDs", "value": "MiBIG IDs"},
-                                    {"label": "BGC Classes", "value": "BGC Classes"},
-                                ],
-                                value=["Top Spectrum ID"],  # Default visible columns
+                                options=GM_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS,
+                                value=[GM_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS[0]],
                                 switch=True,
                             )
                         ),
