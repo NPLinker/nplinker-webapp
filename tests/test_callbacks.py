@@ -8,6 +8,7 @@ import pandas as pd
 import pytest
 from dash_uploader import UploadStatus
 from app.callbacks import disable_tabs_and_reset_blocks
+from app.callbacks import generate_excel
 from app.callbacks import gm_filter_add_block
 from app.callbacks import gm_filter_apply
 from app.callbacks import gm_scoring_apply
@@ -15,11 +16,13 @@ from app.callbacks import gm_table_select_rows
 from app.callbacks import gm_table_toggle_selection
 from app.callbacks import gm_table_update_datatable
 from app.callbacks import process_uploaded_data
+from app.callbacks import toggle_download_button
 from app.callbacks import upload_data
 from . import DATA_DIR
 
 
 MOCK_FILE_PATH = DATA_DIR / "mock_obj_data.pkl"
+MOCK_FILE_PATH_NO_LINKS = DATA_DIR / "mock_obj_data_no_links.pkl"
 
 
 @pytest.fixture
@@ -43,17 +46,19 @@ def sample_processed_data():
             {
                 "GCF ID": "GCF_1",
                 "# BGCs": 3,
-                "BGC Classes": ["NRPS", "PKS"],
+                "BGC Classes": [
+                    ["NRPS"],
+                    ["PKS"],
+                    ["NRPS"],
+                ],
                 "BGC IDs": ["BGC_1", "BGC_2", "BGC_3"],
-                "BGC smiles": ["CCO", "CCN", "N/A"],
                 "strains": ["Strain_1", "Strain_2", "Strain_3"],
             },
             {
                 "GCF ID": "GCF_2",
                 "# BGCs": 2,
-                "BGC Classes": ["RiPP", "Terpene"],
+                "BGC Classes": [["RiPP"], ["Terpene"]],
                 "BGC IDs": ["BGC_1", "BGC_3"],
-                "BGC smiles": ["CCO", "N/A"],
                 "strains": ["Strain_3"],
             },
         ]
@@ -82,9 +87,14 @@ def test_process_uploaded_data_invalid_input(input_path):
 
 def test_process_uploaded_data_structure():
     processed_data, processed_links = process_uploaded_data(MOCK_FILE_PATH)
+    processed_data_no_links, processed_links_no_links = process_uploaded_data(
+        MOCK_FILE_PATH_NO_LINKS
+    )
 
     assert processed_data is not None
     assert processed_links is not None
+    assert processed_data_no_links == processed_data
+    assert len(json.loads(processed_links_no_links)) == 0  # type: ignore
 
     processed_data = json.loads(processed_data)
     processed_links = json.loads(processed_links)
@@ -118,12 +128,16 @@ def test_process_uploaded_data_structure():
         assert isinstance(gcf["GCF ID"], str)
         assert isinstance(gcf["# BGCs"], int)
         assert isinstance(gcf["BGC Classes"], list)
+        # Verify nested list structure for BGC Classes
+        for bgc_class in gcf["BGC Classes"]:
+            assert isinstance(bgc_class, list)
+            for cls in bgc_class:
+                assert isinstance(cls, str)
 
     # Check processed_links structure
     expected_link_keys = [
         "gcf_id",
-        "spectrum_id",
-        "strains",
+        "spectrum",
         "method",
         "score",
         "cutoff",
@@ -143,7 +157,7 @@ def test_process_uploaded_data_structure():
 def test_disable_tabs(mock_uuid):
     # Test with None as input
     result = disable_tabs_and_reset_blocks(None)
-    assert result == (True, True, [], [], True, [], [], {}, {"display": "block"}, True)
+    assert result == (True, True, [], [], {}, {"display": "block"}, True, [], [], True, True)
 
     # Test with a string as input
     result = disable_tabs_and_reset_blocks(MOCK_FILE_PATH)
@@ -154,26 +168,28 @@ def test_disable_tabs(mock_uuid):
         gm_filter_accordion_disabled,
         gm_filter_block_ids,
         gm_filter_blocks,
+        table_header_style,
+        table_body_style,
         gm_scoring_accordion_disabled,
         gm_scoring_block_ids,
         gm_scoring_blocks,
-        table_header_style,
-        table_body_style,
+        gm_results_disabled,
         mg_tab_disabled,
     ) = result
 
     assert gm_tab_disabled is False
     assert gm_filter_accordion_disabled is False
-    assert gm_scoring_accordion_disabled is False
-    assert table_header_style == {}
-    assert table_body_style == {"display": "block"}
-    assert mg_tab_disabled is False
     assert gm_filter_block_ids == ["test-uuid"]
     assert len(gm_filter_blocks) == 1
     assert isinstance(gm_filter_blocks[0], dmc.Grid)
+    assert table_header_style == {}
+    assert table_body_style == {"display": "block"}
+    assert gm_scoring_accordion_disabled is False
     assert gm_scoring_block_ids == ["test-uuid"]
     assert len(gm_scoring_blocks) == 1
     assert isinstance(gm_scoring_blocks[0], dmc.Grid)
+    assert gm_results_disabled is False
+    assert mg_tab_disabled is False
 
 
 @pytest.mark.parametrize(
@@ -208,10 +224,13 @@ def test_gm_filter_apply(sample_processed_data):
     assert set(filtered_df["GCF ID"]) == set(gcf_ids)
 
     # Test BGC_CLASS filter
-    bgc_class = df["BGC Classes"].iloc[0][0]  # Get the first BGC class from the first row
+    bgc_class = df["BGC Classes"].iloc[0][0][0]  # Get first class from nested structure
     filtered_df = gm_filter_apply(df, ["BGC_CLASS"], [""], [[bgc_class]])
     assert len(filtered_df) > 0
-    assert all(bgc_class in classes for classes in filtered_df["BGC Classes"])
+    assert any(
+        bgc_class in [cls for sublist in classes for cls in sublist]
+        for classes in filtered_df["BGC Classes"]
+    )
 
     # Test no filter
     filtered_df = gm_filter_apply(df, [], [], [])
@@ -240,9 +259,11 @@ def test_gm_table_update_datatable(sample_processed_data):
         assert data[1]["GCF ID"] == "GCF_2"
 
         # Check columns
-        assert len(columns) == 2
+        assert len(columns) == 4
         assert columns[0]["name"] == "GCF ID"
         assert columns[1]["name"] == "# BGCs"
+        assert columns[2]["name"] == "BGC Classes"
+        assert columns[3]["name"] == "MiBIG IDs"
 
         # Check style
         assert style == {"display": "block"}
@@ -371,3 +392,35 @@ def test_gm_scoring_apply_empty_inputs():
 
     assert len(result) == 1, "Should return original DataFrame"
     assert result.equals(df), "Should return unmodified DataFrame"
+
+
+def test_toggle_download_button():
+    """Test the toggle_download_button function with different inputs."""
+    # Test with empty table data - should disable the button
+    result = toggle_download_button([])
+    assert result == (True, False, "")
+
+    # Test with populated table data - should enable the button
+    sample_data = [{"GCF ID": 1, "# Links": 5}]
+    result = toggle_download_button(sample_data)
+    assert result == (False, False, "")
+
+
+def test_generate_excel_error_handling():
+    """Test the generate_excel function error handling."""
+    table_data = [{"GCF ID": 1, "spectrum_ids_str": "123"}]
+
+    with (
+        patch("app.callbacks.ctx") as mock_ctx,
+        patch("app.callbacks.pd.ExcelWriter") as mock_writer,
+    ):
+        mock_ctx.triggered = True
+        # Simulate an error during Excel generation
+        mock_writer.side_effect = Exception("Excel write error")
+
+        result = generate_excel(1, table_data)
+
+        # Should return an error message
+        assert result[0] is None
+        assert result[1] is True  # Alert is open
+        assert "Error generating Excel file" in result[2]
