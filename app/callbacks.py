@@ -594,18 +594,6 @@ def gm_table_update_datatable(
         filtered_df = df
         new_checkbox_value = checkbox_value if checkbox_value is not None else []
 
-    # Prepare the data for display
-    filtered_df["BGC Classes Display"] = filtered_df["BGC Classes"].apply(
-        lambda x: ", ".join({item for sublist in x for item in sublist})  # Unique flattened classes
-    )
-    filtered_df["MiBIG IDs"] = filtered_df["strains"].apply(
-        lambda x: ", ".join([s for s in x if s.startswith("BGC")]) or "None"
-    )
-
-    display_data = filtered_df[["GCF ID", "# BGCs", "BGC Classes Display", "MiBIG IDs"]].to_dict(
-        "records"
-    )
-
     # Prepare tooltip data
     tooltip_data = []
     for _, row in filtered_df.iterrows():
@@ -626,14 +614,31 @@ def gm_table_update_datatable(
             }
         )
 
+    # Prepare the data for display
+    filtered_df["BGC IDs"] = filtered_df["BGC IDs"].apply(", ".join)
+    filtered_df["BGC Classes"] = filtered_df["BGC Classes"].apply(
+        lambda x: ", ".join({item for sublist in x for item in sublist})  # Unique flattened classes
+    )
+    filtered_df["MiBIG IDs"] = filtered_df["strains"].apply(
+        lambda x: ", ".join([s for s in x if s.startswith("BGC")]) or "None"
+    )
+    filtered_df["strains"] = filtered_df["strains"].apply(", ".join)
+
     columns = [
         {"name": "GCF ID", "id": "GCF ID"},
         {"name": "# BGCs", "id": "# BGCs", "type": "numeric"},
-        {"name": "BGC Classes", "id": "BGC Classes Display"},
+        {"name": "BGC Classes", "id": "BGC Classes"},
         {"name": "MiBIG IDs", "id": "MiBIG IDs"},
     ]
 
-    return display_data, columns, tooltip_data, {"display": "block"}, [], new_checkbox_value
+    return (
+        filtered_df.to_dict("records"),
+        columns,
+        tooltip_data,
+        {"display": "block"},
+        [],
+        new_checkbox_value,
+    )
 
 
 @app.callback(
@@ -1036,10 +1041,6 @@ def update_columns(selected_columns: list[str] | None, n_clicks: int | None) -> 
 
 # TODO: Check out data are passed back to the DataTable both here and in the other callback
 # Check whether you're doing unnecessary work and uniform the logic
-# TODO: (#35) Check whether is possible to squeeze long tooltips, and thus make them persistent, allow user to copy their text
-# TODO: (#35) Check whether is possible to include hyperlinks in the tooltips
-# TODO: (#35) Check whether is possible to include a plot in the tooltips
-# TODO: Add tests
 @app.callback(
     Output("gm-results-alert", "children"),
     Output("gm-results-alert", "is_open"),
@@ -1118,7 +1119,7 @@ def gm_update_results_datatable(
         selected_gcfs = {
             row["GCF ID"]: {
                 "MiBIG IDs": row["MiBIG IDs"],
-                "BGC Classes": row["BGC Classes Display"],
+                "BGC Classes": row["BGC Classes"],
             }
             for i, row in enumerate(virtual_data)
             if i in selected_rows
