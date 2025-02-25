@@ -1011,7 +1011,7 @@ def update_columns(selected_columns: list[str] | None, n_clicks: int | None) -> 
         List of column definitions for the results table.
     """
     # Start with mandatory columns
-    columns = GM_RESULTS_TABLE_MANDATORY_COLUMNS.copy()
+    columns: list[dict] = GM_RESULTS_TABLE_MANDATORY_COLUMNS.copy()
 
     # Create a dictionary for optional columns lookup
     optional_columns_dict = {col["id"]: col for col in GM_RESULTS_TABLE_OPTIONAL_COLUMNS}
