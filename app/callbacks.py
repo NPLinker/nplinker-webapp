@@ -16,7 +16,8 @@ from config import GM_FILTER_DROPDOWN_BGC_CLASS_OPTIONS
 from config import GM_FILTER_DROPDOWN_MENU_OPTIONS
 from config import GM_RESULTS_TABLE_MANDATORY_COLUMNS
 from config import GM_RESULTS_TABLE_OPTIONAL_COLUMNS
-from config import GM_SCORING_DROPDOWN_MENU_OPTIONS
+from config import MG_FILTER_DROPDOWN_MENU_OPTIONS
+from config import SCORING_DROPDOWN_MENU_OPTIONS
 from dash import ALL
 from dash import MATCH
 from dash import Dash
@@ -51,6 +52,7 @@ clientside_callback(
 )
 
 
+# ------------------ Upload and Process Data ------------------ #
 @du.callback(
     id="dash-uploader",
     output=[Output("dash-uploader-output", "children"), Output("file-store", "data")],
@@ -177,6 +179,7 @@ def process_uploaded_data(file_path: Path | str | None) -> tuple[str | None, str
 
 @app.callback(
     [
+        # GM tab outputs
         Output("gm-tab", "disabled"),
         Output("gm-filter-accordion-control", "disabled"),
         Output("gm-filter-blocks-id", "data", allow_duplicate=True),
@@ -187,27 +190,25 @@ def process_uploaded_data(file_path: Path | str | None) -> tuple[str | None, str
         Output("gm-scoring-blocks-id", "data", allow_duplicate=True),
         Output("gm-scoring-blocks-container", "children", allow_duplicate=True),
         Output("gm-results-button", "disabled"),
+        # MG tab outputs
         Output("mg-tab", "disabled"),
+        Output("mg-filter-accordion-control", "disabled"),
+        Output("mg-filter-blocks-id", "data", allow_duplicate=True),
+        Output("mg-filter-blocks-container", "children", allow_duplicate=True),
+        Output("mg-table-card-header", "style"),
+        Output("mg-table-card-body", "style", allow_duplicate=True),
+        Output("mg-scoring-accordion-control", "disabled"),
+        Output("mg-scoring-blocks-id", "data", allow_duplicate=True),
+        Output("mg-scoring-blocks-container", "children", allow_duplicate=True),
+        Output("mg-results-button", "disabled"),
     ],
     [Input("file-store", "data")],
     prevent_initial_call=True,
 )
 def disable_tabs_and_reset_blocks(
     file_path: Path | str | None,
-) -> tuple[
-    bool,
-    bool,
-    list[str],
-    list[dmc.Grid],
-    dict,
-    dict[str, str],
-    bool,
-    list[str],
-    list[dmc.Grid],
-    bool,
-    bool,
-]:
-    """Manage tab states and reset blocks based on file upload status.
+) -> tuple:
+    """Manage tab states and reset blocks based on file upload status for both GM and MG tabs.
 
     Args:
         file_path: The name of the uploaded file, or None if no file is uploaded.
@@ -216,16 +217,47 @@ def disable_tabs_and_reset_blocks(
         Tuple containing boolean values for disabling tabs, styles, and new block data.
     """
     if file_path is None:
-        # Disable the tabs, don't change blocks
-        return True, True, [], [], {}, {"display": "block"}, True, [], [], True, True
+        # Disable all tabs and controls when no file is uploaded
+        return (
+            # GM tab - disabled
+            True,
+            True,
+            [],
+            [],
+            {},
+            {"display": "block"},
+            True,
+            [],
+            [],
+            True,
+            # MG tab - disabled
+            True,
+            True,
+            [],
+            [],
+            {},
+            {"display": "block"},
+            True,
+            [],
+            [],
+            True,
+        )
 
     # Enable the tabs and reset blocks
+    # GM tab initial blocks
     gm_filter_initial_block_id = [str(uuid.uuid4())]
     gm_filter_new_blocks = [gm_filter_create_initial_block(gm_filter_initial_block_id[0])]
     gm_scoring_initial_block_id = [str(uuid.uuid4())]
-    gm_scoring_new_blocks = [gm_scoring_create_initial_block(gm_scoring_initial_block_id[0])]
+    gm_scoring_new_blocks = [scoring_create_initial_block(gm_scoring_initial_block_id[0], "gm")]
+
+    # MG tab initial blocks
+    mg_filter_initial_block_id = [str(uuid.uuid4())]
+    mg_filter_new_blocks = [mg_filter_create_initial_block(mg_filter_initial_block_id[0])]
+    mg_scoring_initial_block_id = [str(uuid.uuid4())]
+    mg_scoring_new_blocks = [scoring_create_initial_block(mg_scoring_initial_block_id[0], "mg")]
 
     return (
+        # GM tab - enabled with initial blocks
         False,
         False,
         gm_filter_initial_block_id,
@@ -236,10 +268,21 @@ def disable_tabs_and_reset_blocks(
         gm_scoring_initial_block_id,
         gm_scoring_new_blocks,
         False,
+        # MG tab - enabled with initial blocks
+        False,
+        False,
+        mg_filter_initial_block_id,
+        mg_filter_new_blocks,
+        {},
+        {"display": "block"},
+        False,
+        mg_scoring_initial_block_id,
+        mg_scoring_new_blocks,
         False,
     )
 
 
+# ------------------ GM Plot ------------------ #
 @app.callback(
     Output("gm-graph", "figure"),
     Output("gm-graph", "style"),
@@ -287,9 +330,9 @@ def gm_plot(stored_data: str | None) -> tuple[dict | go.Figure, dict]:
     return fig, {"display": "block"}
 
 
-# Filter callbacks
+# ------------------ GM Filter functions ------------------ #
 def gm_filter_create_initial_block(block_id: str) -> dmc.Grid:
-    """Create the initial block component with the given ID.
+    """Create the initial block component for the GM tab with the given ID.
 
     Args:
         block_id: A unique identifier for the block.
@@ -496,7 +539,219 @@ def gm_filter_update_placeholder(
         return {"display": "none"}, {"display": "none"}, "", "", "", []
 
 
-# First table callbacks
+# ------------------ MG Filter functions ------------------ #
+def mg_filter_create_initial_block(block_id: str) -> dmc.Grid:
+    """Create the initial filter block component for the MG tab with the given ID.
+
+    Args:
+        block_id: A unique identifier for the block.
+
+    Returns:
+        A Grid component with nested elements.
+    """
+    return dmc.Grid(
+        id={"type": "mg-filter-block", "index": block_id},
+        children=[
+            dmc.GridCol(
+                dbc.Button(
+                    [html.I(className="fas fa-plus")],
+                    id={"type": "mg-filter-add-button", "index": block_id},
+                    className="btn-primary",
+                ),
+                span=2,
+            ),
+            dmc.GridCol(
+                dcc.Dropdown(
+                    options=MG_FILTER_DROPDOWN_MENU_OPTIONS,
+                    value="SPECTRUM_ID",
+                    id={"type": "mg-filter-dropdown-menu", "index": block_id},
+                    clearable=False,
+                ),
+                span=4,
+            ),
+            dmc.GridCol(
+                [
+                    dmc.TextInput(
+                        id={"type": "mg-filter-dropdown-mf-ids-text-input", "index": block_id},
+                        placeholder="1, 2, 3, ...",
+                        className="custom-textinput",
+                    ),
+                    dmc.TextInput(
+                        id={"type": "mg-filter-dropdown-spec-ids-text-input", "index": block_id},
+                        placeholder="1, 2, 3, ...",
+                        className="custom-textinput",
+                        style={"display": "none"},
+                    ),
+                ],
+                span=6,
+            ),
+        ],
+        gutter="md",
+    )
+
+
+@app.callback(
+    Output("mg-filter-blocks-id", "data"),
+    Input({"type": "mg-filter-add-button", "index": ALL}, "n_clicks"),
+    State("mg-filter-blocks-id", "data"),
+)
+def mg_filter_add_block(n_clicks: list[int], blocks_id: list[str]) -> list[str]:
+    """Add a new block to the layout when the add button is clicked.
+
+    Args:
+        n_clicks: List of number of clicks for each add button.
+        blocks_id: Current list of block IDs.
+
+    Returns:
+        Updated list of block IDs.
+    """
+    if not any(n_clicks):
+        raise dash.exceptions.PreventUpdate
+    # Create a unique ID for the new block
+    new_block_id = str(uuid.uuid4())
+    blocks_id.append(new_block_id)
+    return blocks_id
+
+
+@app.callback(
+    Output("mg-filter-blocks-container", "children"),
+    Input("mg-filter-blocks-id", "data"),
+    State("mg-filter-blocks-container", "children"),
+)
+def mg_filter_display_blocks(
+    blocks_id: list[str], existing_blocks: list[dmc.Grid]
+) -> list[dmc.Grid]:
+    """Display the blocks for the input block IDs.
+
+    Args:
+        blocks_id: List of block IDs.
+        existing_blocks: Current list of block components.
+
+    Returns:
+        Updated list of block components.
+    """
+    if len(blocks_id) > 1:
+        new_block_id = blocks_id[-1]
+
+        new_block = dmc.Grid(
+            id={"type": "mg-filter-block", "index": new_block_id},
+            children=[
+                dmc.GridCol(
+                    html.Div(
+                        [
+                            dbc.Button(
+                                [html.I(className="fas fa-plus")],
+                                id={"type": "mg-filter-add-button", "index": new_block_id},
+                                className="btn-primary",
+                            ),
+                            html.Label(
+                                "OR",
+                                id={"type": "mg-filter-or-label", "index": new_block_id},
+                                className="ms-2 px-2 py-1 rounded",
+                                style={
+                                    "color": "green",
+                                    "backgroundColor": "#f0f0f0",
+                                    "display": "inline-block",
+                                    "position": "absolute",
+                                    "left": "50px",  # Adjust based on button width
+                                    "top": "50%",
+                                    "transform": "translateY(-50%)",
+                                },
+                            ),
+                        ],
+                        style={"position": "relative", "height": "38px"},
+                    ),
+                    span=2,
+                ),
+                dmc.GridCol(
+                    dcc.Dropdown(
+                        options=MG_FILTER_DROPDOWN_MENU_OPTIONS,
+                        value="SPECTRUM_ID",
+                        id={"type": "mg-filter-dropdown-menu", "index": new_block_id},
+                        clearable=False,
+                    ),
+                    span=4,
+                ),
+                dmc.GridCol(
+                    [
+                        dmc.TextInput(
+                            id={
+                                "type": "mg-filter-dropdown-mf-ids-text-input",
+                                "index": new_block_id,
+                            },
+                            placeholder="1, 2, 3, ...",
+                            className="custom-textinput",
+                        ),
+                        dmc.TextInput(
+                            id={
+                                "type": "mg-filter-dropdown-spec-ids-text-input",
+                                "index": new_block_id,
+                            },
+                            placeholder="1, 2, 3, ...",
+                            className="custom-textinput",
+                            style={"display": "none"},
+                        ),
+                    ],
+                    span=6,
+                ),
+            ],
+            gutter="md",
+        )
+
+        # Hide the add button and OR label on the previous last block
+        if len(existing_blocks) == 1:
+            existing_blocks[-1]["props"]["children"][0]["props"]["children"]["props"]["style"] = {
+                "display": "none"
+            }
+        else:
+            existing_blocks[-1]["props"]["children"][0]["props"]["children"]["props"]["children"][
+                0
+            ]["props"]["style"] = {"display": "none"}
+
+        return existing_blocks + [new_block]
+    return existing_blocks
+
+
+@app.callback(
+    Output({"type": "mg-filter-dropdown-mf-ids-text-input", "index": MATCH}, "style"),
+    Output({"type": "mg-filter-dropdown-spec-ids-text-input", "index": MATCH}, "style"),
+    Output({"type": "mg-filter-dropdown-mf-ids-text-input", "index": MATCH}, "placeholder"),
+    Output({"type": "mg-filter-dropdown-spec-ids-text-input", "index": MATCH}, "placeholder"),
+    Output({"type": "mg-filter-dropdown-mf-ids-text-input", "index": MATCH}, "value"),
+    Output({"type": "mg-filter-dropdown-spec-ids-text-input", "index": MATCH}, "value"),
+    Input({"type": "mg-filter-dropdown-menu", "index": MATCH}, "value"),
+)
+def mg_filter_update_placeholder(
+    selected_value: str,
+) -> tuple[dict[str, str], dict[str, str], str, str, str, list[Any]]:
+    """Update the placeholder text and style of input fields based on the dropdown selection.
+
+    Args:
+        selected_value: The value selected in the dropdown menu.
+
+    Returns:
+        A tuple containing style, placeholder, and value updates for the input fields.
+    """
+    if not ctx.triggered:
+        # Callback was not triggered by user interaction, don't change anything
+        raise dash.exceptions.PreventUpdate
+    if selected_value == "MF_ID":
+        return {"display": "block"}, {"display": "none"}, "1, 2, 3, ...", "", "", []
+    elif selected_value == "SPECTRUM_ID":
+        return (
+            {"display": "none"},
+            {"display": "block"},
+            "",
+            "1, 2, 3, ...",
+            "",
+            [],
+        )
+    else:
+        # This case should never occur due to the Literal type, but it satisfies mypy
+        return {"display": "none"}, {"display": "none"}, "", "", "", []
+
+
+# ------------------ GM Data Table functions ------------------ #
 def gm_filter_apply(
     df: pd.DataFrame,
     dropdown_menus: list[str],
@@ -710,18 +965,22 @@ def gm_table_select_rows(
     return output1, output2
 
 
-# Scoring filter callbacks
-def gm_scoring_create_initial_block(block_id: str) -> dmc.Grid:
-    """Create the initial block component with the given ID.
+# ------------------ MG Data Table functions ------------------ #
+
+
+# ------------------ Common Scoring functions ------------------ #
+def scoring_create_initial_block(block_id: str, tab_prefix: str = "gm") -> dmc.Grid:
+    """Create the initial scoring block component for either GM or MG tab with the given ID.
 
     Args:
         block_id: A unique identifier for the block.
+        tab_prefix: Prefix for the tab ('gm' or 'mg') to determine which dropdown options to use.
 
     Returns:
         A Grid component with nested elements.
     """
     return dmc.Grid(
-        id={"type": "gm-scoring-block", "index": block_id},
+        id={"type": f"{tab_prefix}-scoring-block", "index": block_id},
         children=[
             dmc.GridCol(span=6),
             dmc.GridCol(
@@ -729,7 +988,7 @@ def gm_scoring_create_initial_block(block_id: str) -> dmc.Grid:
                     ["RAW", "STANDARDISED"],
                     "RAW",
                     inline=True,
-                    id={"type": "gm-scoring-radio-items", "index": block_id},
+                    id={"type": f"{tab_prefix}-scoring-radio-items", "index": block_id},
                     labelStyle={
                         "marginRight": "20px",
                         "padding": "8px 12px",
@@ -744,7 +1003,7 @@ def gm_scoring_create_initial_block(block_id: str) -> dmc.Grid:
             dmc.GridCol(
                 dbc.Button(
                     [html.I(className="fas fa-plus")],
-                    id={"type": "gm-scoring-add-button", "index": block_id},
+                    id={"type": f"{tab_prefix}-scoring-add-button", "index": block_id},
                     className="btn-primary",
                     style={"marginTop": "24px"},
                 ),
@@ -752,9 +1011,9 @@ def gm_scoring_create_initial_block(block_id: str) -> dmc.Grid:
             ),
             dmc.GridCol(
                 dcc.Dropdown(
-                    options=GM_SCORING_DROPDOWN_MENU_OPTIONS,
+                    options=SCORING_DROPDOWN_MENU_OPTIONS,
                     value="METCALF",
-                    id={"type": "gm-scoring-dropdown-menu", "index": block_id},
+                    id={"type": f"{tab_prefix}-scoring-dropdown-menu", "index": block_id},
                     clearable=False,
                     style={"marginTop": "24px"},
                 ),
@@ -763,7 +1022,10 @@ def gm_scoring_create_initial_block(block_id: str) -> dmc.Grid:
             dmc.GridCol(
                 [
                     dmc.TextInput(
-                        id={"type": "gm-scoring-dropdown-ids-cutoff-met", "index": block_id},
+                        id={
+                            "type": f"{tab_prefix}-scoring-dropdown-ids-cutoff-met",
+                            "index": block_id,
+                        },
                         label="Cutoff",
                         placeholder="Insert cutoff value as a number",
                         value="0.05",
@@ -777,6 +1039,7 @@ def gm_scoring_create_initial_block(block_id: str) -> dmc.Grid:
     )
 
 
+# ------------------ GM Scoring functions ------------------ #
 @app.callback(
     Output("gm-scoring-blocks-id", "data"),
     Input({"type": "gm-scoring-add-button", "index": ALL}, "n_clicks"),
@@ -937,7 +1200,10 @@ def gm_scoring_update_placeholder(
         return ({"display": "none"}, "", "")
 
 
-# Results table callbacks
+# ------------------ MG Scoring functions ------------------ #
+
+
+# ------------------ GM Results table functions ------------------ #
 def gm_scoring_apply(
     df: pd.DataFrame, dropdown_menus: list[str], radiobuttons: list[str], cutoffs_met: list[str]
 ) -> pd.DataFrame:
@@ -1301,3 +1567,6 @@ def generate_excel(n_clicks, table_data):
         return dcc.send_bytes(excel_data, "nplinker_genom_to_metabol.xlsx"), False, ""
     except Exception as e:
         return None, True, f"Error generating Excel file: {str(e)}"
+
+
+# ------------------ MG Results table functions ------------------ #

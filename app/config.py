@@ -1,3 +1,4 @@
+# GM Table Configurations
 GM_FILTER_DROPDOWN_MENU_OPTIONS = [
     {"label": "GCF ID", "value": "GCF_ID"},
     {"label": "BGC Class", "value": "BGC_CLASS"},
@@ -13,8 +14,6 @@ GM_FILTER_DROPDOWN_BGC_CLASS_OPTIONS = [
     {"label": "Other", "value": "OTHER"},
     {"label": "Unknown", "value": "UNKNOWN"},
 ]
-
-GM_SCORING_DROPDOWN_MENU_OPTIONS = [{"label": "Metcalf", "value": "METCALF"}]
 
 GM_RESULTS_TABLE_MANDATORY_COLUMNS = [
     {"name": "GCF ID", "id": "GCF ID", "type": "numeric"},
@@ -38,6 +37,12 @@ GM_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS = [
     "Top Spectrum Score",
     "MiBIG IDs",
     "BGC Classes",
+]
+
+# MG Table Configurations
+MG_FILTER_DROPDOWN_MENU_OPTIONS = [
+    {"label": "MF ID", "value": "MF_ID"},
+    {"label": "Spectrum ID", "value": "SPECTRUM_ID"},
 ]
 
 MG_RESULTS_TABLE_MANDATORY_COLUMNS = [
@@ -64,3 +69,6 @@ MG_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS = [
     "Spectrum Precursor m/z",
     "Spectrum GNPS ID",
 ]
+
+# Scoring Configurations
+SCORING_DROPDOWN_MENU_OPTIONS = [{"label": "Metcalf", "value": "METCALF"}]

@@ -157,39 +157,87 @@ def test_process_uploaded_data_structure():
 def test_disable_tabs(mock_uuid):
     # Test with None as input
     result = disable_tabs_and_reset_blocks(None)
-    assert result == (True, True, [], [], {}, {"display": "block"}, True, [], [], True, True)
+    assert result == (
+        # GM tab - disabled
+        True,
+        True,
+        [],
+        [],
+        {},
+        {"display": "block"},
+        True,
+        [],
+        [],
+        True,
+        # MG tab - disabled
+        True,
+        True,
+        [],
+        [],
+        {},
+        {"display": "block"},
+        True,
+        [],
+        [],
+        True,
+    )
 
     # Test with a string as input
     result = disable_tabs_and_reset_blocks(MOCK_FILE_PATH)
 
     # Unpack the result for easier assertion
     (
+        # GM tab outputs
         gm_tab_disabled,
         gm_filter_accordion_disabled,
         gm_filter_block_ids,
         gm_filter_blocks,
-        table_header_style,
-        table_body_style,
+        gm_table_header_style,
+        gm_table_body_style,
         gm_scoring_accordion_disabled,
         gm_scoring_block_ids,
         gm_scoring_blocks,
         gm_results_disabled,
+        # MG tab outputs
         mg_tab_disabled,
+        mg_filter_accordion_disabled,
+        mg_filter_block_ids,
+        mg_filter_blocks,
+        mg_table_header_style,
+        mg_table_body_style,
+        mg_scoring_accordion_disabled,
+        mg_scoring_block_ids,
+        mg_scoring_blocks,
+        mg_results_disabled,
     ) = result
 
+    # Assert GM tab outputs
     assert gm_tab_disabled is False
     assert gm_filter_accordion_disabled is False
     assert gm_filter_block_ids == ["test-uuid"]
     assert len(gm_filter_blocks) == 1
     assert isinstance(gm_filter_blocks[0], dmc.Grid)
-    assert table_header_style == {}
-    assert table_body_style == {"display": "block"}
+    assert gm_table_header_style == {}
+    assert gm_table_body_style == {"display": "block"}
     assert gm_scoring_accordion_disabled is False
     assert gm_scoring_block_ids == ["test-uuid"]
     assert len(gm_scoring_blocks) == 1
     assert isinstance(gm_scoring_blocks[0], dmc.Grid)
     assert gm_results_disabled is False
+
+    # Assert MG tab outputs
     assert mg_tab_disabled is False
+    assert mg_filter_accordion_disabled is False
+    assert mg_filter_block_ids == ["test-uuid"]
+    assert len(mg_filter_blocks) == 1
+    assert isinstance(mg_filter_blocks[0], dmc.Grid)
+    assert mg_table_header_style == {}
+    assert mg_table_body_style == {"display": "block"}
+    assert mg_scoring_accordion_disabled is False
+    assert mg_scoring_block_ids == ["test-uuid"]
+    assert len(mg_scoring_blocks) == 1
+    assert isinstance(mg_scoring_blocks[0], dmc.Grid)
+    assert mg_results_disabled is False
 
 
 @pytest.mark.parametrize(
