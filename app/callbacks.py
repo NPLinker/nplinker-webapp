@@ -31,6 +31,9 @@ from dash import html
 from nplinker.metabolomics.spectrum import Spectrum
 
 
+# TODO: Add underlines to the rows with tooltips in the tables
+
+
 dash._dash_renderer._set_react_version("18.2.0")  # type: ignore
 
 
@@ -113,18 +116,12 @@ def process_uploaded_data(file_path: Path | str | None) -> tuple[str | None, str
                 return ["Unknown"]
             return list(bgc_class)  # Convert tuple to list
 
-        # Create a dictionary to map BGC to its class
-        bgc_to_class = {bgc.id: process_bgc_class(bgc.mibig_bgc_class) for bgc in bgcs}
-
         processed_data: dict[str, Any] = {"n_bgcs": {}, "gcf_data": []}
 
         for gcf in gcfs:
-            # Create pairs of (bgc_id, bgc) and sort by ID to maintain correspondence
-            bgc_pairs = [(bgc.id, bgc) for bgc in gcf.bgcs]
-            bgc_pairs.sort(key=lambda x: x[0])  # Sort by BGC ID
-
-            bgc_ids = [pair[0] for pair in bgc_pairs]  # Get sorted IDs
-            bgc_classes = [bgc_to_class[pair[0]] for pair in bgc_pairs]  # Get corresponding classes
+            sorted_bgcs = sorted(gcf.bgcs, key=lambda bgc: bgc.id)
+            bgc_ids = [bgc.id for bgc in sorted_bgcs]
+            bgc_classes = [process_bgc_class(bgc.mibig_bgc_class) for bgc in sorted_bgcs]
 
             strains = sorted([s.id for s in gcf.strains._strains])
 
