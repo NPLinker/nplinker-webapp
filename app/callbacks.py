@@ -243,10 +243,9 @@ def disable_tabs_and_reset_blocks(
 @app.callback(
     Output("gm-graph", "figure"),
     Output("gm-graph", "style"),
-    Output("mg-file-content", "children"),
     [Input("processed-data-store", "data")],
 )
-def gm_plot(stored_data: str | None) -> tuple[dict | go.Figure, dict, str]:
+def gm_plot(stored_data: str | None) -> tuple[dict | go.Figure, dict]:
     """Create a bar plot based on the processed data.
 
     Args:
@@ -256,7 +255,7 @@ def gm_plot(stored_data: str | None) -> tuple[dict | go.Figure, dict, str]:
         Tuple containing the plot figure, style, and a status message.
     """
     if stored_data is None:
-        return {}, {"display": "none"}, "No data available"
+        return {}, {"display": "none"}
     data = json.loads(stored_data)
     n_bgcs = data["n_bgcs"]
 
@@ -285,7 +284,7 @@ def gm_plot(stored_data: str | None) -> tuple[dict | go.Figure, dict, str]:
         yaxis_title="# GCFs",
         xaxis=dict(type="category"),
     )
-    return fig, {"display": "block"}, "Data loaded and plotted!!"
+    return fig, {"display": "block"}
 
 
 # Filter callbacks
@@ -1244,7 +1243,7 @@ def toggle_download_button(table_data):
 
 @app.callback(
     [
-        Output("download-excel", "data"),
+        Output("gm-download-excel", "data"),
         Output("gm-download-alert", "is_open", allow_duplicate=True),
         Output("gm-download-alert", "children", allow_duplicate=True),
     ],
