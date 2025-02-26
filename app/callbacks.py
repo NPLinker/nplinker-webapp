@@ -1131,7 +1131,7 @@ def gm_scoring_display_blocks(
                 ),
                 dmc.GridCol(
                     dcc.Dropdown(
-                        options=GM_SCORING_DROPDOWN_MENU_OPTIONS,
+                        options=SCORING_DROPDOWN_MENU_OPTIONS,
                         value="METCALF",
                         id={"type": "gm-scoring-dropdown-menu", "index": new_block_id},
                         clearable=False,
