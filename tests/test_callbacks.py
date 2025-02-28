@@ -15,6 +15,9 @@ from app.callbacks import gm_scoring_apply
 from app.callbacks import gm_table_select_rows
 from app.callbacks import gm_table_toggle_selection
 from app.callbacks import gm_table_update_datatable
+from app.callbacks import mg_filter_apply
+from app.callbacks import mg_table_toggle_selection
+from app.callbacks import mg_table_update_datatable
 from app.callbacks import process_uploaded_data
 from app.callbacks import toggle_download_button
 from app.callbacks import upload_data
@@ -61,7 +64,25 @@ def sample_processed_data():
                 "BGC IDs": ["BGC_1", "BGC_3"],
                 "strains": ["Strain_3"],
             },
-        ]
+        ],
+        "mf_data": [
+            {
+                "MF ID": "MF_1",
+                "# Spectra": 2,
+                "Spectra IDs": ["Spec_1", "Spec_2"],
+                "Spectra precursor m/z": [150.5, 220.3],
+                "Spectra GNPS IDs": ["GNPS_1", "GNPS_2"],
+                "strains": ["Strain_1", "Strain_2"],
+            },
+            {
+                "MF ID": "MF_2",
+                "# Spectra": 3,
+                "Spectra IDs": ["Spec_3", "Spec_4", "Spec_5"],
+                "Spectra precursor m/z": [180.1, 210.7, 230.2],
+                "Spectra GNPS IDs": ["GNPS_3", "GNPS_4", "GNPS_5"],
+                "strains": ["Strain_2", "Strain_3"],
+            },
+        ],
     }
     return json.dumps(data)
 
@@ -103,14 +124,12 @@ def test_process_uploaded_data_structure():
     assert isinstance(processed_data, dict)
     assert "n_bgcs" in processed_data
     assert "gcf_data" in processed_data
+    assert "mf_data" in processed_data
 
     # Add more specific assertions based on the expected content of your mock_obj_data.pkl
-    assert len(processed_data["gcf_data"]) > 0
     assert len(processed_data["n_bgcs"]) > 0
-    first_gcf = processed_data["gcf_data"][0]
-    assert "GCF ID" in first_gcf
-    assert "# BGCs" in first_gcf
-    assert "BGC Classes" in first_gcf
+    assert len(processed_data["gcf_data"]) > 0
+    assert len(processed_data["mf_data"]) > 0
 
     # Check n_bgcs structure
     assert isinstance(processed_data["n_bgcs"], dict)
@@ -133,6 +152,20 @@ def test_process_uploaded_data_structure():
             assert isinstance(bgc_class, list)
             for cls in bgc_class:
                 assert isinstance(cls, str)
+
+    # Check mf_data structure
+    assert isinstance(processed_data["mf_data"], list)
+    for mf in processed_data["mf_data"]:
+        assert isinstance(mf, dict)
+        assert "MF ID" in mf
+        assert "# Spectra" in mf
+        assert "Spectra IDs" in mf
+        assert isinstance(mf["MF ID"], str)
+        assert isinstance(mf["# Spectra"], int)
+        assert isinstance(mf["Spectra IDs"], list)
+        assert isinstance(mf["Spectra precursor m/z"], list)
+        assert isinstance(mf["Spectra GNPS IDs"], list)
+        assert isinstance(mf["strains"], list)
 
     # Check processed_links structure
     expected_link_keys = [
@@ -240,6 +273,7 @@ def test_disable_tabs(mock_uuid):
     assert mg_results_disabled is False
 
 
+# ----------------- GM tab tests -----------------
 @pytest.mark.parametrize(
     "n_clicks, initial_blocks, expected_result",
     [
@@ -472,3 +506,104 @@ def test_generate_excel_error_handling():
         assert result[0] is None
         assert result[1] is True  # Alert is open
         assert "Error generating Excel file" in result[2]
+
+
+# ----------------- MG tab tests -----------------
+def test_mg_filter_apply(sample_processed_data):
+    data = json.loads(sample_processed_data)
+    df = pd.DataFrame(data["mf_data"])
+
+    # Test MF_ID filter
+    mf_ids = df["MF ID"].iloc[:1].tolist()
+    filtered_df = mg_filter_apply(df, ["MF_ID"], [",".join(mf_ids)], [""])
+    assert len(filtered_df) == 1
+    assert set(filtered_df["MF ID"]) == set(mf_ids)
+
+    # Test SPECTRUM_ID filter
+    spec_id = df["Spectra IDs"].iloc[0][0]  # Get first spectrum ID from first row
+    filtered_df = mg_filter_apply(df, ["SPECTRUM_ID"], [""], [spec_id])
+    assert len(filtered_df) == 1
+    assert spec_id in filtered_df.iloc[0]["Spectra IDs"]
+
+    # Test no filter
+    filtered_df = mg_filter_apply(df, [], [], [])
+    assert len(filtered_df) == len(df)
+
+
+def test_mg_table_update_datatable(sample_processed_data):
+    with patch("app.callbacks.ctx") as mock_ctx:
+        # Test with processed data and no filters applied
+        mock_ctx.triggered_id = None
+        result = mg_table_update_datatable(
+            sample_processed_data,
+            None,  # n_clicks
+            [],  # dropdown_menus
+            [],  # mf_text_inputs
+            [],  # spec_text_inputs
+            None,  # checkbox_value
+        )
+
+        assert len(result) == 6
+        data, columns, tooltip_data, style, selected_rows, checkbox_value = result
+
+        # Check data
+        assert len(data) == 2
+        assert data[0]["MF ID"] == "MF_1"
+        assert data[1]["MF ID"] == "MF_2"
+
+        # Check columns
+        assert len(columns) == 3
+        assert columns[0]["name"] == "MF ID"
+        assert columns[1]["name"] == "# Spectra"
+        assert columns[2]["name"] == "Spectra GNPS IDs"
+
+        # Check style
+        assert style == {"display": "block"}
+
+        # Check selected_rows
+        assert selected_rows == []
+
+        # Check checkbox_value
+        assert checkbox_value == []
+
+        # Test with None input
+        result = mg_table_update_datatable(None, None, [], [], [], None)
+        assert result == ([], [], [], {"display": "none"}, [], [])
+
+        # Test with apply-filters-button triggered
+        mock_ctx.triggered_id = "mg-filter-apply-button"
+        result = mg_table_update_datatable(
+            sample_processed_data,
+            1,  # n_clicks
+            ["MF_ID"],  # dropdown_menus
+            ["MF_1"],  # mf_text_inputs
+            [""],  # spec_text_inputs
+            ["disabled"],  # checkbox_value
+        )
+
+        data, columns, tooltip_data, style, selected_rows, checkbox_value = result
+        assert len(data) == 1
+        assert data[0]["MF ID"] == "MF_1"
+        assert checkbox_value == []
+
+
+def test_mg_table_toggle_selection(sample_processed_data):
+    data = json.loads(sample_processed_data)
+    original_rows = data["mf_data"]
+    filtered_rows = original_rows[:1]
+
+    # Test selecting all rows
+    result = mg_table_toggle_selection(["disabled"], original_rows, filtered_rows)
+    assert result == [0]  # Should select indices of rows matching the filter
+
+    # Test deselecting all rows
+    result = mg_table_toggle_selection([], original_rows, filtered_rows)
+    assert result == []
+
+    # Test with None filtered_rows
+    result = mg_table_toggle_selection(["disabled"], original_rows, None)
+    assert result == list(range(len(original_rows)))  # Should select all rows in original_rows
+
+    # Test with empty value (deselecting when no filter is applied)
+    result = mg_table_toggle_selection([], original_rows, None)
+    assert result == []

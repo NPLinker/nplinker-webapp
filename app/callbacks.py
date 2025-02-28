@@ -31,6 +31,7 @@ from dash import html
 from nplinker.metabolomics.spectrum import Spectrum
 
 
+# TODO: Add new tests for the mg table
 # TODO: Add underlines to the rows with tooltips in the tables
 
 
@@ -109,35 +110,46 @@ def process_uploaded_data(file_path: Path | str | None) -> tuple[str | None, str
             data = pickle.load(f)
 
         # Extract and process the necessary data
-        bgcs, gcfs, _, _, _, links = data
+        _, gcfs, _, mfs, _, links = data
 
         def process_bgc_class(bgc_class: tuple[str, ...] | None) -> list[str]:
             if bgc_class is None:
                 return ["Unknown"]
             return list(bgc_class)  # Convert tuple to list
 
-        processed_data: dict[str, Any] = {"n_bgcs": {}, "gcf_data": []}
+        processed_data: dict[str, Any] = {"n_bgcs": {}, "gcf_data": [], "mf_data": []}
 
         for gcf in gcfs:
             sorted_bgcs = sorted(gcf.bgcs, key=lambda bgc: bgc.id)
             bgc_ids = [bgc.id for bgc in sorted_bgcs]
             bgc_classes = [process_bgc_class(bgc.mibig_bgc_class) for bgc in sorted_bgcs]
 
-            strains = sorted([s.id for s in gcf.strains._strains])
-
             processed_data["gcf_data"].append(
                 {
                     "GCF ID": gcf.id,
                     "# BGCs": len(gcf.bgcs),
-                    "BGC Classes": bgc_classes,
                     "BGC IDs": bgc_ids,
-                    "strains": strains,
+                    "BGC Classes": bgc_classes,
+                    "strains": sorted([s.id for s in gcf.strains._strains]),
                 }
             )
 
             if len(gcf.bgcs) not in processed_data["n_bgcs"]:
                 processed_data["n_bgcs"][len(gcf.bgcs)] = []
             processed_data["n_bgcs"][len(gcf.bgcs)].append(gcf.id)
+
+        for mf in mfs:
+            sorted_spectra = sorted(mf.spectra, key=lambda spectrum: spectrum.id)
+            processed_data["mf_data"].append(
+                {
+                    "MF ID": mf.id,
+                    "# Spectra": len(mf.spectra_ids),
+                    "Spectra IDs": list(spectrum.id for spectrum in sorted_spectra),
+                    "Spectra precursor m/z": [spectrum.precursor_mz for spectrum in sorted_spectra],
+                    "Spectra GNPS IDs": [spectrum.gnps_id for spectrum in sorted_spectra],
+                    "strains": sorted([s.id for s in mf.strains._strains]),
+                }
+            )
 
         if links is not None:
             processed_links: dict[str, Any] = {
@@ -560,7 +572,7 @@ def mg_filter_create_initial_block(block_id: str) -> dmc.Grid:
             dmc.GridCol(
                 dcc.Dropdown(
                     options=MG_FILTER_DROPDOWN_MENU_OPTIONS,
-                    value="SPECTRUM_ID",
+                    value="MF_ID",
                     id={"type": "mg-filter-dropdown-menu", "index": block_id},
                     clearable=False,
                 ),
@@ -663,7 +675,7 @@ def mg_filter_display_blocks(
                 dmc.GridCol(
                     dcc.Dropdown(
                         options=MG_FILTER_DROPDOWN_MENU_OPTIONS,
-                        value="SPECTRUM_ID",
+                        value="MF_ID",
                         id={"type": "mg-filter-dropdown-menu", "index": new_block_id},
                         clearable=False,
                     ),
@@ -868,7 +880,7 @@ def gm_table_update_datatable(
         )
 
     # Prepare the data for display
-    filtered_df["BGC IDs"] = filtered_df["BGC IDs"].apply(", ".join)
+    filtered_df["BGC IDs"] = filtered_df["BGC IDs"].apply(lambda x: ", ".join(map(str, x)))
     filtered_df["BGC Classes"] = filtered_df["BGC Classes"].apply(
         lambda x: ", ".join({item for sublist in x for item in sublist})  # Unique flattened classes
     )
@@ -963,6 +975,249 @@ def gm_table_select_rows(
 
 
 # ------------------ MG Data Table functions ------------------ #
+
+
+def mg_filter_apply(
+    df: pd.DataFrame,
+    dropdown_menus: list[str],
+    mf_text_inputs: list[str],
+    spec_text_inputs: list[str],
+) -> pd.DataFrame:
+    """Apply filters to the DataFrame based on user inputs.
+
+    Args:
+        df: The input DataFrame.
+        dropdown_menus: List of selected dropdown menu options.
+        mf_text_inputs: List of text inputs for MF IDs.
+        spec_text_inputs: List of text inputs for Spectrum IDs.
+
+    Returns:
+        Filtered DataFrame.
+    """
+    masks = []
+
+    for menu, mf_text_input, spec_text_input in zip(
+        dropdown_menus, mf_text_inputs, spec_text_inputs
+    ):
+        if menu == "MF_ID" and mf_text_input:
+            mf_ids = [id.strip() for id in mf_text_input.split(",") if id.strip()]
+            if mf_ids:
+                mask = df["MF ID"].astype(str).isin(mf_ids)
+                masks.append(mask)
+        elif menu == "SPECTRUM_ID" and spec_text_input:
+            spectrum_ids = [id.strip() for id in spec_text_input.split(",") if id.strip()]
+            if spectrum_ids:
+                # Convert to set of strings for efficient lookup
+                spectrum_ids_set = set(spectrum_ids)
+                # Check if any of the spectrum IDs exactly match any ID in the Spectra IDs list
+                mask = df["Spectra IDs"].apply(lambda x: any(str(s) in spectrum_ids_set for s in x))
+                masks.append(mask)
+
+    if masks:
+        # Combine all masks with OR operation
+        final_mask = pd.concat(masks, axis=1).any(axis=1)
+        return df[final_mask]
+    else:
+        return df
+
+
+@app.callback(
+    Output("mg-table", "data"),
+    Output("mg-table", "columns"),
+    Output("mg-table", "tooltip_data"),
+    Output("mg-table-card-body", "style"),
+    Output("mg-table", "selected_rows", allow_duplicate=True),
+    Output("mg-table-select-all-checkbox", "value"),
+    Input("processed-data-store", "data"),
+    Input("mg-filter-apply-button", "n_clicks"),
+    State({"type": "mg-filter-dropdown-menu", "index": ALL}, "value"),
+    State({"type": "mg-filter-dropdown-mf-ids-text-input", "index": ALL}, "value"),
+    State({"type": "mg-filter-dropdown-spec-ids-text-input", "index": ALL}, "value"),
+    State("mg-table-select-all-checkbox", "value"),
+    prevent_initial_call=True,
+)
+def mg_table_update_datatable(
+    processed_data: str | None,
+    n_clicks: int | None,
+    dropdown_menus: list[str],
+    mf_text_inputs: list[str],
+    spec_text_inputs: list[str],
+    checkbox_value: list | None,
+) -> tuple[list[dict], list[dict], list[dict], dict, list, list]:
+    """Update the DataTable based on processed data and applied filters when the button is clicked.
+
+    Args:
+        processed_data: JSON string of processed data.
+        n_clicks: Number of times the Apply Filters button has been clicked.
+        dropdown_menus: List of selected dropdown menu options.
+        mf_text_inputs: List of text inputs for MF IDs.
+        spec_text_inputs: List of text inputs for Spectrum IDs.
+        checkbox_value: Current value of the select-all checkbox.
+
+    Returns:
+        Tuple containing table data, column definitions, tooltips data, style, empty selected rows, and updated checkbox value.
+    """
+    if processed_data is None:
+        return [], [], [], {"display": "none"}, [], []
+
+    try:
+        data = json.loads(processed_data)
+        df = pd.DataFrame(data["mf_data"])
+    except (json.JSONDecodeError, KeyError, pd.errors.EmptyDataError):
+        return [], [], [], {"display": "none"}, [], []
+
+    if ctx.triggered_id == "mg-filter-apply-button":
+        # Apply filters only when the button is clicked
+        filtered_df = mg_filter_apply(df, dropdown_menus, mf_text_inputs, spec_text_inputs)
+        # Reset the checkbox when filters are applied
+        new_checkbox_value = []
+    else:
+        # On initial load or when processed data changes, show all data
+        filtered_df = df
+        new_checkbox_value = checkbox_value if checkbox_value is not None else []
+
+    # Prepare tooltip data
+    tooltip_data = []
+    for _, row in filtered_df.iterrows():
+        # Limit spectra entries in tooltip with 'more entries' indicator
+        max_tooltip_entries = 10
+        spectra_count = len(row["Spectra IDs"])
+
+        # Create spectra tooltip without GNPS ID column
+        spectra_tooltip_markdown = "| Spectrum ID | Precursor m/z |\n|------------|-------------|\n"
+
+        # Add top entries limited to max_tooltip_entries
+        for i in range(min(max_tooltip_entries, spectra_count)):
+            spec_id = row["Spectra IDs"][i]
+            precursor_mz = row["Spectra precursor m/z"][i]
+            spectra_tooltip_markdown += f"| {spec_id} | {precursor_mz:.4f} |\n"
+
+        # Add indication of more entries if applicable
+        if spectra_count > max_tooltip_entries:
+            remaining = spectra_count - max_tooltip_entries
+            spectra_tooltip_markdown += f"\n... {remaining} more entries ..."
+
+        # Limit strains entries in tooltip with 'more entries' indicator
+        strains = row["strains"]
+        strains_count = len(strains)
+        max_strains_entries = 10
+
+        strains_markdown = "| Strains |\n|----------|\n"
+        # Add top entries limited to max_strains_entries
+        for i in range(min(max_strains_entries, strains_count)):
+            strains_markdown += f"| {strains[i]} |\n"
+
+        # Add indication of more entries if applicable
+        if strains_count > max_strains_entries:
+            remaining = strains_count - max_strains_entries
+            strains_markdown += f"\n... {remaining} more entries ..."
+
+        tooltip_data.append(
+            {
+                "# Spectra": {"value": spectra_tooltip_markdown, "type": "markdown"},
+                "MF ID": {"value": strains_markdown, "type": "markdown"},
+            }
+        )
+
+    # Prepare the data for display
+    filtered_df["Spectra GNPS IDs"] = filtered_df["Spectra GNPS IDs"].apply(
+        lambda x: ", ".join({str(gnps_id) for gnps_id in x if gnps_id}) if x else "None"
+    )
+    filtered_df["Display Spectra GNPS IDs"] = filtered_df["Spectra GNPS IDs"].apply(
+        lambda x: ", ".join({str(gnps_id) for gnps_id in x if gnps_id and str(gnps_id) != "None"})
+        or "None"
+    )
+
+    filtered_df["Spectra IDs"] = filtered_df["Spectra IDs"].apply(lambda x: ", ".join(map(str, x)))
+
+    # Calculate average precursor m/z and display
+    filtered_df["Spectra precursor m/z"] = filtered_df["Spectra precursor m/z"].apply(
+        lambda x: ", ".join([str(round(val, 4)) for val in x]) if x else "N/A"
+    )
+    filtered_df["strains"] = filtered_df["strains"].apply(", ".join)
+
+    columns = [
+        {"name": "MF ID", "id": "MF ID"},
+        {"name": "# Spectra", "id": "# Spectra", "type": "numeric"},
+        {"name": "Spectra GNPS IDs", "id": "Display Spectra GNPS IDs"},
+    ]
+
+    return (
+        filtered_df.to_dict("records"),
+        columns,
+        tooltip_data,
+        {"display": "block"},
+        [],
+        new_checkbox_value,
+    )
+
+
+@app.callback(
+    Output("mg-table", "selected_rows", allow_duplicate=True),
+    Input("mg-table-select-all-checkbox", "value"),
+    State("mg-table", "data"),
+    State("mg-table", "derived_virtual_data"),
+    prevent_initial_call=True,
+)
+def mg_table_toggle_selection(
+    value: list | None,
+    original_rows: list,
+    filtered_rows: list | None,
+) -> list:
+    """Toggle between selecting all rows and deselecting all rows in the current view of a Dash DataTable.
+
+    Args:
+        value: Value of the select-all checkbox.
+        original_rows: All rows in the table.
+        filtered_rows: Rows visible after filtering, or None if no filter is applied.
+
+    Returns:
+        List of indices of selected rows after toggling.
+    """
+    is_checked = value and "disabled" in value
+
+    if filtered_rows is None:
+        # No filtering applied, toggle all rows
+        return list(range(len(original_rows))) if is_checked else []
+    else:
+        # Filtering applied, toggle only visible rows
+        return (
+            [i for i, row in enumerate(original_rows) if row in filtered_rows] if is_checked else []
+        )
+
+
+@app.callback(
+    Output("mg-table-output1", "children"),
+    Output("mg-table-output2", "children"),
+    Input("mg-table", "derived_virtual_data"),
+    Input("mg-table", "derived_virtual_selected_rows"),
+)
+def mg_table_select_rows(
+    rows: list[dict[str, Any]], selected_rows: list[int] | None
+) -> tuple[str, str]:
+    """Display the total number of rows and the number of selected rows in the table.
+
+    Args:
+        rows: List of row data from the DataTable.
+        selected_rows: Indices of selected rows.
+
+    Returns:
+        Strings describing total rows and selected rows.
+    """
+    if not rows:
+        return "No data available.", "No rows selected."
+
+    df = pd.DataFrame(rows)
+
+    if selected_rows is None:
+        selected_rows = []
+
+    selected_rows_data = df.iloc[selected_rows]
+
+    output1 = f"Total rows: {len(df)}"
+    output2 = f"Selected rows: {len(selected_rows)}\nSelected MF IDs: {', '.join(selected_rows_data['MF ID'].astype(str))}"
+
+    return output1, output2
 
 
 # ------------------ Common Scoring functions ------------------ #
