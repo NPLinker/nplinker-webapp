@@ -28,6 +28,7 @@ from dash import callback_context as ctx
 from dash import clientside_callback
 from dash import dcc
 from dash import html
+from nplinker.metabolomics.molecular_family import MolecularFamily
 from nplinker.metabolomics.spectrum import Spectrum
 
 
@@ -153,18 +154,28 @@ def process_uploaded_data(file_path: Path | str | None) -> tuple[str | None, str
 
         if links is not None:
             processed_links: dict[str, Any] = {
-                "gcf_id": [],
-                "spectrum": [],
-                "method": [],
-                "score": [],
-                "cutoff": [],
-                "standardised": [],
+                "gm_data": {
+                    "gcf_id": [],
+                    "spectrum": [],
+                    "method": [],
+                    "score": [],
+                    "cutoff": [],
+                    "standardised": [],
+                },
+                "mg_data": {
+                    "mf_id": [],
+                    "gcf": [],
+                    "method": [],
+                    "score": [],
+                    "cutoff": [],
+                    "standardised": [],
+                },
             }
 
             for link in links.links:
                 if isinstance(link[1], Spectrum):  # Then link[0] is a GCF (GCF -> Spectrum)
-                    processed_links["gcf_id"].append(link[0].id)
-                    processed_links["spectrum"].append(
+                    processed_links["gm_data"]["gcf_id"].append(link[0].id)
+                    processed_links["gm_data"]["spectrum"].append(
                         {
                             "id": link[1].id,
                             "strains": sorted([s.id for s in link[1].strains._strains]),
@@ -173,10 +184,36 @@ def process_uploaded_data(file_path: Path | str | None) -> tuple[str | None, str
                         }
                     )
                     for method, data in link[2].items():
-                        processed_links["method"].append(method)
-                        processed_links["score"].append(data.value)
-                        processed_links["cutoff"].append(data.parameter["cutoff"])
-                        processed_links["standardised"].append(data.parameter["standardised"])
+                        processed_links["gm_data"]["method"].append(method)
+                        processed_links["gm_data"]["score"].append(data.value)
+                        processed_links["gm_data"]["cutoff"].append(data.parameter["cutoff"])
+                        processed_links["gm_data"]["standardised"].append(
+                            data.parameter["standardised"]
+                        )
+                elif isinstance(link[1], MolecularFamily):  # Then link[0] if GCFS (GCF -> MF)
+                    print(link[0])
+                    print(link[0].bgcs)
+                    sorted_bgcs = sorted(link[0].bgcs, key=lambda bgc: bgc.id)
+                    bgc_ids = [bgc.id for bgc in sorted_bgcs]
+                    bgc_classes = [process_bgc_class(bgc.mibig_bgc_class) for bgc in sorted_bgcs]
+
+                    processed_links["mg_data"]["mf_id"].append(link[1].id)
+                    processed_links["mg_data"]["gcf"].append(
+                        {
+                            "id": link[0].id,
+                            "strains": sorted([s.id for s in link[1].strains._strains]),
+                            "# BGCs": len(link[0].bgcs),
+                            "BGC IDs": bgc_ids,
+                            "BGC Classes": bgc_classes,
+                        }
+                    )
+                    for method, data in link[2].items():
+                        processed_links["mg_data"]["method"].append(method)
+                        processed_links["mg_data"]["score"].append(data.value)
+                        processed_links["mg_data"]["cutoff"].append(data.parameter["cutoff"])
+                        processed_links["mg_data"]["standardised"].append(
+                            data.parameter["standardised"]
+                        )
         else:
             processed_links = {}
 
@@ -1620,6 +1657,7 @@ def gm_update_results_datatable(
                 True,
             )
 
+        links_data = links_data["gm_data"]
         # Get selected GCF IDs and their corresponding data
         selected_gcfs = {
             row["GCF ID"]: {

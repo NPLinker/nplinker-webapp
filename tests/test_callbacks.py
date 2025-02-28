@@ -168,7 +168,13 @@ def test_process_uploaded_data_structure():
         assert isinstance(mf["strains"], list)
 
     # Check processed_links structure
-    expected_link_keys = [
+    assert isinstance(processed_links, dict)
+    assert "gm_data" in processed_links
+    assert "mg_data" in processed_links
+
+    # Check gm_data structure
+    assert isinstance(processed_links["gm_data"], dict)
+    expected_gm_keys = [
         "gcf_id",
         "spectrum",
         "method",
@@ -176,15 +182,35 @@ def test_process_uploaded_data_structure():
         "cutoff",
         "standardised",
     ]
-    for key in expected_link_keys:
-        assert key in processed_links, f"Missing key '{key}' in processed links"
-        assert isinstance(processed_links[key], list), f"{key} should be a list"
+    for key in expected_gm_keys:
+        assert key in processed_links["gm_data"], f"Missing key '{key}' in gm_data"
+        assert isinstance(processed_links["gm_data"][key], list), f"gm_data[{key}] should be a list"
 
-    # Check that all lists have the same length
-    list_lengths = [len(processed_links[key]) for key in expected_link_keys]
+    # Check that all gm_data lists have the same length
+    gm_list_lengths = [len(processed_links["gm_data"][key]) for key in expected_gm_keys]
     assert all(
-        length == list_lengths[0] for length in list_lengths
-    ), "Link data lists have inconsistent lengths"
+        length == gm_list_lengths[0] for length in gm_list_lengths
+    ), "GM link data lists have inconsistent lengths"
+
+    # Check mg_data structure
+    assert isinstance(processed_links["mg_data"], dict)
+    expected_mg_keys = [
+        "mf_id",
+        "gcf",
+        "method",
+        "score",
+        "cutoff",
+        "standardised",
+    ]
+    for key in expected_mg_keys:
+        assert key in processed_links["mg_data"], f"Missing key '{key}' in mg_data"
+        assert isinstance(processed_links["mg_data"][key], list), f"mg_data[{key}] should be a list"
+
+    # Check that all mg_data lists have the same length
+    mg_list_lengths = [len(processed_links["mg_data"][key]) for key in expected_mg_keys]
+    assert all(
+        length == mg_list_lengths[0] for length in mg_list_lengths
+    ), "MG link data lists have inconsistent lengths"
 
 
 def test_disable_tabs(mock_uuid):
