@@ -1661,6 +1661,257 @@ def mg_scoring_update_placeholder(
 
 
 # ------------------ Common Results Table Functions ------------------
+def update_results_datatable(
+    n_clicks,
+    virtual_data,
+    selected_rows,
+    processed_links,
+    dropdown_menus,
+    radiobuttons,
+    cutoffs_met,
+    prefix,
+    item_type,
+):
+    """Common function for updating results DataTable based on scoring filters.
+
+    Args:
+        n_clicks: Number of times the "Show Results" button has been clicked.
+        virtual_data: Current filtered data from the table.
+        selected_rows: Indices of selected rows in the table.
+        processed_links: JSON string of processed links data.
+        dropdown_menus: List of selected dropdown menu options.
+        radiobuttons: List of selected radio button options.
+        cutoffs_met: List of cutoff values for METCALF method.
+        prefix: Tab prefix ('gm' or 'mg').
+        item_type: Type of item being processed ('GCF' or 'MF').
+
+    Returns:
+        Tuple containing alert message, visibility state, table data and settings, and header style.
+    """
+    triggered_id = ctx.triggered_id
+
+    if triggered_id in [f"{prefix}-table-select-all-checkbox", f"{prefix}-table"]:
+        return "", False, [], [], {"display": "none"}, {"color": "#888888"}, True
+
+    if n_clicks is None:
+        return "", False, [], [], {"display": "none"}, {"color": "#888888"}, True
+
+    if not selected_rows:
+        return (
+            f"No {item_type}s selected. Please select {item_type}s and try again.",
+            True,
+            [],
+            [],
+            {"display": "none"},
+            {"color": "#888888"},
+            True,
+        )
+
+    if not virtual_data:
+        return "No data available.", True, [], [], {"display": "none"}, {"color": "#888888"}, True
+
+    try:
+        links_data = json.loads(processed_links)
+        if len(links_data) == 0:
+            return (
+                "No processed links available.",
+                True,
+                [],
+                [],
+                {"display": "none"},
+                {"color": "#888888"},
+                True,
+            )
+
+        links_data = links_data[f"{prefix}_data"]
+
+        # Process specific to GM or MG data
+        if prefix == "gm":
+            # Get selected GCF IDs and their corresponding data
+            selected_items = {
+                row["GCF ID"]: {
+                    "MiBIG IDs": row["MiBIG IDs"],
+                    "BGC Classes": row["BGC Classes"],
+                }
+                for i, row in enumerate(virtual_data)
+                if i in selected_rows
+            }
+            id_field = "gcf_id"
+            item_field = "spectrum"
+            score_field = "score"
+            tooltip_field = "spectrum_ids_str"
+        else:  # MG
+            # Get selected MF IDs
+            selected_items = {
+                row["MF ID"]: {
+                    "Spectra IDs": row["Spectra IDs"].split(", ")
+                    if isinstance(row["Spectra IDs"], str)
+                    else [],
+                    "Spectra GNPS IDs": row["Spectra GNPS IDs"].split(", ")
+                    if isinstance(row["Spectra GNPS IDs"], str)
+                    else [],
+                    "Spectra precursor m/z": row["Spectra precursor m/z"].split(", ")
+                    if isinstance(row["Spectra precursor m/z"], str)
+                    else [],
+                }
+                for i, row in enumerate(virtual_data)
+                if i in selected_rows
+            }
+            id_field = "mf_id"
+            item_field = "gcf"
+            score_field = "score"
+            tooltip_field = "gcf_ids_str"
+
+        # Convert links data to DataFrame
+        links_df = pd.DataFrame(links_data)
+
+        # Apply scoring filters
+        filtered_df = scoring_apply(links_df, dropdown_menus, radiobuttons, cutoffs_met)
+
+        # Filter for selected items and aggregate results
+        results = []
+        for item_id in selected_items:
+            item_links = filtered_df[filtered_df[id_field] == item_id]
+            if not item_links.empty:
+                # Sort by score in descending order
+                item_links = item_links.sort_values(score_field, ascending=False)
+
+                # Get the top item
+                top_item = item_links.iloc[0]
+
+                if prefix == "gm":
+                    result = {
+                        # Mandatory fields
+                        "GCF ID": int(item_id),
+                        "# Links": len(item_links),
+                        "Average Score": round(item_links[score_field].mean(), 2),
+                        # Optional fields with None handling
+                        "Top Spectrum ID": int(top_item[item_field].get("id", float("nan"))),
+                        "Top Spectrum Precursor m/z": round(
+                            top_item[item_field].get("precursor_mz", float("nan")), 4
+                        )
+                        if top_item[item_field].get("precursor_mz") is not None
+                        else float("nan"),
+                        "Top Spectrum GNPS ID": top_item[item_field].get("gnps_id", "None")
+                        if top_item[item_field].get("gnps_id") is not None
+                        else "None",
+                        "Top Spectrum Score": round(top_item.get(score_field, float("nan")), 4)
+                        if top_item.get(score_field) is not None
+                        else float("nan"),
+                        "MiBIG IDs": selected_items[item_id]["MiBIG IDs"],
+                        "BGC Classes": selected_items[item_id]["BGC Classes"],
+                        # Store all spectrum data for later use
+                        "spectrum_ids_str": "|".join(
+                            [str(s.get("id", "")) for s in item_links[item_field]]
+                        ),
+                        "spectrum_scores_str": "|".join(
+                            [str(score) for score in item_links[score_field].tolist()]
+                        ),
+                    }
+                else:  # MG
+                    result = {
+                        # Mandatory fields
+                        "MF ID": int(item_id),
+                        "# Links": len(item_links),
+                        "Average Score": round(item_links[score_field].mean(), 2),
+                        # Optional fields
+                        "Top GCF ID": int(top_item[item_field].get("id", float("nan"))),
+                        "Top GCF # BGCs": top_item[item_field].get("# BGCs", 0),
+                        "Top GCF BGC IDs": ", ".join(
+                            [str(s) for s in top_item[item_field]["BGC IDs"]]
+                        ),
+                        "Top GCF BGC Classes": ", ".join(
+                            {
+                                item
+                                for sublist in top_item[item_field].get("BGC Classes", [])
+                                for item in sublist
+                            }
+                        ),
+                        "Top GCF Score": round(top_item.get(score_field, float("nan")), 4),
+                        # Store all GCF data for later use
+                        "gcf_ids_str": "|".join(
+                            [str(gcf.get("id", "")) for gcf in item_links[item_field]]
+                        ),
+                        "gcf_scores_str": "|".join(
+                            [str(score) for score in item_links[score_field].tolist()]
+                        ),
+                    }
+
+                results.append(result)
+
+        if not results:
+            return (
+                f"No matching links found for selected {item_type}s.",
+                True,
+                [],
+                [],
+                {"display": "none"},
+                {"color": "#888888"},
+                True,
+            )
+
+        # Prepare tooltip data
+        tooltip_data = []
+        for result in results:
+            ids = result[tooltip_field].split("|") if result[tooltip_field] else []
+            scores = (
+                [
+                    float(s)
+                    for s in result[f"{item_field if prefix == 'gm' else 'gcf'}_scores_str"].split(
+                        "|"
+                    )
+                ]
+                if result[f"{item_field if prefix == 'gm' else 'gcf'}_scores_str"]
+                else []
+            )
+
+            # Show only top 5 items in tooltip
+            max_tooltip_entries = 5
+            total_entries = len(ids)
+
+            items_table = (
+                f"| {'Spectrum' if prefix == 'gm' else 'GCF'} ID | Score |\n|--------|--------|\n"
+            )
+
+            # Add top entries
+            for item_id, score in zip(
+                ids[:max_tooltip_entries],
+                scores[:max_tooltip_entries],
+            ):
+                items_table += f"| {item_id} | {round(score, 4)} |\n"
+
+            # Add indication of more entries if applicable
+            if total_entries > max_tooltip_entries:
+                remaining = total_entries - max_tooltip_entries
+                items_table += f"\n... {remaining} more entries ..."
+
+            row_tooltip = {
+                "# Links": {"value": items_table, "type": "markdown"},
+            }
+            tooltip_data.append(row_tooltip)
+
+        return (
+            "",
+            False,
+            results,
+            tooltip_data,
+            {"display": "block"},
+            {},
+            False,
+        )
+
+    except Exception as e:
+        return (
+            f"Error processing results: {str(e)}",
+            True,
+            [],
+            [],
+            {"display": "none"},
+            {"color": "#888888"},
+            True,
+        )
+
+
 def toggle_column_settings_modal(n1, n2, is_open):
     """Toggle the visibility of the column settings modal.
 
@@ -1733,6 +1984,89 @@ def toggle_download_button(table_data):
     return False, False, ""
 
 
+def generate_excel(n_clicks, table_data, tab_prefix):
+    """Generate Excel file with two sheets: full results and detailed data.
+
+    Args:
+        n_clicks: Number of clicks on the download button.
+        table_data: Data from the results table.
+        tab_prefix: Tab prefix ('gm' or 'mg').
+
+    Returns:
+        Tuple containing the download component, alert visibility, and alert message.
+    """
+    if not ctx.triggered or not table_data:
+        return None, False, ""
+
+    try:
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
+            # Sheet 1: Best candidate links table
+            results_df = pd.DataFrame(table_data)
+
+            # Field names are different based on tab
+            if tab_prefix == "gm":
+                internal_fields = ["spectrum_ids_str", "spectrum_scores_str"]
+                filename = "nplinker_genom_to_metabol.xlsx"
+                detail_id_field = "GCF ID"
+                item_id_field = "Spectrum ID"
+                detail_sheet_name = "All Candidate Links"
+            else:  # MG
+                internal_fields = ["gcf_ids_str", "gcf_scores_str"]
+                filename = "nplinker_metabol_to_genom.xlsx"
+                detail_id_field = "MF ID"
+                item_id_field = "GCF ID"
+                detail_sheet_name = "All Candidate Links"
+
+            # Filter out only the internal fields used for tooltips and processing
+            export_columns = [col for col in results_df.columns if col not in internal_fields]
+
+            # Use all non-internal columns
+            results_df = results_df[export_columns]
+            results_df.to_excel(writer, sheet_name="Best Candidate Links", index=False)
+
+            # Sheet 2: Detailed data
+            detailed_data = []
+            for row in table_data:
+                primary_id = row[detail_id_field]
+                if tab_prefix == "gm":
+                    ids = (
+                        row.get("spectrum_ids_str", "").split("|")
+                        if row.get("spectrum_ids_str")
+                        else []
+                    )
+                    scores = (
+                        [float(s) for s in row.get("spectrum_scores_str", "").split("|")]
+                        if row.get("spectrum_scores_str")
+                        else []
+                    )
+                else:  # MG
+                    ids = row.get("gcf_ids_str", "").split("|") if row.get("gcf_ids_str") else []
+                    scores = (
+                        [float(s) for s in row.get("gcf_scores_str", "").split("|")]
+                        if row.get("gcf_scores_str")
+                        else []
+                    )
+
+                # Add all entries without truncation
+                for item_id, score in zip(ids, scores):
+                    detail_row = {
+                        detail_id_field: primary_id,
+                        item_id_field: int(item_id),
+                        "Score": score,
+                    }
+                    detailed_data.append(detail_row)
+
+            detailed_df = pd.DataFrame(detailed_data)
+            detailed_df.to_excel(writer, sheet_name=detail_sheet_name, index=False)
+
+        # Prepare the file for download
+        excel_data = output.getvalue()
+        return dcc.send_bytes(excel_data, filename), False, ""
+    except Exception as e:
+        return None, True, f"Error generating Excel file: {str(e)}"
+
+
 # ------------------ GM Results table functions ------------------ #
 @app.callback(
     Output("gm-results-table-column-settings-modal", "is_open"),
@@ -1798,184 +2132,26 @@ def gm_update_columns(selected_columns: list[str] | None, n_clicks: int | None) 
     State({"type": "gm-scoring-dropdown-ids-cutoff-met", "index": ALL}, "value"),
 )
 def gm_update_results_datatable(
-    n_clicks: int | None,
-    virtual_data: list[dict] | None,
-    selected_rows: list[int] | None,
-    processed_links: str,
-    dropdown_menus: list[str],
-    radiobuttons: list[str],
-    cutoffs_met: list[str],
-) -> tuple[str, bool, list[dict], list[dict], dict, dict, bool]:
-    """Update the results DataTable based on scoring filters.
-
-    Args:
-        n_clicks: Number of times the "Show Results" button has been clicked.
-        virtual_data: Current filtered data from the GCF table.
-        selected_rows: Indices of selected rows in the GCF table.
-        processed_links: JSON string of processed links data.
-        dropdown_menus: List of selected dropdown menu options.
-        radiobuttons: List of selected radio button options.
-        cutoffs_met: List of cutoff values for METCALF method.
-
-    Returns:
-        Tuple containing alert message, visibility state, table data and settings, and header style.
-    """
-    triggered_id = ctx.triggered_id
-
-    if triggered_id in ["gm-table-select-all-checkbox", "gm-table"]:
-        return "", False, [], [], {"display": "none"}, {"color": "#888888"}, True
-
-    if n_clicks is None:
-        return "", False, [], [], {"display": "none"}, {"color": "#888888"}, True
-
-    if not selected_rows:
-        return (
-            "No GCFs selected. Please select GCFs and try again.",
-            True,
-            [],
-            [],
-            {"display": "none"},
-            {"color": "#888888"},
-            True,
-        )
-
-    if not virtual_data:
-        return "No data available.", True, [], [], {"display": "none"}, {"color": "#888888"}, True
-
-    try:
-        links_data = json.loads(processed_links)
-        if len(links_data) == 0:
-            return (
-                "No processed links available.",
-                True,
-                [],
-                [],
-                {"display": "none"},
-                {"color": "#888888"},
-                True,
-            )
-
-        links_data = links_data["gm_data"]
-        # Get selected GCF IDs and their corresponding data
-        selected_gcfs = {
-            row["GCF ID"]: {
-                "MiBIG IDs": row["MiBIG IDs"],
-                "BGC Classes": row["BGC Classes"],
-            }
-            for i, row in enumerate(virtual_data)
-            if i in selected_rows
-        }
-
-        # Convert links data to DataFrame
-        links_df = pd.DataFrame(links_data)
-
-        # Apply scoring filters
-        filtered_df = scoring_apply(links_df, dropdown_menus, radiobuttons, cutoffs_met)
-
-        # Filter for selected GCFs and aggregate results
-        results = []
-        for gcf_id in selected_gcfs:
-            gcf_links = filtered_df[filtered_df["gcf_id"] == gcf_id]
-            if not gcf_links.empty:
-                # Sort by score in descending order
-                gcf_links = gcf_links.sort_values("score", ascending=False)
-
-                top_spectrum = gcf_links.iloc[0]
-                result = {
-                    # Mandatory fields
-                    "GCF ID": int(gcf_id),
-                    "# Links": len(gcf_links),
-                    "Average Score": round(gcf_links["score"].mean(), 2),
-                    # Optional fields with None handling
-                    "Top Spectrum ID": int(top_spectrum["spectrum"].get("id", float("nan"))),
-                    "Top Spectrum Precursor m/z": round(
-                        top_spectrum["spectrum"].get("precursor_mz", float("nan")), 4
-                    )
-                    if top_spectrum["spectrum"].get("precursor_mz") is not None
-                    else float("nan"),
-                    "Top Spectrum GNPS ID": top_spectrum["spectrum"].get("gnps_id", "None")
-                    if top_spectrum["spectrum"].get("gnps_id") is not None
-                    else "None",
-                    "Top Spectrum Score": round(top_spectrum.get("score", float("nan")), 4)
-                    if top_spectrum.get("score") is not None
-                    else float("nan"),
-                    "MiBIG IDs": selected_gcfs[gcf_id]["MiBIG IDs"],
-                    "BGC Classes": selected_gcfs[gcf_id]["BGC Classes"],
-                    # Store all spectrum data for later use (download, etc.)
-                    "spectrum_ids_str": "|".join(
-                        [str(s.get("id", "")) for s in gcf_links["spectrum"]]
-                    ),
-                    "spectrum_scores_str": "|".join(
-                        [str(score) for score in gcf_links["score"].tolist()]
-                    ),
-                }
-                results.append(result)
-
-        if not results:
-            return (
-                "No matching links found for selected GCFs.",
-                True,
-                [],
-                [],
-                {"display": "none"},
-                {"color": "#888888"},
-                True,
-            )
-
-        # Prepare tooltip data
-        tooltip_data = []
-        for result in results:
-            spectrum_ids = (
-                result["spectrum_ids_str"].split("|") if result["spectrum_ids_str"] else []
-            )
-            spectrum_scores = (
-                [float(s) for s in result["spectrum_scores_str"].split("|")]
-                if result["spectrum_scores_str"]
-                else []
-            )
-            # Show only top 5 spectrums in tooltip
-            max_tooltip_entries = 5
-            total_entries = len(result["spectrum_ids_str"])
-
-            spectrums_table = "| Spectrum ID | Score |\n|------------|--------|\n"
-
-            # Add top entries
-            for spectrum_id, score in zip(
-                spectrum_ids[:max_tooltip_entries],
-                spectrum_scores[:max_tooltip_entries],
-            ):
-                spectrums_table += f"| {spectrum_id} | {round(score, 4)} |\n"
-
-            # Add indication of more entries if applicable
-            if total_entries > max_tooltip_entries:
-                remaining = total_entries - max_tooltip_entries
-                spectrums_table += f"\n... {remaining} more entries ..."
-
-            row_tooltip = {
-                "# Links": {"value": spectrums_table, "type": "markdown"},
-            }
-            tooltip_data.append(row_tooltip)
-
-        return (
-            "",
-            False,
-            results,
-            tooltip_data,
-            {"display": "block"},
-            {},
-            False,
-        )
-
-    except Exception as e:
-        return (
-            f"Error processing results: {str(e)}",
-            True,
-            [],
-            [],
-            {"display": "none"},
-            {"color": "#888888"},
-            True,
-        )
+    n_clicks,
+    virtual_data,
+    selected_rows,
+    processed_links,
+    dropdown_menus,
+    radiobuttons,
+    cutoffs_met,
+):
+    """Update the GM results DataTable based on scoring filters."""
+    return update_results_datatable(
+        n_clicks,
+        virtual_data,
+        selected_rows,
+        processed_links,
+        dropdown_menus,
+        radiobuttons,
+        cutoffs_met,
+        "gm",
+        "GCF",
+    )
 
 
 @app.callback(
@@ -2006,53 +2182,8 @@ def gm_toggle_download_button(table_data):
     prevent_initial_call=True,
 )
 def gm_generate_excel(n_clicks, table_data):
-    """Generate Excel file with two sheets: full results and detailed spectrum data."""
-    if not ctx.triggered or not table_data:
-        return None, False, ""
-
-    try:
-        output = io.BytesIO()
-        with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
-            # Sheet 1: Best candidate links table
-            results_df = pd.DataFrame(table_data)
-
-            # Filter out only the internal fields used for tooltips and processing
-            internal_fields = ["spectrum_ids_str", "spectrum_scores_str"]
-            export_columns = [col for col in results_df.columns if col not in internal_fields]
-
-            # Use all non-internal columns
-            results_df = results_df[export_columns]
-            results_df.to_excel(writer, sheet_name="Best Candidate Links", index=False)
-
-            # Sheet 2: Detailed spectrum data
-            detailed_data = []
-            for row in table_data:
-                gcf_id = row["GCF ID"]
-                spectrum_ids = (
-                    row.get("spectrum_ids_str", "").split("|")
-                    if row.get("spectrum_ids_str")
-                    else []
-                )
-                scores = (
-                    [float(s) for s in row.get("spectrum_scores_str", "").split("|")]
-                    if row.get("spectrum_scores_str")
-                    else []
-                )
-
-                # Add all spectrum entries without truncation
-                for spectrum_id, score in zip(spectrum_ids, scores):
-                    detailed_data.append(
-                        {"GCF ID": gcf_id, "Spectrum ID": int(spectrum_id), "Score": score}
-                    )
-
-            detailed_df = pd.DataFrame(detailed_data)
-            detailed_df.to_excel(writer, sheet_name="All Candidate Links", index=False)
-
-        # Prepare the file for download
-        excel_data = output.getvalue()
-        return dcc.send_bytes(excel_data, "nplinker_genom_to_metabol.xlsx"), False, ""
-    except Exception as e:
-        return None, True, f"Error generating Excel file: {str(e)}"
+    """Generate Excel file for GM data."""
+    return generate_excel(n_clicks, table_data, "gm")
 
 
 # ------------------ MG Results table functions ------------------ #
@@ -2120,186 +2251,26 @@ def mg_update_columns(selected_columns: list[str] | None, n_clicks: int | None) 
     State({"type": "mg-scoring-dropdown-ids-cutoff-met", "index": ALL}, "value"),
 )
 def mg_update_results_datatable(
-    n_clicks: int | None,
-    virtual_data: list[dict] | None,
-    selected_rows: list[int] | None,
-    processed_links: str,
-    dropdown_menus: list[str],
-    radiobuttons: list[str],
-    cutoffs_met: list[str],
-) -> tuple[str, bool, list[dict], list[dict], dict, dict, bool]:
-    """Update the results DataTable based on scoring filters.
-
-    Args:
-        n_clicks: Number of times the "Show Results" button has been clicked.
-        virtual_data: Current filtered data from the MF table.
-        selected_rows: Indices of selected rows in the MF table.
-        processed_links: JSON string of processed links data.
-        dropdown_menus: List of selected dropdown menu options.
-        radiobuttons: List of selected radio button options.
-        cutoffs_met: List of cutoff values for METCALF method.
-
-    Returns:
-        Tuple containing alert message, visibility state, table data and settings, and header style.
-    """
-    triggered_id = ctx.triggered_id
-
-    if triggered_id in ["mg-table-select-all-checkbox", "mg-table"]:
-        return "", False, [], [], {"display": "none"}, {"color": "#888888"}, True
-
-    if n_clicks is None:
-        return "", False, [], [], {"display": "none"}, {"color": "#888888"}, True
-
-    if not selected_rows:
-        return (
-            "No MFs selected. Please select MFs and try again.",
-            True,
-            [],
-            [],
-            {"display": "none"},
-            {"color": "#888888"},
-            True,
-        )
-
-    if not virtual_data:
-        return "No data available.", True, [], [], {"display": "none"}, {"color": "#888888"}, True
-
-    try:
-        links_data = json.loads(processed_links)
-        if len(links_data) == 0:
-            return (
-                "No processed links available.",
-                True,
-                [],
-                [],
-                {"display": "none"},
-                {"color": "#888888"},
-                True,
-            )
-
-        links_data = links_data["mg_data"]
-        # Get selected MF IDs and spectrum IDs
-        selected_mfs = {
-            row["MF ID"]: {
-                "Spectra IDs": row["Spectra IDs"].split(", ")
-                if isinstance(row["Spectra IDs"], str)
-                else [],
-                "Spectra GNPS IDs": row["Spectra GNPS IDs"].split(", ")
-                if isinstance(row["Spectra GNPS IDs"], str)
-                else [],
-                "Spectra precursor m/z": row["Spectra precursor m/z"].split(", ")
-                if isinstance(row["Spectra precursor m/z"], str)
-                else [],
-            }
-            for i, row in enumerate(virtual_data)
-            if i in selected_rows
-        }
-
-        # Convert links data to DataFrame
-        links_df = pd.DataFrame(links_data)
-
-        # Apply scoring filters
-        filtered_df = scoring_apply(links_df, dropdown_menus, radiobuttons, cutoffs_met)
-        # Filter for selected MFs and aggregate results
-        results = []
-        for mf_id in selected_mfs:
-            mf_links = filtered_df[filtered_df["mf_id"] == mf_id]
-            if not mf_links.empty:
-                # Sort by score in descending order
-                mf_links = mf_links.sort_values("score", ascending=False)
-
-                # Get the top GCF for this MF
-                top_gcf = mf_links.iloc[0]
-
-                result = {
-                    # Mandatory fields
-                    "MF ID": int(mf_id),
-                    "# Links": len(mf_links),
-                    "Average Score": round(mf_links["score"].mean(), 2),
-                    # # Optional fields
-                    "Top GCF ID": int(top_gcf["gcf"].get("id", float("nan"))),
-                    "Top GCF # BGCs": top_gcf["gcf"].get("# BGCs", 0),
-                    "Top GCF BGC IDs": ", ".join([str(s) for s in top_gcf["gcf"]["BGC IDs"]]),
-                    "Top GCF BGC Classes": ", ".join(
-                        {
-                            item
-                            for sublist in top_gcf["gcf"].get("BGC Classes", [])
-                            for item in sublist
-                        }
-                    ),
-                    "Top GCF Score": round(top_gcf.get("score", float("nan")), 4),
-                    # Store all GCF data for later use (download, etc.)
-                    "gcf_ids_str": "|".join([str(gcf.get("id", "")) for gcf in mf_links["gcf"]]),
-                    "gcf_scores_str": "|".join(
-                        [str(score) for score in mf_links["score"].tolist()]
-                    ),
-                }
-                results.append(result)
-
-        if not results:
-            return (
-                "No matching links found for selected MFs.",
-                True,
-                [],
-                [],
-                {"display": "none"},
-                {"color": "#888888"},
-                True,
-            )
-
-        # Prepare tooltip data
-        tooltip_data = []
-        for result in results:
-            gcf_ids = result["gcf_ids_str"].split("|") if result["gcf_ids_str"] else []
-            gcf_scores = (
-                [float(s) for s in result["gcf_scores_str"].split("|")]
-                if result["gcf_scores_str"]
-                else []
-            )
-
-            # Show only top 5 GCFs in tooltip
-            max_tooltip_entries = 5
-            total_entries = len(gcf_ids)
-
-            gcfs_table = "| GCF ID | Score |\n|--------|--------|\n"
-
-            # Add top entries
-            for gcf_id, score in zip(
-                gcf_ids[:max_tooltip_entries],
-                gcf_scores[:max_tooltip_entries],
-            ):
-                gcfs_table += f"| {gcf_id} | {round(score, 4)} |\n"
-
-            # Add indication of more entries if applicable
-            if total_entries > max_tooltip_entries:
-                remaining = total_entries - max_tooltip_entries
-                gcfs_table += f"\n... {remaining} more entries ..."
-
-            row_tooltip = {
-                "# Links": {"value": gcfs_table, "type": "markdown"},
-            }
-            tooltip_data.append(row_tooltip)
-
-        return (
-            "",
-            False,
-            results,
-            tooltip_data,
-            {"display": "block"},
-            {},
-            False,
-        )
-
-    except Exception as e:
-        return (
-            f"Error processing results: {str(e)}",
-            True,
-            [],
-            [],
-            {"display": "none"},
-            {"color": "#888888"},
-            True,
-        )
+    n_clicks,
+    virtual_data,
+    selected_rows,
+    processed_links,
+    dropdown_menus,
+    radiobuttons,
+    cutoffs_met,
+):
+    """Update the MG results DataTable based on scoring filters."""
+    return update_results_datatable(
+        n_clicks,
+        virtual_data,
+        selected_rows,
+        processed_links,
+        dropdown_menus,
+        radiobuttons,
+        cutoffs_met,
+        "mg",
+        "MF",
+    )
 
 
 @app.callback(
@@ -2330,50 +2301,5 @@ def mg_toggle_download_button(table_data):
     prevent_initial_call=True,
 )
 def mg_generate_excel(n_clicks, table_data):
-    """Generate Excel file with two sheets: full results and detailed GCF data."""
-    if not ctx.triggered or not table_data:
-        return None, False, ""
-
-    try:
-        output = io.BytesIO()
-        with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
-            # Sheet 1: Best candidate links table
-            results_df = pd.DataFrame(table_data)
-
-            # Filter out only the internal fields used for tooltips and processing
-            internal_fields = ["gcf_ids_str", "gcf_scores_str"]
-            export_columns = [col for col in results_df.columns if col not in internal_fields]
-
-            # Use all non-internal columns
-            results_df = results_df[export_columns]
-            results_df.to_excel(writer, sheet_name="Best Candidate Links", index=False)
-
-            # Sheet 2: Detailed GCF data
-            detailed_data = []
-            for row in table_data:
-                mf_id = row["MF ID"]
-                gcf_ids = row.get("gcf_ids_str", "").split("|") if row.get("gcf_ids_str") else []
-                scores = (
-                    [float(s) for s in row.get("gcf_scores_str", "").split("|")]
-                    if row.get("gcf_scores_str")
-                    else []
-                )
-
-                # Add all GCF entries without truncation
-                for gcf_id, score in zip(gcf_ids, scores):
-                    detailed_data.append(
-                        {
-                            "MF ID": mf_id,
-                            "GCF ID": int(gcf_id),
-                            "Score": score,
-                        }
-                    )
-
-            detailed_df = pd.DataFrame(detailed_data)
-            detailed_df.to_excel(writer, sheet_name="All Candidate Links", index=False)
-
-        # Prepare the file for download
-        excel_data = output.getvalue()
-        return dcc.send_bytes(excel_data, "nplinker_metabol_to_genom.xlsx"), False, ""
-    except Exception as e:
-        return None, True, f"Error generating Excel file: {str(e)}"
+    """Generate Excel file for MG data."""
+    return generate_excel(n_clicks, table_data, "mg")
