@@ -1049,8 +1049,6 @@ def gm_table_select_rows(
 
 
 # ------------------ MG Data Table functions ------------------ #
-
-
 def mg_filter_apply(
     df: pd.DataFrame,
     dropdown_menus: list[str],
@@ -1605,8 +1603,6 @@ def gm_scoring_update_placeholder(
 
 
 # ------------------ MG Scoring functions ------------------ #
-
-
 @app.callback(
     Output("mg-scoring-blocks-id", "data"),
     Input({"type": "mg-scoring-add-button", "index": ALL}, "n_clicks"),
@@ -1665,19 +1661,11 @@ def mg_scoring_update_placeholder(
     return scoring_update_placeholder(selected_value)
 
 
-# ------------------ GM Results table functions ------------------ #
-
-
-@app.callback(
-    Output("gm-results-table-column-settings-modal", "is_open"),
-    [
-        Input("gm-results-table-column-settings-button", "n_clicks"),
-        Input("gm-results-table-column-settings-close", "n_clicks"),
-    ],
-    [State("gm-results-table-column-settings-modal", "is_open")],
-)
+# ------------------ Common Results Table Functions ------------------
 def toggle_column_settings_modal(n1, n2, is_open):
     """Toggle the visibility of the column settings modal.
+
+    Generic function to handle both GM and MG column settings modal toggling.
 
     Args:
         n1: Number of clicks on the open button.
@@ -1692,28 +1680,30 @@ def toggle_column_settings_modal(n1, n2, is_open):
     return is_open
 
 
-@app.callback(
-    Output("gm-results-table", "columns"),
-    [
-        Input("gm-results-table-column-toggle", "value"),
-        Input("gm-results-button", "n_clicks"),
-    ],
-)
-def update_columns(selected_columns: list[str] | None, n_clicks: int | None) -> list[dict]:
+def update_columns(
+    selected_columns: list[str] | None,
+    n_clicks: int | None,
+    mandatory_columns: list[dict],
+    optional_columns: list[dict],
+) -> list[dict]:
     """Update the columns of the results table based on user selections.
+
+    Generic function to handle both GM and MG column updates.
 
     Args:
         selected_columns: List of selected columns to display.
         n_clicks: Number of times the "Show Results" button has been clicked.
+        mandatory_columns: List of mandatory column definitions.
+        optional_columns: List of optional column definitions.
 
     Returns:
         List of column definitions for the results table.
     """
     # Start with mandatory columns
-    columns: list[dict] = GM_RESULTS_TABLE_MANDATORY_COLUMNS.copy()
+    columns: list[dict] = mandatory_columns.copy()
 
     # Create a dictionary for optional columns lookup
-    optional_columns_dict = {col["id"]: col for col in GM_RESULTS_TABLE_OPTIONAL_COLUMNS}
+    optional_columns_dict = {col["id"]: col for col in optional_columns}
 
     # Add the selected columns in the order they appear in selected_columns
     if selected_columns:
@@ -1726,6 +1716,54 @@ def update_columns(selected_columns: list[str] | None, n_clicks: int | None) -> 
         )
 
     return columns
+
+
+# ------------------ GM Results table functions ------------------ #
+@app.callback(
+    Output("gm-results-table-column-settings-modal", "is_open"),
+    [
+        Input("gm-results-table-column-settings-button", "n_clicks"),
+        Input("gm-results-table-column-settings-close", "n_clicks"),
+    ],
+    [State("gm-results-table-column-settings-modal", "is_open")],
+)
+def gm_toggle_column_settings_modal(n1, n2, is_open):
+    """Toggle the visibility of the GM column settings modal.
+
+    Args:
+        n1: Number of clicks on the open button.
+        n2: Number of clicks on the close button.
+        is_open: Current state of the modal (open or closed).
+
+    Returns:
+        The new state of the modal (open or closed).
+    """
+    return toggle_column_settings_modal(n1, n2, is_open)
+
+
+@app.callback(
+    Output("gm-results-table", "columns"),
+    [
+        Input("gm-results-table-column-toggle", "value"),
+        Input("gm-results-button", "n_clicks"),
+    ],
+)
+def gm_update_columns(selected_columns: list[str] | None, n_clicks: int | None) -> list[dict]:
+    """Update the columns of the GM results table based on user selections.
+
+    Args:
+        selected_columns: List of selected columns to display.
+        n_clicks: Number of times the "Show Results" button has been clicked.
+
+    Returns:
+        List of column definitions for the results table.
+    """
+    return update_columns(
+        selected_columns,
+        n_clicks,
+        GM_RESULTS_TABLE_MANDATORY_COLUMNS,
+        GM_RESULTS_TABLE_OPTIONAL_COLUMNS,
+    )
 
 
 @app.callback(
@@ -2005,8 +2043,6 @@ def generate_excel(n_clicks, table_data):
 
 
 # ------------------ MG Results table functions ------------------ #
-
-
 @app.callback(
     Output("mg-results-table-column-settings-modal", "is_open"),
     [
@@ -2015,8 +2051,8 @@ def generate_excel(n_clicks, table_data):
     ],
     [State("mg-results-table-column-settings-modal", "is_open")],
 )
-def toggle_mg_column_settings_modal(n1, n2, is_open):
-    """Toggle the visibility of the column settings modal.
+def mg_toggle_column_settings_modal(n1, n2, is_open):
+    """Toggle the visibility of the MG column settings modal.
 
     Args:
         n1: Number of clicks on the open button.
@@ -2026,9 +2062,7 @@ def toggle_mg_column_settings_modal(n1, n2, is_open):
     Returns:
         The new state of the modal (open or closed).
     """
-    if n1 or n2:
-        return not is_open
-    return is_open
+    return toggle_column_settings_modal(n1, n2, is_open)
 
 
 @app.callback(
@@ -2038,8 +2072,8 @@ def toggle_mg_column_settings_modal(n1, n2, is_open):
         Input("mg-results-button", "n_clicks"),
     ],
 )
-def update_mg_columns(selected_columns: list[str] | None, n_clicks: int | None) -> list[dict]:
-    """Update the columns of the results table based on user selections.
+def mg_update_columns(selected_columns: list[str] | None, n_clicks: int | None) -> list[dict]:
+    """Update the columns of the MG results table based on user selections.
 
     Args:
         selected_columns: List of selected columns to display.
@@ -2048,23 +2082,12 @@ def update_mg_columns(selected_columns: list[str] | None, n_clicks: int | None) 
     Returns:
         List of column definitions for the results table.
     """
-    # Start with mandatory columns
-    columns: list[dict] = MG_RESULTS_TABLE_MANDATORY_COLUMNS.copy()
-
-    # Create a dictionary for optional columns lookup
-    optional_columns_dict = {col["id"]: col for col in MG_RESULTS_TABLE_OPTIONAL_COLUMNS}
-
-    # Add the selected columns in the order they appear in selected_columns
-    if selected_columns:
-        columns.extend(
-            [
-                optional_columns_dict[col_id]
-                for col_id in selected_columns
-                if col_id in optional_columns_dict
-            ]
-        )
-
-    return columns
+    return update_columns(
+        selected_columns,
+        n_clicks,
+        MG_RESULTS_TABLE_MANDATORY_COLUMNS,
+        MG_RESULTS_TABLE_OPTIONAL_COLUMNS,
+    )
 
 
 @app.callback(
