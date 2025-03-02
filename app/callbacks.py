@@ -376,6 +376,56 @@ def gm_plot(stored_data: str | None) -> tuple[dict | go.Figure, dict]:
     return fig, {"display": "block"}
 
 
+# ------------------ Common Filter and Table Functions ------------------ #
+def filter_add_block(n_clicks: list[int], blocks_id: list[str]) -> list[str]:
+    """Add a new block to the layout when the add button is clicked.
+
+    Generic function to handle both GM and MG filter block additions.
+
+    Args:
+        n_clicks: List of number of clicks for each add button.
+        blocks_id: Current list of block IDs.
+
+    Returns:
+        Updated list of block IDs.
+    """
+    if not any(n_clicks):
+        raise dash.exceptions.PreventUpdate
+    # Create a unique ID for the new block
+    new_block_id = str(uuid.uuid4())
+    blocks_id.append(new_block_id)
+    return blocks_id
+
+
+def table_toggle_selection(
+    value: list | None,
+    original_rows: list,
+    filtered_rows: list | None,
+) -> list:
+    """Toggle between selecting all rows and deselecting all rows in the current view of a Dash DataTable.
+
+    Generic function to handle both GM and MG table row selections.
+
+    Args:
+        value: Value of the select-all checkbox.
+        original_rows: All rows in the table.
+        filtered_rows: Rows visible after filtering, or None if no filter is applied.
+
+    Returns:
+        List of indices of selected rows after toggling.
+    """
+    is_checked = value and "disabled" in value
+
+    if filtered_rows is None:
+        # No filtering applied, toggle all rows
+        return list(range(len(original_rows))) if is_checked else []
+    else:
+        # Filtering applied, toggle only visible rows
+        return (
+            [i for i, row in enumerate(original_rows) if row in filtered_rows] if is_checked else []
+        )
+
+
 # ------------------ GM Filter functions ------------------ #
 def gm_filter_create_initial_block(block_id: str) -> dmc.Grid:
     """Create the initial block component for the GM tab with the given ID.
@@ -433,7 +483,9 @@ def gm_filter_create_initial_block(block_id: str) -> dmc.Grid:
     State("gm-filter-blocks-id", "data"),
 )
 def gm_filter_add_block(n_clicks: list[int], blocks_id: list[str]) -> list[str]:
-    """Add a new block to the layout when the add button is clicked.
+    """Add a new block to the GM filters layout when the add button is clicked.
+
+    Calls the common filter_add_block function.
 
     Args:
         n_clicks: List of number of clicks for each add button.
@@ -442,12 +494,7 @@ def gm_filter_add_block(n_clicks: list[int], blocks_id: list[str]) -> list[str]:
     Returns:
         Updated list of block IDs.
     """
-    if not any(n_clicks):
-        raise dash.exceptions.PreventUpdate
-    # Create a unique ID for the new block
-    new_block_id = str(uuid.uuid4())
-    blocks_id.append(new_block_id)
-    return blocks_id
+    return filter_add_block(n_clicks, blocks_id)
 
 
 @app.callback(
@@ -642,7 +689,9 @@ def mg_filter_create_initial_block(block_id: str) -> dmc.Grid:
     State("mg-filter-blocks-id", "data"),
 )
 def mg_filter_add_block(n_clicks: list[int], blocks_id: list[str]) -> list[str]:
-    """Add a new block to the layout when the add button is clicked.
+    """Add a new block to the MG filters layout when the add button is clicked.
+
+    Calls the common filter_add_block function.
 
     Args:
         n_clicks: List of number of clicks for each add button.
@@ -651,12 +700,7 @@ def mg_filter_add_block(n_clicks: list[int], blocks_id: list[str]) -> list[str]:
     Returns:
         Updated list of block IDs.
     """
-    if not any(n_clicks):
-        raise dash.exceptions.PreventUpdate
-    # Create a unique ID for the new block
-    new_block_id = str(uuid.uuid4())
-    blocks_id.append(new_block_id)
-    return blocks_id
+    return filter_add_block(n_clicks, blocks_id)
 
 
 @app.callback(
@@ -955,7 +999,9 @@ def gm_table_toggle_selection(
     original_rows: list,
     filtered_rows: list | None,
 ) -> list:
-    """Toggle between selecting all rows and deselecting all rows in the current view of a Dash DataTable.
+    """Toggle between selecting all rows and deselecting all rows in the GM DataTable.
+
+    Calls the common table_toggle_selection function.
 
     Args:
         value: Value of the select-all checkbox.
@@ -965,16 +1011,7 @@ def gm_table_toggle_selection(
     Returns:
         List of indices of selected rows after toggling.
     """
-    is_checked = value and "disabled" in value
-
-    if filtered_rows is None:
-        # No filtering applied, toggle all rows
-        return list(range(len(original_rows))) if is_checked else []
-    else:
-        # Filtering applied, toggle only visible rows
-        return (
-            [i for i, row in enumerate(original_rows) if row in filtered_rows] if is_checked else []
-        )
+    return table_toggle_selection(value, original_rows, filtered_rows)
 
 
 @app.callback(
@@ -1201,7 +1238,9 @@ def mg_table_toggle_selection(
     original_rows: list,
     filtered_rows: list | None,
 ) -> list:
-    """Toggle between selecting all rows and deselecting all rows in the current view of a Dash DataTable.
+    """Toggle between selecting all rows and deselecting all rows in the MG DataTable.
+
+    Calls the common table_toggle_selection function.
 
     Args:
         value: Value of the select-all checkbox.
@@ -1211,16 +1250,7 @@ def mg_table_toggle_selection(
     Returns:
         List of indices of selected rows after toggling.
     """
-    is_checked = value and "disabled" in value
-
-    if filtered_rows is None:
-        # No filtering applied, toggle all rows
-        return list(range(len(original_rows))) if is_checked else []
-    else:
-        # Filtering applied, toggle only visible rows
-        return (
-            [i for i, row in enumerate(original_rows) if row in filtered_rows] if is_checked else []
-        )
+    return table_toggle_selection(value, original_rows, filtered_rows)
 
 
 @app.callback(
