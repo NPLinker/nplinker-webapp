@@ -1,3 +1,4 @@
+# GM Table Configurations
 GM_FILTER_DROPDOWN_MENU_OPTIONS = [
     {"label": "GCF ID", "value": "GCF_ID"},
     {"label": "BGC Class", "value": "BGC_CLASS"},
@@ -13,8 +14,6 @@ GM_FILTER_DROPDOWN_BGC_CLASS_OPTIONS = [
     {"label": "Other", "value": "OTHER"},
     {"label": "Unknown", "value": "UNKNOWN"},
 ]
-
-GM_SCORING_DROPDOWN_MENU_OPTIONS = [{"label": "Metcalf", "value": "METCALF"}]
 
 GM_RESULTS_TABLE_MANDATORY_COLUMNS = [
     {"name": "GCF ID", "id": "GCF ID", "type": "numeric"},
@@ -39,3 +38,34 @@ GM_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS = [
     "MiBIG IDs",
     "BGC Classes",
 ]
+
+# MG Table Configurations
+MG_FILTER_DROPDOWN_MENU_OPTIONS = [
+    {"label": "MF ID", "value": "MF_ID"},
+    {"label": "Spectrum ID", "value": "SPECTRUM_ID"},
+]
+
+MG_RESULTS_TABLE_MANDATORY_COLUMNS = [
+    {"name": "MF ID", "id": "MF ID", "type": "numeric"},
+    {"name": "# Links", "id": "# Links", "type": "numeric"},
+    {"name": "Average Score", "id": "Average Score", "type": "numeric"},
+]
+
+MG_RESULTS_TABLE_OPTIONAL_COLUMNS = [
+    {"name": "Top GCF ID", "id": "Top GCF ID", "type": "numeric"},
+    {"name": "Top GCF # BGCs", "id": "Top GCF # BGCs", "type": "numeric"},
+    {"name": "Top GCF BGC IDs", "id": "Top GCF BGC IDs", "type": "text"},
+    {"name": "Top GCF BGC Classes", "id": "Top GCF BGC Classes", "type": "text"},
+    {"name": "Top GCF Score", "id": "Top GCF Score", "type": "numeric"},
+]
+
+MG_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS = [
+    "Top GCF ID",
+    "Top GCF # BGCs",
+    "Top GCF BGC IDs",
+    "Top GCF BGC Classes",
+    "Top GCF Score",
+]
+
+# Scoring Configurations
+SCORING_DROPDOWN_MENU_OPTIONS = [{"label": "Metcalf", "value": "METCALF"}]
