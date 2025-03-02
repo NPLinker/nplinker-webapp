@@ -9,6 +9,506 @@ from dash import dcc
 from dash import html
 
 
+# ------------------ Helper Functions ------------------ #
+def create_data_table(table_id, select_all_id):
+    """Create a common data table component.
+
+    Args:
+        table_id: The ID for the table component.
+        select_all_id: The ID for the select-all checkbox.
+
+    Returns:
+        A dash_table.DataTable component.
+    """
+    return dash_table.DataTable(
+        id=table_id,
+        columns=[],
+        data=[],
+        tooltip_data=[],
+        editable=False,
+        filter_action="none",
+        sort_action="none",
+        sort_mode="multi",
+        column_selectable=False,
+        row_deletable=False,
+        row_selectable="multi",
+        selected_columns=[],
+        selected_rows=[],
+        page_action="native",
+        page_current=0,
+        page_size=10,
+        style_cell={"textAlign": "left", "padding": "5px"},
+        style_header={
+            "backgroundColor": "#FF6E42",
+            "fontWeight": "bold",
+            "color": "white",
+        },
+        style_data={"border": "1px solid #ddd"},
+        style_data_conditional=[
+            {
+                "if": {"state": "selected"},
+                "backgroundColor": "white",
+                "border": "1px solid #ddd",
+            }
+        ],
+        style_cell_conditional=[{"if": {"column_id": "selector"}, "width": "30px"}],
+        tooltip_delay=0,
+        tooltip_duration=None,
+        css=[
+            {
+                "selector": ".dash-table-tooltip",
+                "rule": """
+                    background-color: #ffd8cc;
+                    font-family: monospace;
+                    font-size: 12px;
+                    max-width: none !important;
+                    white-space: pre-wrap;
+                    padding: 8px;
+                    border: 1px solid #FF6E42;
+                    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+                """,
+            }
+        ],
+        tooltip={"type": "markdown"},
+    )
+
+
+def create_results_table(table_id, no_sort_columns):
+    """Create a common results table component.
+
+    Args:
+        table_id: The ID for the table component.
+        no_sort_columns: List of column names that should not be sortable.
+
+    Returns:
+        A dash_table.DataTable component.
+    """
+    return dash_table.DataTable(
+        id=table_id,
+        columns=[],
+        data=[],
+        editable=False,
+        filter_action="none",
+        sort_action="native",
+        sort_mode="single",
+        sort_as_null=["None", ""],
+        sort_by=[],
+        page_action="native",
+        page_current=0,
+        page_size=10,
+        style_table={"width": "100%"},
+        style_cell={
+            "textAlign": "left",
+            "padding": "5px",
+            "overflow": "hidden",
+            "textOverflow": "ellipsis",
+            "minWidth": "80px",
+            "width": "auto",
+            "maxWidth": "auto",
+        },
+        style_header={
+            "backgroundColor": "#FF6E42",
+            "fontWeight": "bold",
+            "color": "white",
+            "whiteSpace": "normal",
+            "height": "auto",
+        },
+        style_data={
+            "border": "1px solid #ddd",
+            "whiteSpace": "normal",
+            "height": "auto",
+        },
+        style_data_conditional=[
+            {
+                "if": {"state": "selected"},
+                "backgroundColor": "white",
+                "border": "1px solid #ddd",
+            }
+        ],
+        tooltip_delay=0,
+        tooltip_duration=None,
+        css=(
+            [
+                {
+                    "selector": ".dash-table-tooltip",
+                    "rule": """
+                        background-color: #ffd8cc;
+                        font-family: monospace;
+                        font-size: 12px;
+                        max-width: none !important;
+                        white-space: pre-wrap;
+                        padding: 8px;
+                        border: 1px solid #FF6E42;
+                        box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+                    """,
+                }
+            ]
+            + [
+                {
+                    "selector": f'th[data-dash-column="{col}"] span.column-header--sort',
+                    "rule": "display: none",
+                }
+                for col in no_sort_columns
+            ]
+            + [
+                # Style sort arrow hover state
+                {
+                    "selector": ".column-header--sort:hover",
+                    "rule": "color: white !important;",
+                }
+            ]
+        ),
+        tooltip={"type": "markdown"},
+    )
+
+
+def create_filter_accordion(
+    title, control_id, blocks_store_id, blocks_container_id, apply_button_id
+):
+    """Create a common filter accordion component.
+
+    Args:
+        title: The title for the accordion.
+        control_id: The ID for the accordion control.
+        blocks_store_id: The ID for blocks storage.
+        blocks_container_id: The ID for blocks container.
+        apply_button_id: The ID for the apply button.
+
+    Returns:
+        A dmc.Accordion component.
+    """
+    return dmc.Accordion(
+        [
+            dmc.AccordionItem(
+                [
+                    dmc.AccordionControl(
+                        title,
+                        disabled=True,
+                        id=control_id,
+                        className="mt-5 mb-3",
+                    ),
+                    dmc.AccordionPanel(
+                        [
+                            html.Div(
+                                [
+                                    dcc.Store(id=blocks_store_id, data=[]),
+                                    html.Div(
+                                        id=blocks_container_id,
+                                        children=[],
+                                    ),
+                                ]
+                            ),
+                            html.Div(
+                                dbc.Button(
+                                    "Apply Filters",
+                                    id=apply_button_id,
+                                    color="primary",
+                                    className="mt-3",
+                                ),
+                                className="d-flex justify-content-center",
+                            ),
+                        ]
+                    ),
+                ],
+                value=f"{control_id.split('-')[0]}-filter-accordion",
+            ),
+        ],
+        className="mt-5 mb-3",
+    )
+
+
+def create_scoring_accordion(control_id, blocks_store_id, blocks_container_id):
+    """Create a common scoring accordion component.
+
+    Args:
+        control_id: The ID for the accordion control.
+        blocks_store_id: The ID for blocks storage.
+        blocks_container_id: The ID for blocks container.
+
+    Returns:
+        A dmc.Accordion component.
+    """
+    return dmc.Accordion(
+        [
+            dmc.AccordionItem(
+                [
+                    dmc.AccordionControl(
+                        "Scoring",
+                        disabled=True,
+                        id=control_id,
+                        className="mt-5 mb-3",
+                    ),
+                    dmc.AccordionPanel(
+                        [
+                            html.Div(
+                                [
+                                    dcc.Store(id=blocks_store_id, data=[]),
+                                    html.Div(
+                                        id=blocks_container_id,
+                                        children=[],
+                                    ),
+                                ]
+                            ),
+                        ]
+                    ),
+                ],
+                value=f"{control_id.split('-')[0]}-scoring-accordion",
+            ),
+        ],
+        className="mt-5 mb-3",
+    )
+
+
+def create_results_section(  # noqa: D417
+    button_id,
+    alert_id,
+    table_id,
+    table_header_id,
+    table_body_id,
+    settings_button_id,
+    settings_modal_id,
+    settings_close_id,
+    column_toggle_id,
+    checkl_options,
+    download_button_id,
+    download_alert_id,
+    download_id,
+    no_sort_columns,
+):
+    """Create a common results section.
+
+    Args:
+        Various IDs for components and configuration.
+
+    Returns:
+        A list of components for the results section.
+    """
+    results = html.Div(
+        [
+            html.Div(
+                dbc.Button(
+                    "Show Results",
+                    id=button_id,
+                    color="primary",
+                    className="mt-3",
+                    disabled=True,
+                ),
+                className="d-flex justify-content-center",
+            ),
+            html.Div(
+                dbc.Alert(
+                    "Your alert message here",
+                    id=alert_id,
+                    color="warning",
+                    className="mt-3 text-center w-75 mx-auto",
+                    is_open=False,
+                ),
+                className="d-flex justify-content-center",
+            ),
+        ]
+    )
+
+    results_table = dbc.Card(
+        [
+            dbc.CardHeader(
+                [
+                    "Candidate Links",
+                    dbc.Button(
+                        "Columns settings",
+                        id=settings_button_id,
+                        color="secondary",
+                        size="sm",
+                        className="float-end",
+                    ),
+                    dbc.Modal(
+                        [
+                            dbc.ModalHeader("Select columns to display"),
+                            dbc.ModalBody(
+                                dbc.Checklist(
+                                    id=column_toggle_id,
+                                    options=checkl_options,
+                                    value=[checkl_options[0]],
+                                    switch=True,
+                                )
+                            ),
+                            dbc.ModalFooter(
+                                dbc.Button(
+                                    "Close",
+                                    id=settings_close_id,
+                                    className="ms-auto",
+                                )
+                            ),
+                        ],
+                        id=settings_modal_id,
+                        is_open=False,
+                    ),
+                ],
+                id=table_header_id,
+                style={"color": "#888888"},
+            ),
+            dbc.CardBody(
+                [
+                    create_results_table(table_id, no_sort_columns),
+                ],
+                id=table_body_id,
+                style={"display": "none"},
+            ),
+        ]
+    )
+
+    results_download = html.Div(
+        [
+            html.Div(
+                dbc.Button(
+                    "Download Results (Excel)",
+                    id=download_button_id,
+                    color="primary",
+                    className="mt-3",
+                    disabled=True,
+                ),
+                className="d-flex justify-content-center",
+            ),
+            html.Div(
+                dbc.Alert(
+                    "Error downloading results",
+                    id=download_alert_id,
+                    color="warning",
+                    className="mt-3 text-center w-75 mx-auto",
+                    is_open=False,
+                ),
+                className="d-flex justify-content-center",
+            ),
+            dcc.Download(id=download_id),
+        ]
+    )
+
+    return [results, results_table, results_download]
+
+
+def create_data_table_card(table_id, header_id, body_id, select_all_id, output1_id, output2_id):  # noqa: D417
+    """Create a common data table card.
+
+    Args:
+        Various IDs for components.
+
+    Returns:
+        A dbc.Card component.
+    """
+    return dbc.Card(
+        [
+            dbc.CardHeader(
+                [
+                    "Data",
+                ],
+                id=header_id,
+                style={"color": "#888888"},
+            ),
+            dbc.CardBody(
+                [
+                    html.Div(
+                        dcc.Checklist(
+                            options=[{"label": "", "value": "disabled"}],
+                            id=select_all_id,
+                            style={
+                                "position": "absolute",
+                                "top": "4px",
+                                "left": "10px",
+                                "zIndex": "1000",
+                            },
+                        ),
+                        style={"position": "relative", "height": "0px"},
+                    ),
+                    create_data_table(table_id, select_all_id),
+                ],
+                id=body_id,
+                style={"display": "none"},
+            ),
+            html.Div(id=output1_id, className="p-4"),
+            html.Div(id=output2_id, className="p-4"),
+        ]
+    )
+
+
+def create_tab_content(prefix, filter_title, checkl_options, no_sort_columns):
+    """Create tab content for GM or MG tabs.
+
+    Args:
+        prefix: The prefix for component IDs ('gm' or 'mg').
+        filter_title: The title for the filter accordion.
+        checkl_options: Options for the column settings checklist.
+        no_sort_columns: Columns that should not be sortable in results table.
+
+    Returns:
+        A dbc.Row component with all tab content.
+    """
+    # Create filter accordion
+    filter_accordion = create_filter_accordion(
+        filter_title,
+        f"{prefix}-filter-accordion-control",
+        f"{prefix}-filter-blocks-id",
+        f"{prefix}-filter-blocks-container",
+        f"{prefix}-filter-apply-button",
+    )
+
+    # Create data table
+    data_table = create_data_table_card(
+        f"{prefix}-table",
+        f"{prefix}-table-card-header",
+        f"{prefix}-table-card-body",
+        f"{prefix}-table-select-all-checkbox",
+        f"{prefix}-table-output1",
+        f"{prefix}-table-output2",
+    )
+
+    # Create scoring accordion
+    scoring_accordion = create_scoring_accordion(
+        f"{prefix}-scoring-accordion-control",
+        f"{prefix}-scoring-blocks-id",
+        f"{prefix}-scoring-blocks-container",
+    )
+
+    # Create results section
+    results_components = create_results_section(
+        f"{prefix}-results-button",
+        f"{prefix}-results-alert",
+        f"{prefix}-results-table",
+        f"{prefix}-results-table-card-header",
+        f"{prefix}-results-table-card-body",
+        f"{prefix}-results-table-column-settings-button",
+        f"{prefix}-results-table-column-settings-modal",
+        f"{prefix}-results-table-column-settings-close",
+        f"{prefix}-results-table-column-toggle",
+        checkl_options,
+        f"{prefix}-download-button",
+        f"{prefix}-download-alert",
+        f"{prefix}-download-excel",
+        no_sort_columns,
+    )
+
+    # Add graph component only for GM tab
+    components = []
+    if prefix == "gm":
+        graph = dcc.Graph(id="gm-graph", className="mt-5 mb-3", style={"display": "none"})
+        components = [
+            dbc.Col(filter_accordion, width=10, className="mx-auto dbc"),
+            dbc.Col(graph, width=10, className="mx-auto"),
+            dbc.Col(data_table, width=10, className="mx-auto"),
+            dbc.Col(scoring_accordion, width=10, className="mx-auto dbc"),
+        ]
+    else:
+        components = [
+            dbc.Col(filter_accordion, width=10, className="mx-auto dbc"),
+            dbc.Col(data_table, width=10, className="mx-auto"),
+            dbc.Col(scoring_accordion, width=10, className="mx-auto dbc"),
+        ]
+
+    # Add results components
+    for component in results_components:
+        components.append(dbc.Col(component, width=10, className="mt-3 mx-auto"))
+
+    return dbc.Row(components)
+
+
 # ------------------ Nav Bar ------------------ #
 color_mode_switch = html.Span(
     [
@@ -75,711 +575,39 @@ uploader = html.Div(
 )
 
 
+# ------------------ Tab Content Configuration ------------------ #
+# No-sort columns definitions
+gm_no_sort_columns = [
+    "GCF ID",
+    "# Links",
+    "Average Score",
+    "Top Spectrum ID",
+    "Top Spectrum GNPS ID",
+    "MiBIG IDs",
+    "BGC Classes",
+]
+
+mg_no_sort_columns = [
+    "MF ID",
+    "# Links",
+    "Average Score",
+    "Top GCF ID",
+    "Top GCF # BGCs",
+    "Top GCF BGC IDs",
+    "Top GCF BGC Classes",
+]
+
+# ------------------ Tab Content Creation ------------------ #
+# Create tab content
+gm_content = create_tab_content(
+    "gm", "Genomics filter", GM_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS, gm_no_sort_columns
+)
+
+mg_content = create_tab_content(
+    "mg", "Metabolomics filter", MG_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS, mg_no_sort_columns
+)
+
 # ------------------ Tabs ------------------ #
-# ------------------ GM Tab Components ------------------ #
-# gm filter dropdown menu items
-gm_filter_input_group = html.Div(
-    [
-        dcc.Store(id="gm-filter-blocks-id", data=[]),  # Start with one block
-        html.Div(
-            id="gm-filter-blocks-container",
-            children=[],
-        ),
-    ]
-)
-# gm filter (accordion) card
-gm_filter_accordion = dmc.Accordion(
-    [
-        dmc.AccordionItem(
-            [
-                dmc.AccordionControl(
-                    "Genomics filter",
-                    disabled=True,
-                    id="gm-filter-accordion-control",
-                    className="mt-5 mb-3",
-                ),
-                dmc.AccordionPanel(
-                    [
-                        gm_filter_input_group,
-                        html.Div(
-                            dbc.Button(
-                                "Apply Filters",
-                                id="gm-filter-apply-button",
-                                color="primary",
-                                className="mt-3",
-                            ),
-                            className="d-flex justify-content-center",
-                        ),
-                    ]
-                ),
-            ],
-            value="gm-filter-accordion",
-        ),
-    ],
-    className="mt-5 mb-3",
-)
-# gm graph
-gm_graph = dcc.Graph(id="gm-graph", className="mt-5 mb-3", style={"display": "none"})
-# gm_table
-gm_table = dbc.Card(
-    [  # TODO: Reset the selection table when a new file is uploaded
-        dbc.CardHeader(
-            [
-                "Data",
-            ],
-            id="gm-table-card-header",
-            style={"color": "#888888"},
-        ),
-        dbc.CardBody(
-            [
-                html.Div(
-                    dcc.Checklist(
-                        options=[{"label": "", "value": "disabled"}],
-                        id="gm-table-select-all-checkbox",
-                        style={
-                            "position": "absolute",
-                            "top": "4px",
-                            "left": "10px",
-                            "zIndex": "1000",
-                        },
-                    ),
-                    style={"position": "relative", "height": "0px"},
-                ),
-                dash_table.DataTable(
-                    id="gm-table",
-                    columns=[],
-                    data=[],
-                    tooltip_data=[],
-                    editable=False,
-                    filter_action="none",
-                    sort_action="none",
-                    sort_mode="multi",
-                    column_selectable=False,
-                    row_deletable=False,
-                    row_selectable="multi",
-                    selected_columns=[],
-                    selected_rows=[],
-                    page_action="native",
-                    page_current=0,
-                    page_size=10,
-                    style_cell={"textAlign": "left", "padding": "5px"},
-                    style_header={
-                        "backgroundColor": "#FF6E42",
-                        "fontWeight": "bold",
-                        "color": "white",
-                    },
-                    style_data={"border": "1px solid #ddd"},
-                    style_data_conditional=[
-                        {
-                            "if": {"state": "selected"},
-                            "backgroundColor": "white",
-                            "border": "1px solid #ddd",
-                        }
-                    ],
-                    style_cell_conditional=[{"if": {"column_id": "selector"}, "width": "30px"}],
-                    tooltip_delay=0,
-                    tooltip_duration=None,
-                    css=[
-                        {
-                            "selector": ".dash-table-tooltip",
-                            "rule": """
-                                background-color: #ffd8cc;
-                                font-family: monospace;
-                                font-size: 12px;
-                                max-width: none !important;
-                                white-space: pre-wrap;
-                                padding: 8px;
-                                border: 1px solid #FF6E42;
-                                box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
-                            """,
-                        }
-                    ],
-                    tooltip={"type": "markdown"},
-                ),
-            ],
-            id="gm-table-card-body",
-            style={"display": "none"},
-        ),
-        html.Div(id="gm-table-output1", className="p-4"),
-        html.Div(id="gm-table-output2", className="p-4"),
-    ]
-)
-# gm scoring dropdown menu items
-gm_scoring_input_group = html.Div(
-    [
-        dcc.Store(id="gm-scoring-blocks-id", data=[]),  # Start with one block
-        html.Div(
-            id="gm-scoring-blocks-container",
-            children=[],
-        ),
-    ]
-)
-# gm score (accordion) card
-gm_scoring_accordion = dmc.Accordion(
-    [
-        dmc.AccordionItem(
-            [
-                dmc.AccordionControl(
-                    "Scoring",
-                    disabled=True,
-                    id="gm-scoring-accordion-control",
-                    className="mt-5 mb-3",
-                ),
-                dmc.AccordionPanel(
-                    [
-                        gm_scoring_input_group,
-                    ]
-                ),
-            ],
-            value="gm-scoring-accordion",
-        ),
-    ],
-    className="mt-5 mb-3",
-)
-# gm results buttons and table
-gm_results = html.Div(
-    [
-        html.Div(
-            dbc.Button(
-                "Show Results",
-                id="gm-results-button",
-                color="primary",
-                className="mt-3",
-                disabled=True,
-            ),
-            className="d-flex justify-content-center",
-        ),
-        html.Div(
-            dbc.Alert(
-                "Your alert message here",
-                id="gm-results-alert",
-                color="warning",
-                className="mt-3 text-center w-75 mx-auto",
-                is_open=False,
-            ),
-            className="d-flex justify-content-center",
-        ),
-    ]
-)
-gm_results_table = dbc.Card(
-    [
-        dbc.CardHeader(
-            [
-                "Candidate Links",
-                dbc.Button(
-                    "Columns settings",
-                    id="gm-results-table-column-settings-button",
-                    color="secondary",
-                    size="sm",
-                    className="float-end",
-                ),
-                dbc.Modal(
-                    [
-                        dbc.ModalHeader("Select columns to display"),
-                        dbc.ModalBody(
-                            dbc.Checklist(
-                                id="gm-results-table-column-toggle",
-                                options=GM_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS,
-                                value=[GM_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS[0]],
-                                switch=True,
-                            )
-                        ),
-                        dbc.ModalFooter(
-                            dbc.Button(
-                                "Close",
-                                id="gm-results-table-column-settings-close",
-                                className="ms-auto",
-                            )
-                        ),
-                    ],
-                    id="gm-results-table-column-settings-modal",
-                    is_open=False,
-                ),
-            ],
-            id="gm-results-table-card-header",
-            style={"color": "#888888"},
-        ),
-        dbc.CardBody(
-            [
-                dash_table.DataTable(
-                    id="gm-results-table",
-                    columns=[],
-                    data=[],
-                    editable=False,
-                    filter_action="none",
-                    sort_action="native",
-                    sort_mode="single",  # Allow sorting by one column at a time
-                    sort_as_null=["None", ""],  # Treat these values as null for sorting
-                    sort_by=[],
-                    page_action="native",
-                    page_current=0,
-                    page_size=10,
-                    style_table={"width": "100%"},
-                    style_cell={
-                        "textAlign": "left",
-                        "padding": "5px",
-                        "overflow": "hidden",
-                        "textOverflow": "ellipsis",
-                        "minWidth": "80px",
-                        "width": "auto",
-                        "maxWidth": "auto",
-                    },
-                    style_header={
-                        "backgroundColor": "#FF6E42",
-                        "fontWeight": "bold",
-                        "color": "white",
-                        "whiteSpace": "normal",
-                        "height": "auto",
-                    },
-                    style_data={
-                        "border": "1px solid #ddd",
-                        "whiteSpace": "normal",
-                        "height": "auto",
-                    },
-                    style_data_conditional=[
-                        {
-                            "if": {"state": "selected"},
-                            "backgroundColor": "white",
-                            "border": "1px solid #ddd",
-                        }
-                    ],
-                    tooltip_delay=0,
-                    tooltip_duration=None,
-                    css=(
-                        [
-                            {
-                                "selector": ".dash-table-tooltip",
-                                "rule": """
-            background-color: #ffd8cc;
-            font-family: monospace;
-            font-size: 12px;
-            max-width: none !important;
-            white-space: pre-wrap;
-            padding: 8px;
-            border: 1px solid #FF6E42;
-            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
-        """,
-                            }
-                        ]
-                        + [
-                            {
-                                "selector": f'th[data-dash-column="{col}"] span.column-header--sort',
-                                "rule": "display: none",
-                            }
-                            for col in [
-                                "GCF ID",
-                                "# Links",
-                                "Average Score",
-                                "Top Spectrum ID",
-                                "Top Spectrum GNPS ID",
-                                "MiBIG IDs",
-                                "BGC Classes",
-                            ]
-                        ]
-                        + [
-                            # Style sort arrow hover state
-                            {
-                                "selector": ".column-header--sort:hover",
-                                "rule": "color: white !important;",
-                            }
-                        ]
-                    ),
-                    tooltip={"type": "markdown"},
-                ),
-            ],
-            id="gm-results-table-card-body",
-            style={"display": "none"},
-        ),
-    ]
-)
-gm_results_download = html.Div(
-    [
-        html.Div(
-            dbc.Button(
-                "Download Results (Excel)",
-                id="gm-download-button",
-                color="primary",
-                className="mt-3",
-                disabled=True,
-            ),
-            className="d-flex justify-content-center",
-        ),
-        html.Div(
-            dbc.Alert(
-                "Error downloading results",
-                id="gm-download-alert",
-                color="warning",
-                className="mt-3 text-center w-75 mx-auto",
-                is_open=False,
-            ),
-            className="d-flex justify-content-center",
-        ),
-        dcc.Download(id="gm-download-excel"),
-    ]
-)
-# gm tab content
-gm_content = dbc.Row(
-    [
-        dbc.Col(gm_filter_accordion, width=10, className="mx-auto dbc"),
-        dbc.Col(gm_graph, width=10, className="mx-auto"),
-        dbc.Col(gm_table, width=10, className="mx-auto"),
-        dbc.Col(gm_scoring_accordion, width=10, className="mx-auto dbc"),
-        dbc.Col(gm_results, width=10, className="mx-auto"),
-        dbc.Col(gm_results_table, width=10, className="mt-3 mx-auto"),
-        dbc.Col(gm_results_download, width=10, className="mt-3 mx-auto"),
-    ]
-)
-# ------------------ MG Tab Components ------------------ #
-# mg filter dropdown menu items
-mg_filter_input_group = html.Div(
-    [
-        dcc.Store(id="mg-filter-blocks-id", data=[]),  # Start with one block
-        html.Div(
-            id="mg-filter-blocks-container",
-            children=[],
-        ),
-    ]
-)
-# mg filter (accordion) card
-mg_filter_accordion = dmc.Accordion(
-    [
-        dmc.AccordionItem(
-            [
-                dmc.AccordionControl(
-                    "Metabolomics filter",
-                    disabled=True,
-                    id="mg-filter-accordion-control",
-                    className="mt-5 mb-3",
-                ),
-                dmc.AccordionPanel(
-                    [
-                        mg_filter_input_group,
-                        html.Div(
-                            dbc.Button(
-                                "Apply Filters",
-                                id="mg-filter-apply-button",
-                                color="primary",
-                                className="mt-3",
-                            ),
-                            className="d-flex justify-content-center",
-                        ),
-                    ]
-                ),
-            ],
-            value="mg-filter-accordion",
-        ),
-    ],
-    className="mt-5 mb-3",
-)
-# mg_table
-mg_table = dbc.Card(
-    [  # TODO: Reset the selection table when a new file is uploaded
-        dbc.CardHeader(
-            [
-                "Data",
-            ],
-            id="mg-table-card-header",
-            style={"color": "#888888"},
-        ),
-        dbc.CardBody(
-            [
-                html.Div(
-                    dcc.Checklist(
-                        options=[{"label": "", "value": "disabled"}],
-                        id="mg-table-select-all-checkbox",
-                        style={
-                            "position": "absolute",
-                            "top": "4px",
-                            "left": "10px",
-                            "zIndex": "1000",
-                        },
-                    ),
-                    style={"position": "relative", "height": "0px"},
-                ),
-                dash_table.DataTable(
-                    id="mg-table",
-                    columns=[],
-                    data=[],
-                    tooltip_data=[],
-                    editable=False,
-                    filter_action="none",
-                    sort_action="none",
-                    sort_mode="multi",
-                    column_selectable=False,
-                    row_deletable=False,
-                    row_selectable="multi",
-                    selected_columns=[],
-                    selected_rows=[],
-                    page_action="native",
-                    page_current=0,
-                    page_size=10,
-                    style_cell={"textAlign": "left", "padding": "5px"},
-                    style_header={
-                        "backgroundColor": "#FF6E42",
-                        "fontWeight": "bold",
-                        "color": "white",
-                    },
-                    style_data={"border": "1px solid #ddd"},
-                    style_data_conditional=[
-                        {
-                            "if": {"state": "selected"},
-                            "backgroundColor": "white",
-                            "border": "1px solid #ddd",
-                        }
-                    ],
-                    style_cell_conditional=[{"if": {"column_id": "selector"}, "width": "30px"}],
-                    tooltip_delay=0,
-                    tooltip_duration=None,
-                    css=[
-                        {
-                            "selector": ".dash-table-tooltip",
-                            "rule": """
-                                background-color: #ffd8cc;
-                                font-family: monospace;
-                                font-size: 12px;
-                                max-width: none !important;
-                                white-space: pre-wrap;
-                                padding: 8px;
-                                border: 1px solid #FF6E42;
-                                box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
-                            """,
-                        }
-                    ],
-                    tooltip={"type": "markdown"},
-                ),
-            ],
-            id="mg-table-card-body",
-            style={"display": "none"},
-        ),
-        html.Div(id="mg-table-output1", className="p-4"),
-        html.Div(id="mg-table-output2", className="p-4"),
-    ]
-)
-# mg scoring dropdown menu items
-mg_scoring_input_group = html.Div(
-    [
-        dcc.Store(id="mg-scoring-blocks-id", data=[]),  # Start with one block
-        html.Div(
-            id="mg-scoring-blocks-container",
-            children=[],
-        ),
-    ]
-)
-# mg score (accordion) card
-mg_scoring_accordion = dmc.Accordion(
-    [
-        dmc.AccordionItem(
-            [
-                dmc.AccordionControl(
-                    "Scoring",
-                    disabled=True,
-                    id="mg-scoring-accordion-control",
-                    className="mt-5 mb-3",
-                ),
-                dmc.AccordionPanel(
-                    [
-                        mg_scoring_input_group,
-                    ]
-                ),
-            ],
-            value="mg-scoring-accordion",
-        ),
-    ],
-    className="mt-5 mb-3",
-)
-# mg results buttons and table
-mg_results = html.Div(
-    [
-        html.Div(
-            dbc.Button(
-                "Show Results",
-                id="mg-results-button",
-                color="primary",
-                className="mt-3",
-                disabled=True,
-            ),
-            className="d-flex justify-content-center",
-        ),
-        html.Div(
-            dbc.Alert(
-                "Your alert message here",
-                id="mg-results-alert",
-                color="warning",
-                className="mt-3 text-center w-75 mx-auto",
-                is_open=False,
-            ),
-            className="d-flex justify-content-center",
-        ),
-    ]
-)
-mg_results_table = dbc.Card(
-    [
-        dbc.CardHeader(
-            [
-                "Candidate Links",
-                dbc.Button(
-                    "Columns settings",
-                    id="mg-results-table-column-settings-button",
-                    color="secondary",
-                    size="sm",
-                    className="float-end",
-                ),
-                dbc.Modal(
-                    [
-                        dbc.ModalHeader("Select columns to display"),
-                        dbc.ModalBody(
-                            dbc.Checklist(
-                                id="mg-results-table-column-toggle",
-                                options=MG_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS,
-                                value=[MG_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS[0]],
-                                switch=True,
-                            )
-                        ),
-                        dbc.ModalFooter(
-                            dbc.Button(
-                                "Close",
-                                id="mg-results-table-column-settings-close",
-                                className="ms-auto",
-                            )
-                        ),
-                    ],
-                    id="mg-results-table-column-settings-modal",
-                    is_open=False,
-                ),
-            ],
-            id="mg-results-table-card-header",
-            style={"color": "#888888"},
-        ),
-        dbc.CardBody(
-            [
-                dash_table.DataTable(
-                    id="mg-results-table",
-                    columns=[],
-                    data=[],
-                    editable=False,
-                    filter_action="none",
-                    sort_action="native",
-                    sort_mode="single",  # Allow sorting by one column at a time
-                    sort_as_null=["None", ""],  # Treat these values as null for sorting
-                    sort_by=[],
-                    page_action="native",
-                    page_current=0,
-                    page_size=10,
-                    style_table={"width": "100%"},
-                    style_cell={
-                        "textAlign": "left",
-                        "padding": "5px",
-                        "overflow": "hidden",
-                        "textOverflow": "ellipsis",
-                        "minWidth": "80px",
-                        "width": "auto",
-                        "maxWidth": "auto",
-                    },
-                    style_header={
-                        "backgroundColor": "#FF6E42",
-                        "fontWeight": "bold",
-                        "color": "white",
-                        "whiteSpace": "normal",
-                        "height": "auto",
-                    },
-                    style_data={
-                        "border": "1px solid #ddd",
-                        "whiteSpace": "normal",
-                        "height": "auto",
-                    },
-                    style_data_conditional=[
-                        {
-                            "if": {"state": "selected"},
-                            "backgroundColor": "white",
-                            "border": "1px solid #ddd",
-                        }
-                    ],
-                    tooltip_delay=0,
-                    tooltip_duration=None,
-                    css=(
-                        [
-                            {
-                                "selector": ".dash-table-tooltip",
-                                "rule": """
-            background-color: #ffd8cc;
-            font-family: monospace;
-            font-size: 12px;
-            max-width: none !important;
-            white-space: pre-wrap;
-            padding: 8px;
-            border: 1px solid #FF6E42;
-            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
-        """,
-                            }
-                        ]
-                        + [
-                            {
-                                "selector": f'th[data-dash-column="{col}"] span.column-header--sort',
-                                "rule": "display: none",
-                            }
-                            for col in [
-                                "MF ID",
-                                "# Links",
-                                "Average Score",
-                                "Top GCF ID",
-                                "Top GCF # BGCs",
-                                "Top GCF BGC IDs",
-                                "Top GCF BGC Classes",
-                            ]
-                        ]
-                        + [
-                            # Style sort arrow hover state
-                            {
-                                "selector": ".column-header--sort:hover",
-                                "rule": "color: white !important;",
-                            }
-                        ]
-                    ),
-                    tooltip={"type": "markdown"},
-                ),
-            ],
-            id="mg-results-table-card-body",
-            style={"display": "none"},
-        ),
-    ]
-)
-mg_results_download = html.Div(
-    [
-        html.Div(
-            dbc.Button(
-                "Download Results (Excel)",
-                id="mg-download-button",
-                color="primary",
-                className="mt-3",
-                disabled=True,
-            ),
-            className="d-flex justify-content-center",
-        ),
-        html.Div(
-            dbc.Alert(
-                "Error downloading results",
-                id="mg-download-alert",
-                color="warning",
-                className="mt-3 text-center w-75 mx-auto",
-                is_open=False,
-            ),
-            className="d-flex justify-content-center",
-        ),
-        dcc.Download(id="mg-download-excel"),
-    ]
-)
-# mg tab content
-mg_content = dbc.Row(
-    [
-        dbc.Col(mg_filter_accordion, width=10, className="mx-auto dbc"),
-        dbc.Col(mg_table, width=10, className="mx-auto"),
-        dbc.Col(mg_scoring_accordion, width=10, className="mx-auto dbc"),
-        dbc.Col(mg_results, width=10, className="mx-auto"),
-        dbc.Col(mg_results_table, width=10, className="mt-3 mx-auto"),
-        dbc.Col(mg_results_download, width=10, className="mt-3 mx-auto"),
-    ]
-)
-# tabs
 tabs = dbc.Row(
     dbc.Col(
         dbc.Tabs(
@@ -805,6 +633,7 @@ tabs = dbc.Row(
 )
 
 
+# ------------------ Layout Function ------------------ #
 def create_layout():  # noqa: D103
     return dmc.MantineProvider(
         [dbc.Container([navbar, uploader, tabs], fluid=True, className="p-0")]
