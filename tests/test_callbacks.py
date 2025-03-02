@@ -14,12 +14,15 @@ from app.callbacks import gm_generate_excel
 from app.callbacks import gm_table_select_rows
 from app.callbacks import gm_table_toggle_selection
 from app.callbacks import gm_table_update_datatable
+from app.callbacks import gm_toggle_download_button
+from app.callbacks import mg_filter_add_block
 from app.callbacks import mg_filter_apply
+from app.callbacks import mg_generate_excel
+from app.callbacks import mg_table_select_rows
 from app.callbacks import mg_table_toggle_selection
 from app.callbacks import mg_table_update_datatable
 from app.callbacks import process_uploaded_data
 from app.callbacks import scoring_apply
-from app.callbacks import toggle_download_button
 from app.callbacks import upload_data
 from . import DATA_DIR
 
@@ -299,6 +302,68 @@ def test_disable_tabs(mock_uuid):
     assert mg_results_disabled is False
 
 
+def test_scoring_apply_metcalf_raw():
+    """Test scoring_apply with Metcalf method and raw scores."""
+    # Create test DataFrame
+    df = pd.DataFrame(
+        {
+            "method": ["metcalf", "metcalf", "other"],
+            "standardised": [False, True, False],
+            "cutoff": [1.5, 2.0, 1.0],
+            "score": [2.0, 2.5, 1.5],
+        }
+    )
+
+    # Test parameters
+    dropdown_menus = ["METCALF"]
+    radiobuttons = ["RAW"]
+    cutoffs_met = ["1.0"]
+
+    result = scoring_apply(df, dropdown_menus, radiobuttons, cutoffs_met)
+
+    assert len(result) == 1, "Should return one row"
+    assert result.iloc[0]["method"] == "metcalf", "Method should be metcalf"
+    assert not result.iloc[0]["standardised"], "Should be raw (not standardised)"
+    assert result.iloc[0]["cutoff"] >= 1.0, "Cutoff should be >= 1.0"
+
+
+def test_scoring_apply_metcalf_standardised():
+    """Test scoring_apply with Metcalf method and standardised scores."""
+    # Create test DataFrame
+    df = pd.DataFrame(
+        {
+            "method": ["metcalf", "metcalf", "other"],
+            "standardised": [False, True, False],
+            "cutoff": [1.5, 2.0, 1.0],
+            "score": [2.0, 2.5, 1.5],
+        }
+    )
+
+    # Test parameters
+    dropdown_menus = ["METCALF"]
+    radiobuttons = ["STANDARDISED"]
+    cutoffs_met = ["1.5"]
+
+    result = scoring_apply(df, dropdown_menus, radiobuttons, cutoffs_met)
+
+    assert len(result) == 1, "Should return one row"
+    assert result.iloc[0]["method"] == "metcalf", "Method should be metcalf"
+    assert result.iloc[0]["standardised"], "Should be standardised"
+    assert result.iloc[0]["cutoff"] >= 1.5, "Cutoff should be >= 1.5"
+
+
+def test_scoring_apply_empty_inputs():
+    """Test scoring_apply with empty inputs."""
+    df = pd.DataFrame(
+        {"method": ["metcalf"], "standardised": [False], "cutoff": [1.0], "score": [2.0]}
+    )
+
+    result = scoring_apply(df, [], [], [])
+
+    assert len(result) == 1, "Should return original DataFrame"
+    assert result.equals(df), "Should return unmodified DataFrame"
+
+
 # ----------------- GM tab tests -----------------
 @pytest.mark.parametrize(
     "n_clicks, initial_blocks, expected_result",
@@ -440,81 +505,19 @@ def test_gm_table_select_rows(sample_processed_data):
     assert output2 == "No rows selected."
 
 
-def test_gm_scoring_apply_metcalf_raw():
-    """Test scoring_apply with Metcalf method and raw scores."""
-    # Create test DataFrame
-    df = pd.DataFrame(
-        {
-            "method": ["metcalf", "metcalf", "other"],
-            "standardised": [False, True, False],
-            "cutoff": [1.5, 2.0, 1.0],
-            "score": [2.0, 2.5, 1.5],
-        }
-    )
-
-    # Test parameters
-    dropdown_menus = ["METCALF"]
-    radiobuttons = ["RAW"]
-    cutoffs_met = ["1.0"]
-
-    result = scoring_apply(df, dropdown_menus, radiobuttons, cutoffs_met)
-
-    assert len(result) == 1, "Should return one row"
-    assert result.iloc[0]["method"] == "metcalf", "Method should be metcalf"
-    assert not result.iloc[0]["standardised"], "Should be raw (not standardised)"
-    assert result.iloc[0]["cutoff"] >= 1.0, "Cutoff should be >= 1.0"
-
-
-def test_gm_scoring_apply_metcalf_standardised():
-    """Test scoring_apply with Metcalf method and standardised scores."""
-    # Create test DataFrame
-    df = pd.DataFrame(
-        {
-            "method": ["metcalf", "metcalf", "other"],
-            "standardised": [False, True, False],
-            "cutoff": [1.5, 2.0, 1.0],
-            "score": [2.0, 2.5, 1.5],
-        }
-    )
-
-    # Test parameters
-    dropdown_menus = ["METCALF"]
-    radiobuttons = ["STANDARDISED"]
-    cutoffs_met = ["1.5"]
-
-    result = scoring_apply(df, dropdown_menus, radiobuttons, cutoffs_met)
-
-    assert len(result) == 1, "Should return one row"
-    assert result.iloc[0]["method"] == "metcalf", "Method should be metcalf"
-    assert result.iloc[0]["standardised"], "Should be standardised"
-    assert result.iloc[0]["cutoff"] >= 1.5, "Cutoff should be >= 1.5"
-
-
-def test_gm_scoring_apply_empty_inputs():
-    """Test scoring_apply with empty inputs."""
-    df = pd.DataFrame(
-        {"method": ["metcalf"], "standardised": [False], "cutoff": [1.0], "score": [2.0]}
-    )
-
-    result = scoring_apply(df, [], [], [])
-
-    assert len(result) == 1, "Should return original DataFrame"
-    assert result.equals(df), "Should return unmodified DataFrame"
-
-
-def test_toggle_download_button():
+def test_gm_toggle_download_button():
     """Test the toggle_download_button function with different inputs."""
     # Test with empty table data - should disable the button
-    result = toggle_download_button([])
+    result = gm_toggle_download_button([])
     assert result == (True, False, "")
 
     # Test with populated table data - should enable the button
     sample_data = [{"GCF ID": 1, "# Links": 5}]
-    result = toggle_download_button(sample_data)
+    result = gm_toggle_download_button(sample_data)
     assert result == (False, False, "")
 
 
-def test_generate_excel_error_handling():
+def test_gm_generate_excel_error_handling():
     """Test the generate_excel function error handling."""
     table_data = [{"GCF ID": 1, "spectrum_ids_str": "123"}]
 
@@ -535,6 +538,27 @@ def test_generate_excel_error_handling():
 
 
 # ----------------- MG tab tests -----------------
+@pytest.mark.parametrize(
+    "n_clicks, initial_blocks, expected_result",
+    [
+        ([], ["block1"], pytest.raises(dash.exceptions.PreventUpdate)),  # no buttons clicked
+        ([1], ["block1", "block2"], ["block1", "block2", "test-uuid"]),  # one button clicked once
+        (
+            [1, 1, 1],
+            ["block1", "block2"],
+            ["block1", "block2", "test-uuid"],
+        ),  # three buttons, each clicked once
+    ],
+)
+def test_mg_filter_add_block(mock_uuid, n_clicks, initial_blocks, expected_result):
+    if isinstance(expected_result, list):
+        result = mg_filter_add_block(n_clicks, initial_blocks)
+        assert result == expected_result
+    else:
+        with expected_result:
+            mg_filter_add_block(n_clicks, initial_blocks)
+
+
 def test_mg_filter_apply(sample_processed_data):
     data = json.loads(sample_processed_data)
     df = pd.DataFrame(data["mf_data"])
@@ -633,3 +657,38 @@ def test_mg_table_toggle_selection(sample_processed_data):
     # Test with empty value (deselecting when no filter is applied)
     result = mg_table_toggle_selection([], original_rows, None)
     assert result == []
+
+
+def test_mg_table_select_rows(sample_processed_data):
+    data = json.loads(sample_processed_data)
+    rows = data["mf_data"]
+    selected_rows = [0, 1]
+
+    output1, output2 = mg_table_select_rows(rows, selected_rows)
+    assert output1 == f"Total rows: {len(rows)}"
+    assert output2.startswith(f"Selected rows: {len(selected_rows)}\nSelected MF IDs: ")
+
+    # Test with no rows
+    output1, output2 = mg_table_select_rows([], None)
+    assert output1 == "No data available."
+    assert output2 == "No rows selected."
+
+
+def test_mg_generate_excel_error_handling():
+    """Test the mg_generate_excel function error handling."""
+    table_data = [{"MF ID": 1, "gcf_ids_str": "123"}]
+
+    with (
+        patch("app.callbacks.ctx") as mock_ctx,
+        patch("app.callbacks.pd.ExcelWriter") as mock_writer,
+    ):
+        mock_ctx.triggered = True
+        # Simulate an error during Excel generation
+        mock_writer.side_effect = Exception("Excel write error")
+
+        result = mg_generate_excel(1, table_data)
+
+        # Should return an error message
+        assert result[0] is None
+        assert result[1] is True  # Alert is open
+        assert "Error generating Excel file" in result[2]

@@ -34,9 +34,6 @@ from nplinker.metabolomics.molecular_family import MolecularFamily
 from nplinker.metabolomics.spectrum import Spectrum
 
 
-# TODO: Add new tests for the mg table
-
-
 dash._dash_renderer._set_react_version("18.2.0")  # type: ignore
 
 
