@@ -718,13 +718,13 @@ mg_results_table = dbc.Card(
                                 "rule": "display: none",
                             }
                             for col in [
-                                "GCF ID",
+                                "MF ID",
                                 "# Links",
                                 "Average Score",
-                                "Top Spectrum ID",
-                                "Top Spectrum GNPS ID",
-                                "MiBIG IDs",
-                                "BGC Classes",
+                                "Top GCF ID",
+                                "Top GCF # BGCs",
+                                "Top GCF BGC IDs",
+                                "Top GCF BGC Classes",
                             ]
                         ]
                         + [

@@ -17,6 +17,8 @@ from config import GM_FILTER_DROPDOWN_MENU_OPTIONS
 from config import GM_RESULTS_TABLE_MANDATORY_COLUMNS
 from config import GM_RESULTS_TABLE_OPTIONAL_COLUMNS
 from config import MG_FILTER_DROPDOWN_MENU_OPTIONS
+from config import MG_RESULTS_TABLE_MANDATORY_COLUMNS
+from config import MG_RESULTS_TABLE_OPTIONAL_COLUMNS
 from config import SCORING_DROPDOWN_MENU_OPTIONS
 from dash import ALL
 from dash import MATCH
@@ -191,8 +193,6 @@ def process_uploaded_data(file_path: Path | str | None) -> tuple[str | None, str
                             data.parameter["standardised"]
                         )
                 elif isinstance(link[1], MolecularFamily):  # Then link[0] if GCFS (GCF -> MF)
-                    print(link[0])
-                    print(link[0].bgcs)
                     sorted_bgcs = sorted(link[0].bgcs, key=lambda bgc: bgc.id)
                     bgc_ids = [bgc.id for bgc in sorted_bgcs]
                     bgc_classes = [process_bgc_class(bgc.mibig_bgc_class) for bgc in sorted_bgcs]
@@ -1328,6 +1328,36 @@ def scoring_create_initial_block(block_id: str, tab_prefix: str = "gm") -> dmc.G
     )
 
 
+def scoring_apply(
+    df: pd.DataFrame, dropdown_menus: list[str], radiobuttons: list[str], cutoffs_met: list[str]
+) -> pd.DataFrame:
+    """Apply scoring filters to the DataFrame based on user inputs.
+
+    Args:
+        df: The input DataFrame.
+        dropdown_menus: List of selected dropdown menu options.
+        radiobuttons: List of selected radio button options.
+        cutoffs_met: List of cutoff values for METCALF method.
+
+    Returns:
+        Filtered DataFrame.
+    """
+    for menu, radiobutton, cutoff_met in zip(dropdown_menus, radiobuttons, cutoffs_met):
+        if menu == "METCALF":
+            masked_df = df[df["method"] == "metcalf"]
+            if radiobutton == "RAW":
+                masked_df = masked_df[~masked_df["standardised"]]
+            else:
+                masked_df = masked_df[masked_df["standardised"]]
+
+            if cutoff_met:
+                masked_df = masked_df[masked_df["cutoff"] >= float(cutoff_met)]
+
+        return masked_df
+    else:
+        return df
+
+
 # ------------------ GM Scoring functions ------------------ #
 @app.callback(
     Output("gm-scoring-blocks-id", "data"),
@@ -1492,35 +1522,168 @@ def gm_scoring_update_placeholder(
 # ------------------ MG Scoring functions ------------------ #
 
 
-# ------------------ GM Results table functions ------------------ #
-def gm_scoring_apply(
-    df: pd.DataFrame, dropdown_menus: list[str], radiobuttons: list[str], cutoffs_met: list[str]
-) -> pd.DataFrame:
-    """Apply scoring filters to the DataFrame based on user inputs.
+# TODO: Merge with GM Scoring functions
+@app.callback(
+    Output("mg-scoring-blocks-id", "data"),
+    Input({"type": "mg-scoring-add-button", "index": ALL}, "n_clicks"),
+    State("mg-scoring-blocks-id", "data"),
+)
+def mg_scoring_add_block(n_clicks: list[int], blocks_id: list[str]) -> list[str]:
+    """Add a new block to the layout when the add button is clicked.
 
     Args:
-        df: The input DataFrame.
-        dropdown_menus: List of selected dropdown menu options.
-        radiobuttons: List of selected radio button options.
-        cutoffs_met: List of cutoff values for METCALF method.
+        n_clicks: List of number of clicks for each add button.
+        blocks_id: Current list of block IDs.
 
     Returns:
-        Filtered DataFrame.
+        Updated list of block IDs.
     """
-    for menu, radiobutton, cutoff_met in zip(dropdown_menus, radiobuttons, cutoffs_met):
-        if menu == "METCALF":
-            masked_df = df[df["method"] == "metcalf"]
-            if radiobutton == "RAW":
-                masked_df = masked_df[~masked_df["standardised"]]
-            else:
-                masked_df = masked_df[masked_df["standardised"]]
+    if not any(n_clicks):
+        raise dash.exceptions.PreventUpdate
+    # Create a unique ID for the new block
+    new_block_id = str(uuid.uuid4())
+    blocks_id.append(new_block_id)
+    return blocks_id
 
-            if cutoff_met:
-                masked_df = masked_df[masked_df["cutoff"] >= float(cutoff_met)]
 
-        return masked_df
+@app.callback(
+    Output("mg-scoring-blocks-container", "children"),
+    Input("mg-scoring-blocks-id", "data"),
+    State("mg-scoring-blocks-container", "children"),
+)
+def mg_scoring_display_blocks(
+    blocks_id: list[str], existing_blocks: list[dmc.Grid]
+) -> list[dmc.Grid]:
+    """Display the blocks for the input block IDs.
+
+    Args:
+        blocks_id: List of block IDs.
+        existing_blocks: Current list of block components.
+
+    Returns:
+        Updated list of block components.
+    """
+    if len(blocks_id) > 1:
+        new_block_id = blocks_id[-1]
+
+        new_block = dmc.Grid(
+            id={"type": "mg-scoring-block", "index": new_block_id},
+            children=[
+                dmc.GridCol(span=6),
+                dmc.GridCol(
+                    dcc.RadioItems(
+                        ["RAW", "STANDARDISED"],
+                        "RAW",
+                        inline=True,
+                        id={"type": "mg-scoring-radio-items", "index": new_block_id},
+                        labelStyle={
+                            "marginRight": "20px",
+                            "padding": "8px 12px",
+                            "backgroundColor": "#f0f0f0",
+                            "border": "1px solid #ddd",
+                            "borderRadius": "4px",
+                            "cursor": "pointer",
+                        },
+                    ),
+                    span=6,
+                ),
+                dmc.GridCol(
+                    html.Div(
+                        [
+                            dbc.Button(
+                                [html.I(className="fas fa-plus")],
+                                id={"type": "mg-scoring-add-button", "index": new_block_id},
+                                className="btn-primary",
+                            ),
+                            html.Label(
+                                "OR",
+                                id={"type": "mg-scoring-or-label", "index": new_block_id},
+                                className="ms-2 px-2 py-1 rounded",
+                                style={
+                                    "color": "green",
+                                    "backgroundColor": "#f0f0f0",
+                                    "display": "inline-block",
+                                    "position": "absolute",
+                                    "left": "50px",
+                                },
+                            ),
+                        ],
+                    ),
+                    style={"position": "relative", "marginTop": "24px"},
+                    span=2,
+                ),
+                dmc.GridCol(
+                    dcc.Dropdown(
+                        options=SCORING_DROPDOWN_MENU_OPTIONS,
+                        value="METCALF",
+                        id={"type": "mg-scoring-dropdown-menu", "index": new_block_id},
+                        clearable=False,
+                        style={"marginTop": "24px"},
+                    ),
+                    span=4,
+                ),
+                dmc.GridCol(
+                    [
+                        dmc.TextInput(
+                            id={
+                                "type": "mg-scoring-dropdown-ids-cutoff-met",
+                                "index": new_block_id,
+                            },
+                            label="Cutoff",
+                            placeholder="Insert cutoff value as a number",
+                            value="0.05",
+                            className="custom-textinput",
+                        ),
+                    ],
+                    span=6,
+                ),
+            ],
+            gutter="md",
+            style={"marginTop": "30px"},
+        )
+
+        # Hide the add button and OR label on the previous last block
+        if len(existing_blocks) == 1:
+            existing_blocks[-1]["props"]["children"][2]["props"]["children"]["props"]["style"] = {
+                "display": "none"
+            }
+        else:
+            existing_blocks[-1]["props"]["children"][2]["props"]["children"]["props"]["children"][
+                0
+            ]["props"]["style"] = {"display": "none"}
+
+        return existing_blocks + [new_block]
+    return existing_blocks
+
+
+@app.callback(
+    Output({"type": "mg-scoring-radio-items", "index": MATCH}, "style"),
+    Output({"type": "mg-scoring-dropdown-ids-cutoff-met", "index": MATCH}, "label"),
+    Output({"type": "mg-scoring-dropdown-ids-cutoff-met", "index": MATCH}, "value"),
+    Input({"type": "mg-scoring-dropdown-menu", "index": MATCH}, "value"),
+)
+def mg_scoring_update_placeholder(
+    selected_value: str,
+) -> tuple[dict[str, str], str, str]:
+    """Update the style and label of the radio items and input fields based on the dropdown selection.
+
+    Args:
+        selected_value: The value selected in the dropdown menu.
+
+    Returns:
+        A tuple containing style and label updates of the radio items and input fields.
+    """
+    if not ctx.triggered:
+        # Callback was not triggered by user interaction, don't change anything
+        raise dash.exceptions.PreventUpdate
+    if selected_value == "METCALF":
+        return ({"display": "block"}, "Cutoff", "0.05")
     else:
-        return df
+        # This case should never occur due to the Literal type, but it satisfies mypy
+        return ({"display": "none"}, "", "")
+
+
+# ------------------ GM Results table functions ------------------ #
 
 
 @app.callback(
@@ -1672,7 +1835,7 @@ def gm_update_results_datatable(
         links_df = pd.DataFrame(links_data)
 
         # Apply scoring filters
-        filtered_df = gm_scoring_apply(links_df, dropdown_menus, radiobuttons, cutoffs_met)
+        filtered_df = scoring_apply(links_df, dropdown_menus, radiobuttons, cutoffs_met)
 
         # Filter for selected GCFs and aggregate results
         results = []
@@ -1860,3 +2023,343 @@ def generate_excel(n_clicks, table_data):
 
 
 # ------------------ MG Results table functions ------------------ #
+
+# TODO: Finish checking functionality, see whether you can reuse info from the data table as it is done in the GM table
+
+
+@app.callback(
+    Output("mg-results-table-column-settings-modal", "is_open"),
+    [
+        Input("mg-results-table-column-settings-button", "n_clicks"),
+        Input("mg-results-table-column-settings-close", "n_clicks"),
+    ],
+    [State("mg-results-table-column-settings-modal", "is_open")],
+)
+def toggle_mg_column_settings_modal(n1, n2, is_open):
+    """Toggle the visibility of the column settings modal.
+
+    Args:
+        n1: Number of clicks on the open button.
+        n2: Number of clicks on the close button.
+        is_open: Current state of the modal (open or closed).
+
+    Returns:
+        The new state of the modal (open or closed).
+    """
+    if n1 or n2:
+        return not is_open
+    return is_open
+
+
+@app.callback(
+    Output("mg-results-table", "columns"),
+    [
+        Input("mg-results-table-column-toggle", "value"),
+        Input("mg-results-button", "n_clicks"),
+    ],
+)
+def update_mg_columns(selected_columns: list[str] | None, n_clicks: int | None) -> list[dict]:
+    """Update the columns of the results table based on user selections.
+
+    Args:
+        selected_columns: List of selected columns to display.
+        n_clicks: Number of times the "Show Results" button has been clicked.
+
+    Returns:
+        List of column definitions for the results table.
+    """
+    # Start with mandatory columns
+    columns: list[dict] = MG_RESULTS_TABLE_MANDATORY_COLUMNS.copy()
+
+    # Create a dictionary for optional columns lookup
+    optional_columns_dict = {col["id"]: col for col in MG_RESULTS_TABLE_OPTIONAL_COLUMNS}
+
+    # Add the selected columns in the order they appear in selected_columns
+    if selected_columns:
+        columns.extend(
+            [
+                optional_columns_dict[col_id]
+                for col_id in selected_columns
+                if col_id in optional_columns_dict
+            ]
+        )
+
+    return columns
+
+
+@app.callback(
+    Output("mg-results-alert", "children"),
+    Output("mg-results-alert", "is_open"),
+    Output("mg-results-table", "data"),
+    Output("mg-results-table", "tooltip_data"),
+    Output("mg-results-table-card-body", "style"),
+    Output("mg-results-table-card-header", "style"),
+    Output("mg-results-table-column-settings-button", "disabled"),
+    Input("mg-results-button", "n_clicks"),
+    Input("mg-table", "derived_virtual_data"),
+    Input("mg-table", "derived_virtual_selected_rows"),
+    State("processed-links-store", "data"),
+    State({"type": "mg-scoring-dropdown-menu", "index": ALL}, "value"),
+    State({"type": "mg-scoring-radio-items", "index": ALL}, "value"),
+    State({"type": "mg-scoring-dropdown-ids-cutoff-met", "index": ALL}, "value"),
+)
+def mg_update_results_datatable(
+    n_clicks: int | None,
+    virtual_data: list[dict] | None,
+    selected_rows: list[int] | None,
+    processed_links: str,
+    dropdown_menus: list[str],
+    radiobuttons: list[str],
+    cutoffs_met: list[str],
+) -> tuple[str, bool, list[dict], list[dict], dict, dict, bool]:
+    """Update the results DataTable based on scoring filters.
+
+    Args:
+        n_clicks: Number of times the "Show Results" button has been clicked.
+        virtual_data: Current filtered data from the MF table.
+        selected_rows: Indices of selected rows in the MF table.
+        processed_links: JSON string of processed links data.
+        dropdown_menus: List of selected dropdown menu options.
+        radiobuttons: List of selected radio button options.
+        cutoffs_met: List of cutoff values for METCALF method.
+
+    Returns:
+        Tuple containing alert message, visibility state, table data and settings, and header style.
+    """
+    triggered_id = ctx.triggered_id
+
+    if triggered_id in ["mg-table-select-all-checkbox", "mg-table"]:
+        return "", False, [], [], {"display": "none"}, {"color": "#888888"}, True
+
+    if n_clicks is None:
+        return "", False, [], [], {"display": "none"}, {"color": "#888888"}, True
+
+    if not selected_rows:
+        return (
+            "No MFs selected. Please select MFs and try again.",
+            True,
+            [],
+            [],
+            {"display": "none"},
+            {"color": "#888888"},
+            True,
+        )
+
+    if not virtual_data:
+        return "No data available.", True, [], [], {"display": "none"}, {"color": "#888888"}, True
+
+    try:
+        links_data = json.loads(processed_links)
+        if len(links_data) == 0:
+            return (
+                "No processed links available.",
+                True,
+                [],
+                [],
+                {"display": "none"},
+                {"color": "#888888"},
+                True,
+            )
+
+        links_data = links_data["mg_data"]
+        # Get selected MF IDs and spectrum IDs
+        selected_mfs = {
+            row["MF ID"]: {
+                "Spectra IDs": row["Spectra IDs"].split(", ")
+                if isinstance(row["Spectra IDs"], str)
+                else [],
+                "Spectra GNPS IDs": row["Spectra GNPS IDs"].split(", ")
+                if isinstance(row["Spectra GNPS IDs"], str)
+                else [],
+                "Spectra precursor m/z": row["Spectra precursor m/z"].split(", ")
+                if isinstance(row["Spectra precursor m/z"], str)
+                else [],
+            }
+            for i, row in enumerate(virtual_data)
+            if i in selected_rows
+        }
+
+        # Convert links data to DataFrame
+        links_df = pd.DataFrame(links_data)
+
+        # Apply scoring filters
+        filtered_df = scoring_apply(links_df, dropdown_menus, radiobuttons, cutoffs_met)
+        # Filter for selected MFs and aggregate results
+        results = []
+        for mf_id in selected_mfs:
+            mf_links = filtered_df[filtered_df["mf_id"] == mf_id]
+            if not mf_links.empty:
+                # Sort by score in descending order
+                mf_links = mf_links.sort_values("score", ascending=False)
+
+                # Get the top GCF for this MF
+                top_gcf = mf_links.iloc[0]
+
+                result = {
+                    # Mandatory fields
+                    "MF ID": int(mf_id),
+                    "# Links": len(mf_links),
+                    "Average Score": round(mf_links["score"].mean(), 2),
+                    # # Optional fields
+                    "Top GCF ID": int(top_gcf["gcf"].get("id", float("nan"))),
+                    "Top GCF # BGCs": top_gcf["gcf"].get("# BGCs", 0),
+                    "Top GCF BGC IDs": ", ".join([str(s) for s in top_gcf["gcf"]["BGC IDs"]]),
+                    "Top GCF BGC Classes": ", ".join(
+                        {
+                            item
+                            for sublist in top_gcf["gcf"].get("BGC Classes", [])
+                            for item in sublist
+                        }
+                    ),
+                    "Top GCF Score": round(top_gcf.get("score", float("nan")), 4),
+                    # Store all GCF data for later use (download, etc.)
+                    "gcf_ids_str": "|".join([str(gcf.get("id", "")) for gcf in mf_links["gcf"]]),
+                    "gcf_scores_str": "|".join(
+                        [str(score) for score in mf_links["score"].tolist()]
+                    ),
+                }
+                results.append(result)
+
+        if not results:
+            return (
+                "No matching links found for selected MFs.",
+                True,
+                [],
+                [],
+                {"display": "none"},
+                {"color": "#888888"},
+                True,
+            )
+
+        # Prepare tooltip data
+        tooltip_data = []
+        for result in results:
+            gcf_ids = result["gcf_ids_str"].split("|") if result["gcf_ids_str"] else []
+            gcf_scores = (
+                [float(s) for s in result["gcf_scores_str"].split("|")]
+                if result["gcf_scores_str"]
+                else []
+            )
+
+            # Show only top 5 GCFs in tooltip
+            max_tooltip_entries = 5
+            total_entries = len(gcf_ids)
+
+            gcfs_table = "| GCF ID | Score |\n|--------|--------|\n"
+
+            # Add top entries
+            for gcf_id, score in zip(
+                gcf_ids[:max_tooltip_entries],
+                gcf_scores[:max_tooltip_entries],
+            ):
+                gcfs_table += f"| {gcf_id} | {round(score, 4)} |\n"
+
+            # Add indication of more entries if applicable
+            if total_entries > max_tooltip_entries:
+                remaining = total_entries - max_tooltip_entries
+                gcfs_table += f"\n... {remaining} more entries ..."
+
+            row_tooltip = {
+                "# Links": {"value": gcfs_table, "type": "markdown"},
+            }
+            tooltip_data.append(row_tooltip)
+
+        return (
+            "",
+            False,
+            results,
+            tooltip_data,
+            {"display": "block"},
+            {},
+            False,
+        )
+
+    except Exception as e:
+        return (
+            f"Error processing results: {str(e)}",
+            True,
+            [],
+            [],
+            {"display": "none"},
+            {"color": "#888888"},
+            True,
+        )
+
+
+@app.callback(
+    [
+        Output("mg-download-button", "disabled"),
+        Output("mg-download-alert", "is_open"),
+        Output("mg-download-alert", "children"),
+    ],
+    [
+        Input("mg-results-table", "data"),
+    ],
+)
+def toggle_mg_download_button(table_data):
+    """Enable/disable download button based on data availability."""
+    if not table_data:
+        return True, False, ""
+    return False, False, ""
+
+
+@app.callback(
+    [
+        Output("mg-download-excel", "data"),
+        Output("mg-download-alert", "is_open", allow_duplicate=True),
+        Output("mg-download-alert", "children", allow_duplicate=True),
+    ],
+    Input("mg-download-button", "n_clicks"),
+    [
+        State("mg-results-table", "data"),
+    ],
+    prevent_initial_call=True,
+)
+def generate_mg_excel(n_clicks, table_data):
+    """Generate Excel file with two sheets: full results and detailed GCF data."""
+    if not ctx.triggered or not table_data:
+        return None, False, ""
+
+    try:
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
+            # Sheet 1: Best candidate links table
+            results_df = pd.DataFrame(table_data)
+
+            # Filter out only the internal fields used for tooltips and processing
+            internal_fields = ["gcf_ids_str", "gcf_scores_str"]
+            export_columns = [col for col in results_df.columns if col not in internal_fields]
+
+            # Use all non-internal columns
+            results_df = results_df[export_columns]
+            results_df.to_excel(writer, sheet_name="Best Candidate Links", index=False)
+
+            # Sheet 2: Detailed GCF data
+            detailed_data = []
+            for row in table_data:
+                mf_id = row["MF ID"]
+                gcf_ids = row.get("gcf_ids_str", "").split("|") if row.get("gcf_ids_str") else []
+                scores = (
+                    [float(s) for s in row.get("gcf_scores_str", "").split("|")]
+                    if row.get("gcf_scores_str")
+                    else []
+                )
+
+                # Add all GCF entries without truncation
+                for gcf_id, score in zip(gcf_ids, scores):
+                    detailed_data.append(
+                        {
+                            "MF ID": mf_id,
+                            "GCF ID": int(gcf_id),
+                            "Score": score,
+                        }
+                    )
+
+            detailed_df = pd.DataFrame(detailed_data)
+            detailed_df.to_excel(writer, sheet_name="All Candidate Links", index=False)
+
+        # Prepare the file for download
+        excel_data = output.getvalue()
+        return dcc.send_bytes(excel_data, "nplinker_metabol_to_genom.xlsx"), False, ""
+    except Exception as e:
+        return None, True, f"Error generating Excel file: {str(e)}"
