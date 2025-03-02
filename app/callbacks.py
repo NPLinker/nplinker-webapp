@@ -1718,6 +1718,22 @@ def update_columns(
     return columns
 
 
+def toggle_download_button(table_data):
+    """Enable/disable download button based on data availability.
+
+    Generic function to handle both GM and MG download button toggling.
+
+    Args:
+        table_data: Current data in the results table.
+
+    Returns:
+        Tuple containing disabled state, alert visibility, and alert message.
+    """
+    if not table_data:
+        return True, False, ""
+    return False, False, ""
+
+
 # ------------------ GM Results table functions ------------------ #
 @app.callback(
     Output("gm-results-table-column-settings-modal", "is_open"),
@@ -1973,11 +1989,9 @@ def gm_update_results_datatable(
         Input("gm-results-table", "data"),
     ],
 )
-def toggle_download_button(table_data):
-    """Enable/disable download button based on data availability."""
-    if not table_data:
-        return True, False, ""
-    return False, False, ""
+def gm_toggle_download_button(table_data):
+    """Enable/disable download button for GM tab based on data availability."""
+    return toggle_download_button(table_data)
 
 
 @app.callback(
@@ -1992,7 +2006,7 @@ def toggle_download_button(table_data):
     ],
     prevent_initial_call=True,
 )
-def generate_excel(n_clicks, table_data):
+def gm_generate_excel(n_clicks, table_data):
     """Generate Excel file with two sheets: full results and detailed spectrum data."""
     if not ctx.triggered or not table_data:
         return None, False, ""
@@ -2299,11 +2313,9 @@ def mg_update_results_datatable(
         Input("mg-results-table", "data"),
     ],
 )
-def toggle_mg_download_button(table_data):
-    """Enable/disable download button based on data availability."""
-    if not table_data:
-        return True, False, ""
-    return False, False, ""
+def mg_toggle_download_button(table_data):
+    """Enable/disable download button for MG tab based on data availability."""
+    return toggle_download_button(table_data)
 
 
 @app.callback(
@@ -2318,7 +2330,7 @@ def toggle_mg_download_button(table_data):
     ],
     prevent_initial_call=True,
 )
-def generate_mg_excel(n_clicks, table_data):
+def mg_generate_excel(n_clicks, table_data):
     """Generate Excel file with two sheets: full results and detailed GCF data."""
     if not ctx.triggered or not table_data:
         return None, False, ""

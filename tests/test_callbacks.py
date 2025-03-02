@@ -8,9 +8,9 @@ import pandas as pd
 import pytest
 from dash_uploader import UploadStatus
 from app.callbacks import disable_tabs_and_reset_blocks
-from app.callbacks import generate_excel
 from app.callbacks import gm_filter_add_block
 from app.callbacks import gm_filter_apply
+from app.callbacks import gm_generate_excel
 from app.callbacks import gm_table_select_rows
 from app.callbacks import gm_table_toggle_selection
 from app.callbacks import gm_table_update_datatable
@@ -526,7 +526,7 @@ def test_generate_excel_error_handling():
         # Simulate an error during Excel generation
         mock_writer.side_effect = Exception("Excel write error")
 
-        result = generate_excel(1, table_data)
+        result = gm_generate_excel(1, table_data)
 
         # Should return an error message
         assert result[0] is None
