@@ -35,7 +35,6 @@ from nplinker.metabolomics.spectrum import Spectrum
 
 
 # TODO: Add new tests for the mg table
-# TODO: Add underlines to the rows with tooltips in the tables
 
 
 dash._dash_renderer._set_react_version("18.2.0")  # type: ignore
