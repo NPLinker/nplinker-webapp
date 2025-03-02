@@ -2024,8 +2024,6 @@ def generate_excel(n_clicks, table_data):
 
 # ------------------ MG Results table functions ------------------ #
 
-# TODO: Finish checking functionality, see whether you can reuse info from the data table as it is done in the GM table
-
 
 @app.callback(
     Output("mg-results-table-column-settings-modal", "is_open"),
