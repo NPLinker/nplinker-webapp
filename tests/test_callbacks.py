@@ -11,7 +11,6 @@ from app.callbacks import disable_tabs_and_reset_blocks
 from app.callbacks import generate_excel
 from app.callbacks import gm_filter_add_block
 from app.callbacks import gm_filter_apply
-from app.callbacks import gm_scoring_apply
 from app.callbacks import gm_table_select_rows
 from app.callbacks import gm_table_toggle_selection
 from app.callbacks import gm_table_update_datatable
@@ -19,6 +18,7 @@ from app.callbacks import mg_filter_apply
 from app.callbacks import mg_table_toggle_selection
 from app.callbacks import mg_table_update_datatable
 from app.callbacks import process_uploaded_data
+from app.callbacks import scoring_apply
 from app.callbacks import toggle_download_button
 from app.callbacks import upload_data
 from . import DATA_DIR
@@ -441,7 +441,7 @@ def test_gm_table_select_rows(sample_processed_data):
 
 
 def test_gm_scoring_apply_metcalf_raw():
-    """Test gm_scoring_apply with Metcalf method and raw scores."""
+    """Test scoring_apply with Metcalf method and raw scores."""
     # Create test DataFrame
     df = pd.DataFrame(
         {
@@ -457,7 +457,7 @@ def test_gm_scoring_apply_metcalf_raw():
     radiobuttons = ["RAW"]
     cutoffs_met = ["1.0"]
 
-    result = gm_scoring_apply(df, dropdown_menus, radiobuttons, cutoffs_met)
+    result = scoring_apply(df, dropdown_menus, radiobuttons, cutoffs_met)
 
     assert len(result) == 1, "Should return one row"
     assert result.iloc[0]["method"] == "metcalf", "Method should be metcalf"
@@ -466,7 +466,7 @@ def test_gm_scoring_apply_metcalf_raw():
 
 
 def test_gm_scoring_apply_metcalf_standardised():
-    """Test gm_scoring_apply with Metcalf method and standardised scores."""
+    """Test scoring_apply with Metcalf method and standardised scores."""
     # Create test DataFrame
     df = pd.DataFrame(
         {
@@ -482,7 +482,7 @@ def test_gm_scoring_apply_metcalf_standardised():
     radiobuttons = ["STANDARDISED"]
     cutoffs_met = ["1.5"]
 
-    result = gm_scoring_apply(df, dropdown_menus, radiobuttons, cutoffs_met)
+    result = scoring_apply(df, dropdown_menus, radiobuttons, cutoffs_met)
 
     assert len(result) == 1, "Should return one row"
     assert result.iloc[0]["method"] == "metcalf", "Method should be metcalf"
@@ -491,12 +491,12 @@ def test_gm_scoring_apply_metcalf_standardised():
 
 
 def test_gm_scoring_apply_empty_inputs():
-    """Test gm_scoring_apply with empty inputs."""
+    """Test scoring_apply with empty inputs."""
     df = pd.DataFrame(
         {"method": ["metcalf"], "standardised": [False], "cutoff": [1.0], "score": [2.0]}
     )
 
-    result = gm_scoring_apply(df, [], [], [])
+    result = scoring_apply(df, [], [], [])
 
     assert len(result) == 1, "Should return original DataFrame"
     assert result.equals(df), "Should return unmodified DataFrame"
