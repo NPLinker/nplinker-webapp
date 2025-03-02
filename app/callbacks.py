@@ -1358,6 +1358,163 @@ def scoring_create_initial_block(block_id: str, tab_prefix: str = "gm") -> dmc.G
     )
 
 
+def scoring_add_block(n_clicks: list[int], blocks_id: list[str]) -> list[str]:
+    """Add a new block to the scoring layout when the add button is clicked.
+
+    Generic function to handle both GM and MG scoring block additions.
+
+    Args:
+        n_clicks: List of number of clicks for each add button.
+        blocks_id: Current list of block IDs.
+
+    Returns:
+        Updated list of block IDs.
+    """
+    if not any(n_clicks):
+        raise dash.exceptions.PreventUpdate
+    # Create a unique ID for the new block
+    new_block_id = str(uuid.uuid4())
+    blocks_id.append(new_block_id)
+    return blocks_id
+
+
+def scoring_display_blocks(
+    blocks_id: list[str], existing_blocks: list[dmc.Grid], tab_prefix: str = "gm"
+) -> list[dmc.Grid]:
+    """Display the scoring blocks for the input block IDs.
+
+    Generic function to handle both GM and MG scoring block displays.
+
+    Args:
+        blocks_id: List of block IDs.
+        existing_blocks: Current list of block components.
+        tab_prefix: Prefix for the tab ('gm' or 'mg').
+
+    Returns:
+        Updated list of block components.
+    """
+    if len(blocks_id) > 1:
+        new_block_id = blocks_id[-1]
+
+        new_block = dmc.Grid(
+            id={"type": f"{tab_prefix}-scoring-block", "index": new_block_id},
+            children=[
+                dmc.GridCol(span=6),
+                dmc.GridCol(
+                    dcc.RadioItems(
+                        ["RAW", "STANDARDISED"],
+                        "RAW",
+                        inline=True,
+                        id={"type": f"{tab_prefix}-scoring-radio-items", "index": new_block_id},
+                        labelStyle={
+                            "marginRight": "20px",
+                            "padding": "8px 12px",
+                            "backgroundColor": "#f0f0f0",
+                            "border": "1px solid #ddd",
+                            "borderRadius": "4px",
+                            "cursor": "pointer",
+                        },
+                    ),
+                    span=6,
+                ),
+                dmc.GridCol(
+                    html.Div(
+                        [
+                            dbc.Button(
+                                [html.I(className="fas fa-plus")],
+                                id={
+                                    "type": f"{tab_prefix}-scoring-add-button",
+                                    "index": new_block_id,
+                                },
+                                className="btn-primary",
+                            ),
+                            html.Label(
+                                "OR",
+                                id={
+                                    "type": f"{tab_prefix}-scoring-or-label",
+                                    "index": new_block_id,
+                                },
+                                className="ms-2 px-2 py-1 rounded",
+                                style={
+                                    "color": "green",
+                                    "backgroundColor": "#f0f0f0",
+                                    "display": "inline-block",
+                                    "position": "absolute",
+                                    "left": "50px",
+                                },
+                            ),
+                        ],
+                    ),
+                    style={"position": "relative", "marginTop": "24px"},
+                    span=2,
+                ),
+                dmc.GridCol(
+                    dcc.Dropdown(
+                        options=SCORING_DROPDOWN_MENU_OPTIONS,
+                        value="METCALF",
+                        id={"type": f"{tab_prefix}-scoring-dropdown-menu", "index": new_block_id},
+                        clearable=False,
+                        style={"marginTop": "24px"},
+                    ),
+                    span=4,
+                ),
+                dmc.GridCol(
+                    [
+                        dmc.TextInput(
+                            id={
+                                "type": f"{tab_prefix}-scoring-dropdown-ids-cutoff-met",
+                                "index": new_block_id,
+                            },
+                            label="Cutoff",
+                            placeholder="Insert cutoff value as a number",
+                            value="0.05",
+                            className="custom-textinput",
+                        ),
+                    ],
+                    span=6,
+                ),
+            ],
+            gutter="md",
+            style={"marginTop": "30px"},
+        )
+
+        # Hide the add button and OR label on the previous last block
+        if len(existing_blocks) == 1:
+            existing_blocks[-1]["props"]["children"][2]["props"]["children"]["props"]["style"] = {
+                "display": "none"
+            }
+        else:
+            existing_blocks[-1]["props"]["children"][2]["props"]["children"]["props"]["children"][
+                0
+            ]["props"]["style"] = {"display": "none"}
+
+        return existing_blocks + [new_block]
+    return existing_blocks
+
+
+def scoring_update_placeholder(
+    selected_value: str,
+) -> tuple[dict[str, str], str, str]:
+    """Update the style and label of the radio items and input fields based on the dropdown selection.
+
+    Generic function to handle both GM and MG scoring placeholders.
+
+    Args:
+        selected_value: The value selected in the dropdown menu.
+
+    Returns:
+        A tuple containing style and label updates of the radio items and input fields.
+    """
+    if not ctx.triggered:
+        # Callback was not triggered by user interaction, don't change anything
+        raise dash.exceptions.PreventUpdate
+    if selected_value == "METCALF":
+        return ({"display": "block"}, "Cutoff", "0.05")
+    else:
+        # This case should never occur due to the Literal type, but it satisfies mypy
+        return ({"display": "none"}, "", "")
+
+
 def scoring_apply(
     df: pd.DataFrame, dropdown_menus: list[str], radiobuttons: list[str], cutoffs_met: list[str]
 ) -> pd.DataFrame:
@@ -1395,7 +1552,7 @@ def scoring_apply(
     State("gm-scoring-blocks-id", "data"),
 )
 def gm_scoring_add_block(n_clicks: list[int], blocks_id: list[str]) -> list[str]:
-    """Add a new block to the layout when the add button is clicked.
+    """Add a new block to the GM scoring layout when the add button is clicked.
 
     Args:
         n_clicks: List of number of clicks for each add button.
@@ -1404,12 +1561,7 @@ def gm_scoring_add_block(n_clicks: list[int], blocks_id: list[str]) -> list[str]
     Returns:
         Updated list of block IDs.
     """
-    if not any(n_clicks):
-        raise dash.exceptions.PreventUpdate
-    # Create a unique ID for the new block
-    new_block_id = str(uuid.uuid4())
-    blocks_id.append(new_block_id)
-    return blocks_id
+    return scoring_add_block(n_clicks, blocks_id)
 
 
 @app.callback(
@@ -1420,7 +1572,7 @@ def gm_scoring_add_block(n_clicks: list[int], blocks_id: list[str]) -> list[str]
 def gm_scoring_display_blocks(
     blocks_id: list[str], existing_blocks: list[dmc.Grid]
 ) -> list[dmc.Grid]:
-    """Display the blocks for the input block IDs.
+    """Display the blocks for the input block IDs in the GM tab.
 
     Args:
         blocks_id: List of block IDs.
@@ -1429,97 +1581,7 @@ def gm_scoring_display_blocks(
     Returns:
         Updated list of block components.
     """
-    if len(blocks_id) > 1:
-        new_block_id = blocks_id[-1]
-
-        new_block = dmc.Grid(
-            id={"type": "gm-scoring-block", "index": new_block_id},
-            children=[
-                dmc.GridCol(span=6),
-                dmc.GridCol(
-                    dcc.RadioItems(
-                        ["RAW", "STANDARDISED"],
-                        "RAW",
-                        inline=True,
-                        id={"type": "gm-scoring-radio-items", "index": new_block_id},
-                        labelStyle={
-                            "marginRight": "20px",
-                            "padding": "8px 12px",
-                            "backgroundColor": "#f0f0f0",
-                            "border": "1px solid #ddd",
-                            "borderRadius": "4px",
-                            "cursor": "pointer",
-                        },
-                    ),
-                    span=6,
-                ),
-                dmc.GridCol(
-                    html.Div(
-                        [
-                            dbc.Button(
-                                [html.I(className="fas fa-plus")],
-                                id={"type": "gm-scoring-add-button", "index": new_block_id},
-                                className="btn-primary",
-                            ),
-                            html.Label(
-                                "OR",
-                                id={"type": "gm-scoring-or-label", "index": new_block_id},
-                                className="ms-2 px-2 py-1 rounded",
-                                style={
-                                    "color": "green",
-                                    "backgroundColor": "#f0f0f0",
-                                    "display": "inline-block",
-                                    "position": "absolute",
-                                    "left": "50px",
-                                },
-                            ),
-                        ],
-                    ),
-                    style={"position": "relative", "marginTop": "24px"},
-                    span=2,
-                ),
-                dmc.GridCol(
-                    dcc.Dropdown(
-                        options=SCORING_DROPDOWN_MENU_OPTIONS,
-                        value="METCALF",
-                        id={"type": "gm-scoring-dropdown-menu", "index": new_block_id},
-                        clearable=False,
-                        style={"marginTop": "24px"},
-                    ),
-                    span=4,
-                ),
-                dmc.GridCol(
-                    [
-                        dmc.TextInput(
-                            id={
-                                "type": "gm-scoring-dropdown-ids-cutoff-met",
-                                "index": new_block_id,
-                            },
-                            label="Cutoff",
-                            placeholder="Insert cutoff value as a number",
-                            value="0.05",
-                            className="custom-textinput",
-                        ),
-                    ],
-                    span=6,
-                ),
-            ],
-            gutter="md",
-            style={"marginTop": "30px"},
-        )
-
-        # Hide the add button and OR label on the previous last block
-        if len(existing_blocks) == 1:
-            existing_blocks[-1]["props"]["children"][2]["props"]["children"]["props"]["style"] = {
-                "display": "none"
-            }
-        else:
-            existing_blocks[-1]["props"]["children"][2]["props"]["children"]["props"]["children"][
-                0
-            ]["props"]["style"] = {"display": "none"}
-
-        return existing_blocks + [new_block]
-    return existing_blocks
+    return scoring_display_blocks(blocks_id, existing_blocks, "gm")
 
 
 @app.callback(
@@ -1531,35 +1593,27 @@ def gm_scoring_display_blocks(
 def gm_scoring_update_placeholder(
     selected_value: str,
 ) -> tuple[dict[str, str], str, str]:
-    """Update the style and label of the radio items and input fields based on the dropdown selection.
+    """Update the style and label of the radio items and input fields for GM tab.
 
     Args:
         selected_value: The value selected in the dropdown menu.
 
     Returns:
-        A tuple containing st syle and label updates of the radio items and input fields.
+        A tuple containing style and label updates of the radio items and input fields.
     """
-    if not ctx.triggered:
-        # Callback was not triggered by user interaction, don't change anything
-        raise dash.exceptions.PreventUpdate
-    if selected_value == "METCALF":
-        return ({"display": "block"}, "Cutoff", "0.05")
-    else:
-        # This case should never occur due to the Literal type, but it satisfies mypy
-        return ({"display": "none"}, "", "")
+    return scoring_update_placeholder(selected_value)
 
 
 # ------------------ MG Scoring functions ------------------ #
 
 
-# TODO: Merge with GM Scoring functions
 @app.callback(
     Output("mg-scoring-blocks-id", "data"),
     Input({"type": "mg-scoring-add-button", "index": ALL}, "n_clicks"),
     State("mg-scoring-blocks-id", "data"),
 )
 def mg_scoring_add_block(n_clicks: list[int], blocks_id: list[str]) -> list[str]:
-    """Add a new block to the layout when the add button is clicked.
+    """Add a new block to the MG scoring layout when the add button is clicked.
 
     Args:
         n_clicks: List of number of clicks for each add button.
@@ -1568,12 +1622,7 @@ def mg_scoring_add_block(n_clicks: list[int], blocks_id: list[str]) -> list[str]
     Returns:
         Updated list of block IDs.
     """
-    if not any(n_clicks):
-        raise dash.exceptions.PreventUpdate
-    # Create a unique ID for the new block
-    new_block_id = str(uuid.uuid4())
-    blocks_id.append(new_block_id)
-    return blocks_id
+    return scoring_add_block(n_clicks, blocks_id)
 
 
 @app.callback(
@@ -1584,7 +1633,7 @@ def mg_scoring_add_block(n_clicks: list[int], blocks_id: list[str]) -> list[str]
 def mg_scoring_display_blocks(
     blocks_id: list[str], existing_blocks: list[dmc.Grid]
 ) -> list[dmc.Grid]:
-    """Display the blocks for the input block IDs.
+    """Display the blocks for the input block IDs in the MG tab.
 
     Args:
         blocks_id: List of block IDs.
@@ -1593,97 +1642,7 @@ def mg_scoring_display_blocks(
     Returns:
         Updated list of block components.
     """
-    if len(blocks_id) > 1:
-        new_block_id = blocks_id[-1]
-
-        new_block = dmc.Grid(
-            id={"type": "mg-scoring-block", "index": new_block_id},
-            children=[
-                dmc.GridCol(span=6),
-                dmc.GridCol(
-                    dcc.RadioItems(
-                        ["RAW", "STANDARDISED"],
-                        "RAW",
-                        inline=True,
-                        id={"type": "mg-scoring-radio-items", "index": new_block_id},
-                        labelStyle={
-                            "marginRight": "20px",
-                            "padding": "8px 12px",
-                            "backgroundColor": "#f0f0f0",
-                            "border": "1px solid #ddd",
-                            "borderRadius": "4px",
-                            "cursor": "pointer",
-                        },
-                    ),
-                    span=6,
-                ),
-                dmc.GridCol(
-                    html.Div(
-                        [
-                            dbc.Button(
-                                [html.I(className="fas fa-plus")],
-                                id={"type": "mg-scoring-add-button", "index": new_block_id},
-                                className="btn-primary",
-                            ),
-                            html.Label(
-                                "OR",
-                                id={"type": "mg-scoring-or-label", "index": new_block_id},
-                                className="ms-2 px-2 py-1 rounded",
-                                style={
-                                    "color": "green",
-                                    "backgroundColor": "#f0f0f0",
-                                    "display": "inline-block",
-                                    "position": "absolute",
-                                    "left": "50px",
-                                },
-                            ),
-                        ],
-                    ),
-                    style={"position": "relative", "marginTop": "24px"},
-                    span=2,
-                ),
-                dmc.GridCol(
-                    dcc.Dropdown(
-                        options=SCORING_DROPDOWN_MENU_OPTIONS,
-                        value="METCALF",
-                        id={"type": "mg-scoring-dropdown-menu", "index": new_block_id},
-                        clearable=False,
-                        style={"marginTop": "24px"},
-                    ),
-                    span=4,
-                ),
-                dmc.GridCol(
-                    [
-                        dmc.TextInput(
-                            id={
-                                "type": "mg-scoring-dropdown-ids-cutoff-met",
-                                "index": new_block_id,
-                            },
-                            label="Cutoff",
-                            placeholder="Insert cutoff value as a number",
-                            value="0.05",
-                            className="custom-textinput",
-                        ),
-                    ],
-                    span=6,
-                ),
-            ],
-            gutter="md",
-            style={"marginTop": "30px"},
-        )
-
-        # Hide the add button and OR label on the previous last block
-        if len(existing_blocks) == 1:
-            existing_blocks[-1]["props"]["children"][2]["props"]["children"]["props"]["style"] = {
-                "display": "none"
-            }
-        else:
-            existing_blocks[-1]["props"]["children"][2]["props"]["children"]["props"]["children"][
-                0
-            ]["props"]["style"] = {"display": "none"}
-
-        return existing_blocks + [new_block]
-    return existing_blocks
+    return scoring_display_blocks(blocks_id, existing_blocks, "mg")
 
 
 @app.callback(
@@ -1695,7 +1654,7 @@ def mg_scoring_display_blocks(
 def mg_scoring_update_placeholder(
     selected_value: str,
 ) -> tuple[dict[str, str], str, str]:
-    """Update the style and label of the radio items and input fields based on the dropdown selection.
+    """Update the style and label of the radio items and input fields for MG tab.
 
     Args:
         selected_value: The value selected in the dropdown menu.
@@ -1703,14 +1662,7 @@ def mg_scoring_update_placeholder(
     Returns:
         A tuple containing style and label updates of the radio items and input fields.
     """
-    if not ctx.triggered:
-        # Callback was not triggered by user interaction, don't change anything
-        raise dash.exceptions.PreventUpdate
-    if selected_value == "METCALF":
-        return ({"display": "block"}, "Cutoff", "0.05")
-    else:
-        # This case should never occur due to the Literal type, but it satisfies mypy
-        return ({"display": "none"}, "", "")
+    return scoring_update_placeholder(selected_value)
 
 
 # ------------------ GM Results table functions ------------------ #
