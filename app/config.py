@@ -23,6 +23,7 @@ GM_RESULTS_TABLE_MANDATORY_COLUMNS = [
 
 GM_RESULTS_TABLE_OPTIONAL_COLUMNS = [
     {"name": "Top Spectrum ID", "id": "Top Spectrum ID", "type": "numeric"},
+    {"name": "Top Spectrum MF ID", "id": "Top Spectrum MF ID", "type": "numeric"},
     {"name": "Top Spectrum Precursor m/z", "id": "Top Spectrum Precursor m/z", "type": "numeric"},
     {"name": "Top Spectrum GNPS ID", "id": "Top Spectrum GNPS ID", "type": "text"},
     {"name": "Top Spectrum Score", "id": "Top Spectrum Score", "type": "numeric"},
@@ -32,6 +33,7 @@ GM_RESULTS_TABLE_OPTIONAL_COLUMNS = [
 
 GM_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS = [
     "Top Spectrum ID",
+    "Top Spectrum MF ID",
     "Top Spectrum Precursor m/z",
     "Top Spectrum GNPS ID",
     "Top Spectrum Score",

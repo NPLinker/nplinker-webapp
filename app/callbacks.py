@@ -171,45 +171,62 @@ def process_uploaded_data(file_path: Path | str | None) -> tuple[str | None, str
             }
 
             for link in links.links:
-                if isinstance(link[1], Spectrum):  # Then link[0] is a GCF (GCF -> Spectrum)
-                    processed_links["gm_data"]["gcf_id"].append(link[0].id)
+                # Helper function to process Genome-Metabolome (GM) links
+                def process_gm_link(gcf, spectrum, methods_data):
+                    processed_links["gm_data"]["gcf_id"].append(gcf.id)
                     processed_links["gm_data"]["spectrum"].append(
                         {
-                            "id": link[1].id,
-                            "strains": sorted([s.id for s in link[1].strains._strains]),
-                            "precursor_mz": link[1].precursor_mz,
-                            "gnps_id": link[1].gnps_id,
+                            "id": spectrum.id,
+                            "strains": sorted([s.id for s in spectrum.strains._strains]),
+                            "precursor_mz": spectrum.precursor_mz,
+                            "gnps_id": spectrum.gnps_id,
+                            "mf_id": spectrum.family.id if spectrum.family else None,
                         }
                     )
-                    for method, data in link[2].items():
+                    for method, data in methods_data.items():
                         processed_links["gm_data"]["method"].append(method)
                         processed_links["gm_data"]["score"].append(data.value)
                         processed_links["gm_data"]["cutoff"].append(data.parameter["cutoff"])
                         processed_links["gm_data"]["standardised"].append(
                             data.parameter["standardised"]
                         )
-                elif isinstance(link[1], MolecularFamily):  # Then link[0] if GCFS (GCF -> MF)
-                    sorted_bgcs = sorted(link[0].bgcs, key=lambda bgc: bgc.id)
+
+                # Helper function to process Metabolome-Genome (MG) links
+                def process_mg_link(mf, gcf, methods_data):
+                    sorted_bgcs = sorted(gcf.bgcs, key=lambda bgc: bgc.id)
                     bgc_ids = [bgc.id for bgc in sorted_bgcs]
                     bgc_classes = [process_bgc_class(bgc.mibig_bgc_class) for bgc in sorted_bgcs]
 
-                    processed_links["mg_data"]["mf_id"].append(link[1].id)
+                    processed_links["mg_data"]["mf_id"].append(mf.id)
                     processed_links["mg_data"]["gcf"].append(
                         {
-                            "id": link[0].id,
-                            "strains": sorted([s.id for s in link[1].strains._strains]),
-                            "# BGCs": len(link[0].bgcs),
+                            "id": gcf.id,
+                            "strains": sorted([s.id for s in mf.strains._strains]),
+                            "# BGCs": len(gcf.bgcs),
                             "BGC IDs": bgc_ids,
                             "BGC Classes": bgc_classes,
                         }
                     )
-                    for method, data in link[2].items():
+                    for method, data in methods_data.items():
                         processed_links["mg_data"]["method"].append(method)
                         processed_links["mg_data"]["score"].append(data.value)
                         processed_links["mg_data"]["cutoff"].append(data.parameter["cutoff"])
                         processed_links["mg_data"]["standardised"].append(
                             data.parameter["standardised"]
                         )
+
+                # GCF -> Spectrum links
+                if isinstance(link[1], Spectrum):
+                    process_gm_link(link[0], link[1], link[2])
+                # Spectrum -> GCF links
+                elif isinstance(link[0], Spectrum):
+                    process_gm_link(link[1], link[0], link[2])
+                # GCF -> MF links
+                elif isinstance(link[1], MolecularFamily):
+                    process_mg_link(link[1], link[0], link[2])
+                # MF -> GCF links
+                elif isinstance(link[0], MolecularFamily):
+                    process_mg_link(link[0], link[1], link[2])
         else:
             processed_links = {}
 
@@ -1773,68 +1790,106 @@ def update_results_datatable(
                 # Sort by score in descending order
                 item_links = item_links.sort_values(score_field, ascending=False)
 
-                # Get the top item
-                top_item = item_links.iloc[0]
+                # Get the highest score
+                highest_score = item_links[score_field].max()
 
-                if prefix == "gm":
-                    result = {
-                        # Mandatory fields
-                        "GCF ID": int(item_id),
-                        "# Links": len(item_links),
-                        "Average Score": round(item_links[score_field].mean(), 2),
-                        # Optional fields with None handling
-                        "Top Spectrum ID": int(top_item[item_field].get("id", float("nan"))),
-                        "Top Spectrum Precursor m/z": round(
-                            top_item[item_field].get("precursor_mz", float("nan")), 4
-                        )
-                        if top_item[item_field].get("precursor_mz") is not None
-                        else float("nan"),
-                        "Top Spectrum GNPS ID": top_item[item_field].get("gnps_id", "None")
-                        if top_item[item_field].get("gnps_id") is not None
-                        else "None",
-                        "Top Spectrum Score": round(top_item.get(score_field, float("nan")), 4)
-                        if top_item.get(score_field) is not None
-                        else float("nan"),
-                        "MiBIG IDs": selected_items[item_id]["MiBIG IDs"],
-                        "BGC Classes": selected_items[item_id]["BGC Classes"],
-                        # Store all spectrum data for later use
-                        "spectrum_ids_str": "|".join(
-                            [str(s.get("id", "")) for s in item_links[item_field]]
-                        ),
-                        "spectrum_scores_str": "|".join(
-                            [str(score) for score in item_links[score_field].tolist()]
-                        ),
-                    }
-                else:  # MG
-                    result = {
-                        # Mandatory fields
-                        "MF ID": int(item_id),
-                        "# Links": len(item_links),
-                        "Average Score": round(item_links[score_field].mean(), 2),
-                        # Optional fields
-                        "Top GCF ID": int(top_item[item_field].get("id", float("nan"))),
-                        "Top GCF # BGCs": top_item[item_field].get("# BGCs", 0),
-                        "Top GCF BGC IDs": ", ".join(
-                            [str(s) for s in top_item[item_field]["BGC IDs"]]
-                        ),
-                        "Top GCF BGC Classes": ", ".join(
-                            {
-                                item
-                                for sublist in top_item[item_field].get("BGC Classes", [])
-                                for item in sublist
-                            }
-                        ),
-                        "Top GCF Score": round(top_item.get(score_field, float("nan")), 4),
-                        # Store all GCF data for later use
-                        "gcf_ids_str": "|".join(
-                            [str(gcf.get("id", "")) for gcf in item_links[item_field]]
-                        ),
-                        "gcf_scores_str": "|".join(
-                            [str(score) for score in item_links[score_field].tolist()]
-                        ),
-                    }
+                # Get all items with the highest score
+                top_items = item_links[item_links[score_field] == highest_score]
 
-                results.append(result)
+                # Create result rows for each item with the highest score
+                for _, top_item in top_items.iterrows():
+                    if prefix == "gm":
+                        result = {
+                            # Mandatory fields
+                            "GCF ID": int(item_id),
+                            "# Links": len(item_links),
+                            "Average Score": round(item_links[score_field].mean(), 2),
+                            # Optional fields with None handling
+                            "Top Spectrum ID": int(top_item[item_field].get("id", float("nan"))),
+                            "Top Spectrum MF ID": int(
+                                top_item[item_field].get("mf_id", float("nan"))
+                            ),
+                            "Top Spectrum Precursor m/z": round(
+                                top_item[item_field].get("precursor_mz", float("nan")), 4
+                            )
+                            if top_item[item_field].get("precursor_mz") is not None
+                            else float("nan"),
+                            "Top Spectrum GNPS ID": top_item[item_field].get("gnps_id", "None")
+                            if top_item[item_field].get("gnps_id") is not None
+                            else "None",
+                            "Top Spectrum Score": round(top_item.get(score_field, float("nan")), 4)
+                            if top_item.get(score_field) is not None
+                            else float("nan"),
+                            "MiBIG IDs": selected_items[item_id]["MiBIG IDs"],
+                            "BGC Classes": selected_items[item_id]["BGC Classes"],
+                            # Store all spectrum data for later use
+                            "spectrum_ids_str": "|".join(
+                                [str(s.get("id", "")) for s in item_links[item_field]]
+                            ),
+                            "spectrum_mf_ids_str": "|".join(
+                                [str(s.get("mf_id", "None")) for s in item_links[item_field]]
+                            ),
+                            "spectrum_scores_str": "|".join(
+                                [str(score) for score in item_links[score_field].tolist()]
+                            ),
+                            "spectrum_mz_str": "|".join(
+                                [str(s.get("precursor_mz", "None")) for s in item_links[item_field]]
+                            ),
+                            "spectrum_gnps_id_str": "|".join(
+                                [str(s.get("gnps_id", "None")) for s in item_links[item_field]],
+                            ),
+                        }
+                    else:  # MG
+                        result = {
+                            # Mandatory fields
+                            "MF ID": int(item_id),
+                            "# Links": len(item_links),
+                            "Average Score": round(item_links[score_field].mean(), 2),
+                            # Optional fields
+                            "Top GCF ID": int(top_item[item_field].get("id", float("nan"))),
+                            "Top GCF # BGCs": top_item[item_field].get("# BGCs", 0),
+                            "Top GCF BGC IDs": ", ".join(
+                                [str(s) for s in top_item[item_field]["BGC IDs"]]
+                            ),
+                            "Top GCF BGC Classes": ", ".join(
+                                {
+                                    item
+                                    for sublist in top_item[item_field].get("BGC Classes", [])
+                                    for item in sublist
+                                }
+                            ),
+                            "Top GCF Score": round(top_item.get(score_field, float("nan")), 4),
+                            # Store all GCF data for later use
+                            "gcf_ids_str": "|".join(
+                                [str(gcf.get("id", "")) for gcf in item_links[item_field]]
+                            ),
+                            "gcf_scores_str": "|".join(
+                                [str(score) for score in item_links[score_field].tolist()]
+                            ),
+                            "gcf_bgc_classes_str": "|".join(
+                                [
+                                    ", ".join(
+                                        {
+                                            item
+                                            for sublist in gcf.get("BGC Classes", [])
+                                            for item in sublist
+                                        }
+                                    )
+                                    for gcf in item_links[item_field]
+                                ]
+                            ),
+                            "gcf_bgc_ids_str": "|".join(
+                                [
+                                    ", ".join([str(bgc_id) for bgc_id in gcf.get("BGC IDs", [])])
+                                    for gcf in item_links[item_field]
+                                ]
+                            ),
+                            "gcf_num_bgcs_str": "|".join(
+                                [str(gcf.get("# BGCs", 0)) for gcf in item_links[item_field]]
+                            ),
+                        }
+
+                    results.append(result)
 
         if not results:
             return (
@@ -1866,16 +1921,28 @@ def update_results_datatable(
             max_tooltip_entries = 5
             total_entries = len(ids)
 
-            items_table = (
-                f"| {'Spectrum' if prefix == 'gm' else 'GCF'} ID | Score |\n|--------|--------|\n"
-            )
+            if prefix == "gm":
+                # Get MF IDs for tooltips (only for GM tab)
+                mf_ids = (
+                    result.get("spectrum_mf_ids_str", "").split("|")
+                    if result.get("spectrum_mf_ids_str")
+                    else []
+                )
 
-            # Add top entries
-            for item_id, score in zip(
-                ids[:max_tooltip_entries],
-                scores[:max_tooltip_entries],
-            ):
-                items_table += f"| {item_id} | {round(score, 4)} |\n"
+                items_table = "| Spectrum ID | MF ID | Score |\n|--------|--------|--------|\n"
+
+                # Add top entries for GM tab
+                for item_id, score, mf_id in zip(
+                    ids[:max_tooltip_entries],
+                    scores[:max_tooltip_entries],
+                    mf_ids[:max_tooltip_entries],
+                ):
+                    items_table += f"| {item_id} | {mf_id} | {round(float(score), 4)} |\n"
+            else:
+                items_table = "| GCF ID | Score |\n|--------|--------|\n"
+                # Add top entries for MG tab
+                for item_id, score in zip(ids[:max_tooltip_entries], scores[:max_tooltip_entries]):
+                    items_table += f"| {item_id} | {round(float(score), 4)} |\n"
 
             # Add indication of more entries if applicable
             if total_entries > max_tooltip_entries:
@@ -2003,13 +2070,25 @@ def generate_excel(n_clicks, table_data, tab_prefix):
 
             # Field names are different based on tab
             if tab_prefix == "gm":
-                internal_fields = ["spectrum_ids_str", "spectrum_scores_str"]
+                internal_fields = [
+                    "spectrum_ids_str",
+                    "spectrum_mf_ids_str",
+                    "spectrum_scores_str",
+                    "spectrum_mz_str",
+                    "spectrum_gnps_id_str",
+                ]
                 filename = "nplinker_genom_to_metabol.xlsx"
                 detail_id_field = "GCF ID"
                 item_id_field = "Spectrum ID"
                 detail_sheet_name = "All Candidate Links"
             else:  # MG
-                internal_fields = ["gcf_ids_str", "gcf_scores_str"]
+                internal_fields = [
+                    "gcf_ids_str",
+                    "gcf_scores_str",
+                    "gcf_bgc_classes_str",
+                    "gcf_bgc_ids_str",
+                    "gcf_num_bgcs_str",
+                ]
                 filename = "nplinker_metabol_to_genom.xlsx"
                 detail_id_field = "MF ID"
                 item_id_field = "GCF ID"
@@ -2028,15 +2107,58 @@ def generate_excel(n_clicks, table_data, tab_prefix):
                 primary_id = row[detail_id_field]
                 if tab_prefix == "gm":
                     ids = (
-                        row.get("spectrum_ids_str", "").split("|")
+                        [
+                            int(s) if s and s != "None" else float("nan")
+                            for s in row.get("spectrum_ids_str", "").split("|")
+                        ]
                         if row.get("spectrum_ids_str")
                         else []
                     )
+                    mf_ids = (
+                        [
+                            int(s) if s and s != "None" else float("nan")
+                            for s in row.get("spectrum_mf_ids_str", "").split("|")
+                        ]
+                        if row.get("spectrum_mf_ids_str")
+                        else []
+                    )
                     scores = (
-                        [float(s) for s in row.get("spectrum_scores_str", "").split("|")]
+                        [
+                            float(s) if s and s != "None" else float("nan")
+                            for s in row.get("spectrum_scores_str", "").split("|")
+                        ]
                         if row.get("spectrum_scores_str")
                         else []
                     )
+
+                    mz_values = (
+                        [
+                            float(s) if s and s != "None" else float("nan")
+                            for s in row.get("spectrum_mz_str", "").split("|")
+                        ]
+                        if row.get("spectrum_mz_str")
+                        else []
+                    )
+
+                    gnps_ids = (
+                        row.get("spectrum_gnps_id_str", "").split("|")
+                        if row.get("spectrum_gnps_id_str")
+                        else []
+                    )
+
+                    # Add all entries without truncation
+                    for item_id, mf_id, score, mz, gnps_id in zip(
+                        ids, mf_ids, scores, mz_values, gnps_ids
+                    ):
+                        detail_row = {
+                            detail_id_field: primary_id,
+                            item_id_field: item_id,
+                            "MF ID": mf_id,
+                            "Score": score,
+                            "Precursor m/z": mz,
+                            "GNPS ID": gnps_id,
+                        }
+                        detailed_data.append(detail_row)
                 else:  # MG
                     ids = row.get("gcf_ids_str", "").split("|") if row.get("gcf_ids_str") else []
                     scores = (
@@ -2045,14 +2167,40 @@ def generate_excel(n_clicks, table_data, tab_prefix):
                         else []
                     )
 
-                # Add all entries without truncation
-                for item_id, score in zip(ids, scores):
-                    detail_row = {
-                        detail_id_field: primary_id,
-                        item_id_field: int(item_id),
-                        "Score": score,
-                    }
-                    detailed_data.append(detail_row)
+                    bgc_classes = (
+                        row.get("gcf_bgc_classes_str", "").split("|")
+                        if row.get("gcf_bgc_classes_str")
+                        else []
+                    )
+
+                    bgc_ids = (
+                        row.get("gcf_bgc_ids_str", "").split("|")
+                        if row.get("gcf_bgc_ids_str")
+                        else []
+                    )
+
+                    num_bgcs = (
+                        [
+                            int(s) if s and s.isdigit() else 0
+                            for s in row.get("gcf_num_bgcs_str", "").split("|")
+                        ]
+                        if row.get("gcf_num_bgcs_str")
+                        else []
+                    )
+
+                    # Add all entries without truncation
+                    for item_id, score, bgc_class, bgc_id, num_bgc in zip(
+                        ids, scores, bgc_classes, bgc_ids, num_bgcs
+                    ):
+                        detail_row = {
+                            detail_id_field: primary_id,
+                            item_id_field: int(item_id),
+                            "Score": score,
+                            "BGC Classes": bgc_class,
+                            "BGC IDs": bgc_id,
+                            "# BGCs": num_bgc,
+                        }
+                        detailed_data.append(detail_row)
 
             detailed_df = pd.DataFrame(detailed_data)
             detailed_df.to_excel(writer, sheet_name=detail_sheet_name, index=False)
