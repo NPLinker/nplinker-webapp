@@ -1838,6 +1838,27 @@ def update_results_datatable(
                         "gcf_scores_str": "|".join(
                             [str(score) for score in item_links[score_field].tolist()]
                         ),
+                        "gcf_bgc_classes_str": "|".join(
+                            [
+                                ", ".join(
+                                    {
+                                        item
+                                        for sublist in gcf.get("BGC Classes", [])
+                                        for item in sublist
+                                    }
+                                )
+                                for gcf in item_links[item_field]
+                            ]
+                        ),
+                        "gcf_bgc_ids_str": "|".join(
+                            [
+                                ", ".join([str(bgc_id) for bgc_id in gcf.get("BGC IDs", [])])
+                                for gcf in item_links[item_field]
+                            ]
+                        ),
+                        "gcf_num_bgcs_str": "|".join(
+                            [str(gcf.get("# BGCs", 0)) for gcf in item_links[item_field]]
+                        ),
                     }
 
                 results.append(result)
@@ -2020,7 +2041,13 @@ def generate_excel(n_clicks, table_data, tab_prefix):
                 item_id_field = "Spectrum ID"
                 detail_sheet_name = "All Candidate Links"
             else:  # MG
-                internal_fields = ["gcf_ids_str", "gcf_scores_str"]
+                internal_fields = [
+                    "gcf_ids_str",
+                    "gcf_scores_str",
+                    "gcf_bgc_classes_str",
+                    "gcf_bgc_ids_str",
+                    "gcf_num_bgcs_str",
+                ]
                 filename = "nplinker_metabol_to_genom.xlsx"
                 detail_id_field = "MF ID"
                 item_id_field = "GCF ID"
@@ -2082,12 +2109,38 @@ def generate_excel(n_clicks, table_data, tab_prefix):
                         else []
                     )
 
+                    bgc_classes = (
+                        row.get("gcf_bgc_classes_str", "").split("|")
+                        if row.get("gcf_bgc_classes_str")
+                        else []
+                    )
+
+                    bgc_ids = (
+                        row.get("gcf_bgc_ids_str", "").split("|")
+                        if row.get("gcf_bgc_ids_str")
+                        else []
+                    )
+
+                    num_bgcs = (
+                        [
+                            int(s) if s and s.isdigit() else 0
+                            for s in row.get("gcf_num_bgcs_str", "").split("|")
+                        ]
+                        if row.get("gcf_num_bgcs_str")
+                        else []
+                    )
+
                     # Add all entries without truncation
-                    for item_id, score in zip(ids, scores):
+                    for item_id, score, bgc_class, bgc_id, num_bgc in zip(
+                        ids, scores, bgc_classes, bgc_ids, num_bgcs
+                    ):
                         detail_row = {
                             detail_id_field: primary_id,
                             item_id_field: int(item_id),
                             "Score": score,
+                            "BGC Classes": bgc_class,
+                            "BGC IDs": bgc_id,
+                            "# BGCs": num_bgc,
                         }
                         detailed_data.append(detail_row)
 
