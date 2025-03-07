@@ -1804,6 +1804,12 @@ def update_results_datatable(
                         "spectrum_scores_str": "|".join(
                             [str(score) for score in item_links[score_field].tolist()]
                         ),
+                        "spectrum_mz_str": "|".join(
+                            [str(s.get("precursor_mz", "None")) for s in item_links[item_field]]
+                        ),
+                        "spectrum_gnps_id_str": "|".join(
+                            [str(s.get("gnps_id", "None")) for s in item_links[item_field]],
+                        ),
                     }
                 else:  # MG
                     result = {
@@ -2003,7 +2009,12 @@ def generate_excel(n_clicks, table_data, tab_prefix):
 
             # Field names are different based on tab
             if tab_prefix == "gm":
-                internal_fields = ["spectrum_ids_str", "spectrum_scores_str"]
+                internal_fields = [
+                    "spectrum_ids_str",
+                    "spectrum_scores_str",
+                    "spectrum_mz_str",
+                    "spectrum_gnps_id_str",
+                ]
                 filename = "nplinker_genom_to_metabol.xlsx"
                 detail_id_field = "GCF ID"
                 item_id_field = "Spectrum ID"
@@ -2037,6 +2048,32 @@ def generate_excel(n_clicks, table_data, tab_prefix):
                         if row.get("spectrum_scores_str")
                         else []
                     )
+
+                    mz_values = (
+                        [
+                            float(s) if s and s != "None" else float("nan")
+                            for s in row.get("spectrum_mz_str", "").split("|")
+                        ]
+                        if row.get("spectrum_mz_str")
+                        else []
+                    )
+
+                    gnps_ids = (
+                        row.get("spectrum_gnps_id_str", "").split("|")
+                        if row.get("spectrum_gnps_id_str")
+                        else []
+                    )
+
+                    # Add all entries without truncation
+                    for item_id, score, mz, gnps_id in zip(ids, scores, mz_values, gnps_ids):
+                        detail_row = {
+                            detail_id_field: primary_id,
+                            item_id_field: int(item_id),
+                            "Score": score,
+                            "Precursor m/z": mz,
+                            "GNPS ID": gnps_id,
+                        }
+                        detailed_data.append(detail_row)
                 else:  # MG
                     ids = row.get("gcf_ids_str", "").split("|") if row.get("gcf_ids_str") else []
                     scores = (
@@ -2045,14 +2082,14 @@ def generate_excel(n_clicks, table_data, tab_prefix):
                         else []
                     )
 
-                # Add all entries without truncation
-                for item_id, score in zip(ids, scores):
-                    detail_row = {
-                        detail_id_field: primary_id,
-                        item_id_field: int(item_id),
-                        "Score": score,
-                    }
-                    detailed_data.append(detail_row)
+                    # Add all entries without truncation
+                    for item_id, score in zip(ids, scores):
+                        detail_row = {
+                            detail_id_field: primary_id,
+                            item_id_field: int(item_id),
+                            "Score": score,
+                        }
+                        detailed_data.append(detail_row)
 
             detailed_df = pd.DataFrame(detailed_data)
             detailed_df.to_excel(writer, sheet_name=detail_sheet_name, index=False)
