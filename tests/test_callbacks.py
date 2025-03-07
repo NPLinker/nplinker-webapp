@@ -195,6 +195,17 @@ def test_process_uploaded_data_structure():
         length == gm_list_lengths[0] for length in gm_list_lengths
     ), "GM link data lists have inconsistent lengths"
 
+    # Check spectrum structure in gm_data
+    if gm_list_lengths[0] > 0:  # Only if there are any GM links
+        for spectrum in processed_links["gm_data"]["spectrum"]:
+            assert isinstance(spectrum, dict)
+            assert "id" in spectrum
+            assert "precursor_mz" in spectrum
+            assert "gnps_id" in spectrum
+            assert "mf_id" in spectrum
+            assert "strains" in spectrum
+            assert isinstance(spectrum["strains"], list)
+
     # Check mg_data structure
     assert isinstance(processed_links["mg_data"], dict)
     expected_mg_keys = [
@@ -214,6 +225,19 @@ def test_process_uploaded_data_structure():
     assert all(
         length == mg_list_lengths[0] for length in mg_list_lengths
     ), "MG link data lists have inconsistent lengths"
+
+    # Check gcf structure in mg_data
+    if mg_list_lengths[0] > 0:  # Only if there are any MG links
+        for gcf in processed_links["mg_data"]["gcf"]:
+            assert isinstance(gcf, dict)
+            assert "id" in gcf
+            assert "# BGCs" in gcf
+            assert "BGC IDs" in gcf
+            assert "BGC Classes" in gcf
+            assert "strains" in gcf
+            assert isinstance(gcf["strains"], list)
+            assert isinstance(gcf["BGC IDs"], list)
+            assert isinstance(gcf["BGC Classes"], list)
 
 
 def test_disable_tabs(mock_uuid):

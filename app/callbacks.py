@@ -171,46 +171,62 @@ def process_uploaded_data(file_path: Path | str | None) -> tuple[str | None, str
             }
 
             for link in links.links:
-                if isinstance(link[1], Spectrum):  # Then link[0] is a GCF (GCF -> Spectrum)
-                    processed_links["gm_data"]["gcf_id"].append(link[0].id)
+                # Helper function to process Genome-Metabolome (GM) links
+                def process_gm_link(gcf, spectrum, methods_data):
+                    processed_links["gm_data"]["gcf_id"].append(gcf.id)
                     processed_links["gm_data"]["spectrum"].append(
                         {
-                            "id": link[1].id,
-                            "strains": sorted([s.id for s in link[1].strains._strains]),
-                            "precursor_mz": link[1].precursor_mz,
-                            "gnps_id": link[1].gnps_id,
-                            "mf_id": link[1].family.id if link[1].family else None,
+                            "id": spectrum.id,
+                            "strains": sorted([s.id for s in spectrum.strains._strains]),
+                            "precursor_mz": spectrum.precursor_mz,
+                            "gnps_id": spectrum.gnps_id,
+                            "mf_id": spectrum.family.id if spectrum.family else None,
                         }
                     )
-                    for method, data in link[2].items():
+                    for method, data in methods_data.items():
                         processed_links["gm_data"]["method"].append(method)
                         processed_links["gm_data"]["score"].append(data.value)
                         processed_links["gm_data"]["cutoff"].append(data.parameter["cutoff"])
                         processed_links["gm_data"]["standardised"].append(
                             data.parameter["standardised"]
                         )
-                elif isinstance(link[1], MolecularFamily):  # Then link[0] if GCFS (GCF -> MF)
-                    sorted_bgcs = sorted(link[0].bgcs, key=lambda bgc: bgc.id)
+
+                # Helper function to process Metabolome-Genome (MG) links
+                def process_mg_link(mf, gcf, methods_data):
+                    sorted_bgcs = sorted(gcf.bgcs, key=lambda bgc: bgc.id)
                     bgc_ids = [bgc.id for bgc in sorted_bgcs]
                     bgc_classes = [process_bgc_class(bgc.mibig_bgc_class) for bgc in sorted_bgcs]
 
-                    processed_links["mg_data"]["mf_id"].append(link[1].id)
+                    processed_links["mg_data"]["mf_id"].append(mf.id)
                     processed_links["mg_data"]["gcf"].append(
                         {
-                            "id": link[0].id,
-                            "strains": sorted([s.id for s in link[1].strains._strains]),
-                            "# BGCs": len(link[0].bgcs),
+                            "id": gcf.id,
+                            "strains": sorted([s.id for s in mf.strains._strains]),
+                            "# BGCs": len(gcf.bgcs),
                             "BGC IDs": bgc_ids,
                             "BGC Classes": bgc_classes,
                         }
                     )
-                    for method, data in link[2].items():
+                    for method, data in methods_data.items():
                         processed_links["mg_data"]["method"].append(method)
                         processed_links["mg_data"]["score"].append(data.value)
                         processed_links["mg_data"]["cutoff"].append(data.parameter["cutoff"])
                         processed_links["mg_data"]["standardised"].append(
                             data.parameter["standardised"]
                         )
+
+                # GCF -> Spectrum links
+                if isinstance(link[1], Spectrum):
+                    process_gm_link(link[0], link[1], link[2])
+                # Spectrum -> GCF links
+                elif isinstance(link[0], Spectrum):
+                    process_gm_link(link[1], link[0], link[2])
+                # GCF -> MF links
+                elif isinstance(link[1], MolecularFamily):
+                    process_mg_link(link[1], link[0], link[2])
+                # MF -> GCF links
+                elif isinstance(link[0], MolecularFamily):
+                    process_mg_link(link[0], link[1], link[2])
         else:
             processed_links = {}
 
