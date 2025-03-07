@@ -1790,99 +1790,106 @@ def update_results_datatable(
                 # Sort by score in descending order
                 item_links = item_links.sort_values(score_field, ascending=False)
 
-                # Get the top item
-                top_item = item_links.iloc[0]
+                # Get the highest score
+                highest_score = item_links[score_field].max()
 
-                if prefix == "gm":
-                    result = {
-                        # Mandatory fields
-                        "GCF ID": int(item_id),
-                        "# Links": len(item_links),
-                        "Average Score": round(item_links[score_field].mean(), 2),
-                        # Optional fields with None handling
-                        "Top Spectrum ID": int(top_item[item_field].get("id", float("nan"))),
-                        "Top Spectrum MF ID": int(top_item[item_field].get("mf_id", float("nan"))),
-                        "Top Spectrum Precursor m/z": round(
-                            top_item[item_field].get("precursor_mz", float("nan")), 4
-                        )
-                        if top_item[item_field].get("precursor_mz") is not None
-                        else float("nan"),
-                        "Top Spectrum GNPS ID": top_item[item_field].get("gnps_id", "None")
-                        if top_item[item_field].get("gnps_id") is not None
-                        else "None",
-                        "Top Spectrum Score": round(top_item.get(score_field, float("nan")), 4)
-                        if top_item.get(score_field) is not None
-                        else float("nan"),
-                        "MiBIG IDs": selected_items[item_id]["MiBIG IDs"],
-                        "BGC Classes": selected_items[item_id]["BGC Classes"],
-                        # Store all spectrum data for later use
-                        "spectrum_ids_str": "|".join(
-                            [str(s.get("id", "")) for s in item_links[item_field]]
-                        ),
-                        "spectrum_mf_ids_str": "|".join(
-                            [str(s.get("mf_id", "None")) for s in item_links[item_field]]
-                        ),
-                        "spectrum_scores_str": "|".join(
-                            [str(score) for score in item_links[score_field].tolist()]
-                        ),
-                        "spectrum_mz_str": "|".join(
-                            [str(s.get("precursor_mz", "None")) for s in item_links[item_field]]
-                        ),
-                        "spectrum_gnps_id_str": "|".join(
-                            [str(s.get("gnps_id", "None")) for s in item_links[item_field]],
-                        ),
-                    }
-                else:  # MG
-                    result = {
-                        # Mandatory fields
-                        "MF ID": int(item_id),
-                        "# Links": len(item_links),
-                        "Average Score": round(item_links[score_field].mean(), 2),
-                        # Optional fields
-                        "Top GCF ID": int(top_item[item_field].get("id", float("nan"))),
-                        "Top GCF # BGCs": top_item[item_field].get("# BGCs", 0),
-                        "Top GCF BGC IDs": ", ".join(
-                            [str(s) for s in top_item[item_field]["BGC IDs"]]
-                        ),
-                        "Top GCF BGC Classes": ", ".join(
-                            {
-                                item
-                                for sublist in top_item[item_field].get("BGC Classes", [])
-                                for item in sublist
-                            }
-                        ),
-                        "Top GCF Score": round(top_item.get(score_field, float("nan")), 4),
-                        # Store all GCF data for later use
-                        "gcf_ids_str": "|".join(
-                            [str(gcf.get("id", "")) for gcf in item_links[item_field]]
-                        ),
-                        "gcf_scores_str": "|".join(
-                            [str(score) for score in item_links[score_field].tolist()]
-                        ),
-                        "gcf_bgc_classes_str": "|".join(
-                            [
-                                ", ".join(
-                                    {
-                                        item
-                                        for sublist in gcf.get("BGC Classes", [])
-                                        for item in sublist
-                                    }
-                                )
-                                for gcf in item_links[item_field]
-                            ]
-                        ),
-                        "gcf_bgc_ids_str": "|".join(
-                            [
-                                ", ".join([str(bgc_id) for bgc_id in gcf.get("BGC IDs", [])])
-                                for gcf in item_links[item_field]
-                            ]
-                        ),
-                        "gcf_num_bgcs_str": "|".join(
-                            [str(gcf.get("# BGCs", 0)) for gcf in item_links[item_field]]
-                        ),
-                    }
+                # Get all items with the highest score
+                top_items = item_links[item_links[score_field] == highest_score]
 
-                results.append(result)
+                # Create result rows for each item with the highest score
+                for _, top_item in top_items.iterrows():
+                    if prefix == "gm":
+                        result = {
+                            # Mandatory fields
+                            "GCF ID": int(item_id),
+                            "# Links": len(item_links),
+                            "Average Score": round(item_links[score_field].mean(), 2),
+                            # Optional fields with None handling
+                            "Top Spectrum ID": int(top_item[item_field].get("id", float("nan"))),
+                            "Top Spectrum MF ID": int(
+                                top_item[item_field].get("mf_id", float("nan"))
+                            ),
+                            "Top Spectrum Precursor m/z": round(
+                                top_item[item_field].get("precursor_mz", float("nan")), 4
+                            )
+                            if top_item[item_field].get("precursor_mz") is not None
+                            else float("nan"),
+                            "Top Spectrum GNPS ID": top_item[item_field].get("gnps_id", "None")
+                            if top_item[item_field].get("gnps_id") is not None
+                            else "None",
+                            "Top Spectrum Score": round(top_item.get(score_field, float("nan")), 4)
+                            if top_item.get(score_field) is not None
+                            else float("nan"),
+                            "MiBIG IDs": selected_items[item_id]["MiBIG IDs"],
+                            "BGC Classes": selected_items[item_id]["BGC Classes"],
+                            # Store all spectrum data for later use
+                            "spectrum_ids_str": "|".join(
+                                [str(s.get("id", "")) for s in item_links[item_field]]
+                            ),
+                            "spectrum_mf_ids_str": "|".join(
+                                [str(s.get("mf_id", "None")) for s in item_links[item_field]]
+                            ),
+                            "spectrum_scores_str": "|".join(
+                                [str(score) for score in item_links[score_field].tolist()]
+                            ),
+                            "spectrum_mz_str": "|".join(
+                                [str(s.get("precursor_mz", "None")) for s in item_links[item_field]]
+                            ),
+                            "spectrum_gnps_id_str": "|".join(
+                                [str(s.get("gnps_id", "None")) for s in item_links[item_field]],
+                            ),
+                        }
+                    else:  # MG
+                        result = {
+                            # Mandatory fields
+                            "MF ID": int(item_id),
+                            "# Links": len(item_links),
+                            "Average Score": round(item_links[score_field].mean(), 2),
+                            # Optional fields
+                            "Top GCF ID": int(top_item[item_field].get("id", float("nan"))),
+                            "Top GCF # BGCs": top_item[item_field].get("# BGCs", 0),
+                            "Top GCF BGC IDs": ", ".join(
+                                [str(s) for s in top_item[item_field]["BGC IDs"]]
+                            ),
+                            "Top GCF BGC Classes": ", ".join(
+                                {
+                                    item
+                                    for sublist in top_item[item_field].get("BGC Classes", [])
+                                    for item in sublist
+                                }
+                            ),
+                            "Top GCF Score": round(top_item.get(score_field, float("nan")), 4),
+                            # Store all GCF data for later use
+                            "gcf_ids_str": "|".join(
+                                [str(gcf.get("id", "")) for gcf in item_links[item_field]]
+                            ),
+                            "gcf_scores_str": "|".join(
+                                [str(score) for score in item_links[score_field].tolist()]
+                            ),
+                            "gcf_bgc_classes_str": "|".join(
+                                [
+                                    ", ".join(
+                                        {
+                                            item
+                                            for sublist in gcf.get("BGC Classes", [])
+                                            for item in sublist
+                                        }
+                                    )
+                                    for gcf in item_links[item_field]
+                                ]
+                            ),
+                            "gcf_bgc_ids_str": "|".join(
+                                [
+                                    ", ".join([str(bgc_id) for bgc_id in gcf.get("BGC IDs", [])])
+                                    for gcf in item_links[item_field]
+                                ]
+                            ),
+                            "gcf_num_bgcs_str": "|".join(
+                                [str(gcf.get("# BGCs", 0)) for gcf in item_links[item_field]]
+                            ),
+                        }
+
+                    results.append(result)
 
         if not results:
             return (
