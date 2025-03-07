@@ -96,7 +96,10 @@ def create_results_table(table_id, no_sort_columns):
         page_action="native",
         page_current=0,
         page_size=10,
-        style_table={"width": "100%"},
+        style_table={
+            "width": "100%",
+            "overflowX": "auto",
+        },
         style_cell={
             "textAlign": "left",
             "padding": "5px",
@@ -104,7 +107,7 @@ def create_results_table(table_id, no_sort_columns):
             "textOverflow": "ellipsis",
             "minWidth": "80px",
             "width": "auto",
-            "maxWidth": "auto",
+            "maxWidth": "200px",
         },
         style_header={
             "backgroundColor": "#FF6E42",
@@ -582,6 +585,7 @@ gm_no_sort_columns = [
     "# Links",
     "Average Score",
     "Top Spectrum ID",
+    "Top Spectrum MF ID",
     "Top Spectrum GNPS ID",
     "MiBIG IDs",
     "BGC Classes",

@@ -179,6 +179,7 @@ def process_uploaded_data(file_path: Path | str | None) -> tuple[str | None, str
                             "strains": sorted([s.id for s in link[1].strains._strains]),
                             "precursor_mz": link[1].precursor_mz,
                             "gnps_id": link[1].gnps_id,
+                            "mf_id": link[1].family.id if link[1].family else None,
                         }
                     )
                     for method, data in link[2].items():
@@ -1784,6 +1785,7 @@ def update_results_datatable(
                         "Average Score": round(item_links[score_field].mean(), 2),
                         # Optional fields with None handling
                         "Top Spectrum ID": int(top_item[item_field].get("id", float("nan"))),
+                        "Top Spectrum MF ID": int(top_item[item_field].get("mf_id", float("nan"))),
                         "Top Spectrum Precursor m/z": round(
                             top_item[item_field].get("precursor_mz", float("nan")), 4
                         )
@@ -1800,6 +1802,9 @@ def update_results_datatable(
                         # Store all spectrum data for later use
                         "spectrum_ids_str": "|".join(
                             [str(s.get("id", "")) for s in item_links[item_field]]
+                        ),
+                        "spectrum_mf_ids_str": "|".join(
+                            [str(s.get("mf_id", "None")) for s in item_links[item_field]]
                         ),
                         "spectrum_scores_str": "|".join(
                             [str(score) for score in item_links[score_field].tolist()]
@@ -1893,16 +1898,28 @@ def update_results_datatable(
             max_tooltip_entries = 5
             total_entries = len(ids)
 
-            items_table = (
-                f"| {'Spectrum' if prefix == 'gm' else 'GCF'} ID | Score |\n|--------|--------|\n"
-            )
+            if prefix == "gm":
+                # Get MF IDs for tooltips (only for GM tab)
+                mf_ids = (
+                    result.get("spectrum_mf_ids_str", "").split("|")
+                    if result.get("spectrum_mf_ids_str")
+                    else []
+                )
 
-            # Add top entries
-            for item_id, score in zip(
-                ids[:max_tooltip_entries],
-                scores[:max_tooltip_entries],
-            ):
-                items_table += f"| {item_id} | {round(score, 4)} |\n"
+                items_table = "| Spectrum ID | MF ID | Score |\n|--------|--------|--------|\n"
+
+                # Add top entries for GM tab
+                for item_id, score, mf_id in zip(
+                    ids[:max_tooltip_entries],
+                    scores[:max_tooltip_entries],
+                    mf_ids[:max_tooltip_entries],
+                ):
+                    items_table += f"| {item_id} | {mf_id} | {round(float(score), 4)} |\n"
+            else:
+                items_table = "| GCF ID | Score |\n|--------|--------|\n"
+                # Add top entries for MG tab
+                for item_id, score in zip(ids[:max_tooltip_entries], scores[:max_tooltip_entries]):
+                    items_table += f"| {item_id} | {round(float(score), 4)} |\n"
 
             # Add indication of more entries if applicable
             if total_entries > max_tooltip_entries:
@@ -2032,6 +2049,7 @@ def generate_excel(n_clicks, table_data, tab_prefix):
             if tab_prefix == "gm":
                 internal_fields = [
                     "spectrum_ids_str",
+                    "spectrum_mf_ids_str",
                     "spectrum_scores_str",
                     "spectrum_mz_str",
                     "spectrum_gnps_id_str",
@@ -2066,12 +2084,26 @@ def generate_excel(n_clicks, table_data, tab_prefix):
                 primary_id = row[detail_id_field]
                 if tab_prefix == "gm":
                     ids = (
-                        row.get("spectrum_ids_str", "").split("|")
+                        [
+                            int(s) if s and s != "None" else float("nan")
+                            for s in row.get("spectrum_ids_str", "").split("|")
+                        ]
                         if row.get("spectrum_ids_str")
                         else []
                     )
+                    mf_ids = (
+                        [
+                            int(s) if s and s != "None" else float("nan")
+                            for s in row.get("spectrum_mf_ids_str", "").split("|")
+                        ]
+                        if row.get("spectrum_mf_ids_str")
+                        else []
+                    )
                     scores = (
-                        [float(s) for s in row.get("spectrum_scores_str", "").split("|")]
+                        [
+                            float(s) if s and s != "None" else float("nan")
+                            for s in row.get("spectrum_scores_str", "").split("|")
+                        ]
                         if row.get("spectrum_scores_str")
                         else []
                     )
@@ -2092,10 +2124,13 @@ def generate_excel(n_clicks, table_data, tab_prefix):
                     )
 
                     # Add all entries without truncation
-                    for item_id, score, mz, gnps_id in zip(ids, scores, mz_values, gnps_ids):
+                    for item_id, mf_id, score, mz, gnps_id in zip(
+                        ids, mf_ids, scores, mz_values, gnps_ids
+                    ):
                         detail_row = {
                             detail_id_field: primary_id,
-                            item_id_field: int(item_id),
+                            item_id_field: item_id,
+                            "MF ID": mf_id,
                             "Score": score,
                             "Precursor m/z": mz,
                             "GNPS ID": gnps_id,
