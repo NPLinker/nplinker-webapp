@@ -3,15 +3,15 @@
 This is the [NPLinker](https://nplinker.github.io/nplinker/latest/) web application, developed with [Plotly Dash](https://dash.plotly.com/), which enables you to visualize NPLinker predictions in an interactive way.
 
 <p align="center">
-  <img src="app/assets/dash1.png" width="500" alt="Dashboard Screenshot 1">
+  <img src="app/assets/dash1.png" width="600" alt="Dashboard Screenshot 1">
 </p>
 
 <p align="center">
-  <img src="app/assets/dash2.png" width="500" alt="Dashboard Screenshot 2">
+  <img src="app/assets/dash2.png" width="600" alt="Dashboard Screenshot 2">
 </p>
 
 <p align="center">
-  <img src="app/assets/dash3.png" width="500" alt="Dashboard Screenshot 3">
+  <img src="app/assets/dash3.png" width="600" alt="Dashboard Screenshot 3">
 </p>
 
 
