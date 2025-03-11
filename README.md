@@ -25,8 +25,8 @@ Follow these steps to set up the NPLinker dashboard on your local machine:
 
 ### Prerequisites
 
-- Python 3.10 or higher
-- Git
+- [Python 3.10 or higher](https://www.python.org/downloads/)
+- [Git](https://git-scm.com/downloads)
 
 ### Setup Instructions
    
