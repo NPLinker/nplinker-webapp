@@ -24,6 +24,8 @@ from app.callbacks import mg_table_update_datatable
 from app.callbacks import process_uploaded_data
 from app.callbacks import scoring_apply
 from app.callbacks import upload_data
+from app.config import GM_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS
+from app.config import MG_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS
 from . import DATA_DIR
 
 
@@ -95,7 +97,7 @@ def test_upload_data():
     status = UploadStatus(
         uploaded_files=[MOCK_FILE_PATH], n_total=1, uploaded_size_mb=5.39, total_size_mb=5.39
     )
-    upload_string, path_string = upload_data(status)
+    upload_string, path_string, _ = upload_data(status)
 
     # Check the result
     assert upload_string == f"Successfully uploaded: {MOCK_FILE_PATH.name} [5.39 MB]"
@@ -104,14 +106,14 @@ def test_upload_data():
 
 @pytest.mark.parametrize("input_path", [None, Path("non_existent_file.pkl")])
 def test_process_uploaded_data_invalid_input(input_path):
-    processed_data, processed_links = process_uploaded_data(input_path)
+    processed_data, processed_links, _ = process_uploaded_data(input_path)
     assert processed_data is None
     assert processed_links is None
 
 
 def test_process_uploaded_data_structure():
-    processed_data, processed_links = process_uploaded_data(MOCK_FILE_PATH)
-    processed_data_no_links, processed_links_no_links = process_uploaded_data(
+    processed_data, processed_links, _ = process_uploaded_data(MOCK_FILE_PATH)
+    processed_data_no_links, processed_links_no_links, _ = process_uploaded_data(
         MOCK_FILE_PATH_NO_LINKS
     )
 
@@ -241,6 +243,17 @@ def test_process_uploaded_data_structure():
 
 
 def test_disable_tabs(mock_uuid):
+    default_gm_column_value = (
+        [GM_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS[0]]
+        if GM_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS
+        else []
+    )
+    default_mg_column_value = (
+        [MG_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS[0]]
+        if MG_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS
+        else []
+    )
+
     # Test with None as input
     result = disable_tabs_and_reset_blocks(None)
     assert result == (
@@ -255,6 +268,11 @@ def test_disable_tabs(mock_uuid):
         [],
         [],
         True,
+        [],
+        [],
+        [],
+        [],
+        default_gm_column_value,
         # MG tab - disabled
         True,
         True,
@@ -266,6 +284,11 @@ def test_disable_tabs(mock_uuid):
         [],
         [],
         True,
+        [],
+        [],
+        [],
+        [],
+        default_mg_column_value,
     )
 
     # Test with a string as input
@@ -284,6 +307,11 @@ def test_disable_tabs(mock_uuid):
         gm_scoring_block_ids,
         gm_scoring_blocks,
         gm_results_disabled,
+        gm_table_selected_rows,
+        gm_table_checkbox_value,
+        gm_filter_accordion_value,
+        gm_scoring_accordion_value,
+        gm_results_table_column_toggle,
         # MG tab outputs
         mg_tab_disabled,
         mg_filter_accordion_disabled,
@@ -295,6 +323,11 @@ def test_disable_tabs(mock_uuid):
         mg_scoring_block_ids,
         mg_scoring_blocks,
         mg_results_disabled,
+        mg_table_selected_rows,
+        mg_table_checkbox_value,
+        mg_filter_accordion_value,
+        mg_scoring_accordion_value,
+        mg_results_table_column_toggle,
     ) = result
 
     # Assert GM tab outputs
@@ -310,6 +343,11 @@ def test_disable_tabs(mock_uuid):
     assert len(gm_scoring_blocks) == 1
     assert isinstance(gm_scoring_blocks[0], dmc.Grid)
     assert gm_results_disabled is False
+    assert gm_table_selected_rows == []
+    assert gm_table_checkbox_value == []
+    assert gm_filter_accordion_value == []
+    assert gm_scoring_accordion_value == []
+    assert gm_results_table_column_toggle == default_gm_column_value
 
     # Assert MG tab outputs
     assert mg_tab_disabled is False
@@ -324,6 +362,11 @@ def test_disable_tabs(mock_uuid):
     assert len(mg_scoring_blocks) == 1
     assert isinstance(mg_scoring_blocks[0], dmc.Grid)
     assert mg_results_disabled is False
+    assert mg_table_selected_rows == []
+    assert mg_table_checkbox_value == []
+    assert mg_filter_accordion_value == []
+    assert mg_scoring_accordion_value == []
+    assert mg_results_table_column_toggle == default_mg_column_value
 
 
 def test_scoring_apply_metcalf_raw():
