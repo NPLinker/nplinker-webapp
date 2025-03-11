@@ -14,9 +14,11 @@ import pandas as pd
 import plotly.graph_objects as go
 from config import GM_FILTER_DROPDOWN_BGC_CLASS_OPTIONS
 from config import GM_FILTER_DROPDOWN_MENU_OPTIONS
+from config import GM_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS
 from config import GM_RESULTS_TABLE_MANDATORY_COLUMNS
 from config import GM_RESULTS_TABLE_OPTIONAL_COLUMNS
 from config import MG_FILTER_DROPDOWN_MENU_OPTIONS
+from config import MG_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS
 from config import MG_RESULTS_TABLE_MANDATORY_COLUMNS
 from config import MG_RESULTS_TABLE_OPTIONAL_COLUMNS
 from config import SCORING_DROPDOWN_MENU_OPTIONS
@@ -249,6 +251,11 @@ def process_uploaded_data(file_path: Path | str | None) -> tuple[str | None, str
         Output("gm-scoring-blocks-id", "data", allow_duplicate=True),
         Output("gm-scoring-blocks-container", "children", allow_duplicate=True),
         Output("gm-results-button", "disabled"),
+        Output("gm-table", "selected_rows", allow_duplicate=True),
+        Output("gm-table-select-all-checkbox", "value", allow_duplicate=True),
+        Output("gm-filter-accordion-component", "value", allow_duplicate=True),
+        Output("gm-scoring-accordion-component", "value", allow_duplicate=True),
+        Output("gm-results-table-column-toggle", "value", allow_duplicate=True),
         # MG tab outputs
         Output("mg-tab", "disabled"),
         Output("mg-filter-accordion-control", "disabled"),
@@ -260,6 +267,11 @@ def process_uploaded_data(file_path: Path | str | None) -> tuple[str | None, str
         Output("mg-scoring-blocks-id", "data", allow_duplicate=True),
         Output("mg-scoring-blocks-container", "children", allow_duplicate=True),
         Output("mg-results-button", "disabled"),
+        Output("mg-table", "selected_rows", allow_duplicate=True),
+        Output("mg-table-select-all-checkbox", "value", allow_duplicate=True),
+        Output("mg-filter-accordion-component", "value", allow_duplicate=True),
+        Output("mg-scoring-accordion-component", "value", allow_duplicate=True),
+        Output("mg-results-table-column-toggle", "value", allow_duplicate=True),
     ],
     [Input("file-store", "data")],
     prevent_initial_call=True,
@@ -275,6 +287,16 @@ def disable_tabs_and_reset_blocks(
     Returns:
         Tuple containing boolean values for disabling tabs, styles, and new block data.
     """
+    default_gm_column_value = (
+        [GM_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS[0]]
+        if GM_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS
+        else []
+    )
+    default_mg_column_value = (
+        [MG_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS[0]]
+        if MG_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS
+        else []
+    )
     if file_path is None:
         # Disable all tabs and controls when no file is uploaded
         return (
@@ -289,6 +311,11 @@ def disable_tabs_and_reset_blocks(
             [],
             [],
             True,
+            [],
+            [],
+            [],
+            [],
+            default_gm_column_value,
             # MG tab - disabled
             True,
             True,
@@ -300,6 +327,11 @@ def disable_tabs_and_reset_blocks(
             [],
             [],
             True,
+            [],
+            [],
+            [],
+            [],
+            default_mg_column_value,
         )
 
     # Enable the tabs and reset blocks
@@ -327,6 +359,11 @@ def disable_tabs_and_reset_blocks(
         gm_scoring_initial_block_id,
         gm_scoring_new_blocks,
         False,
+        [],
+        [],
+        [],
+        [],
+        default_gm_column_value,
         # MG tab - enabled with initial blocks
         False,
         False,
@@ -338,6 +375,11 @@ def disable_tabs_and_reset_blocks(
         mg_scoring_initial_block_id,
         mg_scoring_new_blocks,
         False,
+        [],
+        [],
+        [],
+        [],
+        default_mg_column_value,
     )
 
 

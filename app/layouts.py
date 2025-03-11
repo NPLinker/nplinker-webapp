@@ -216,7 +216,9 @@ def create_filter_accordion(
                 value=f"{control_id.split('-')[0]}-filter-accordion",
             ),
         ],
+        value=[],
         className="mt-5 mb-3",
+        id=f"{control_id.split('-')[0]}-filter-accordion-component",
     )
 
 
@@ -258,7 +260,9 @@ def create_scoring_accordion(control_id, blocks_store_id, blocks_container_id):
                 value=f"{control_id.split('-')[0]}-scoring-accordion",
             ),
         ],
+        value=[],
         className="mt-5 mb-3",
+        id=f"{control_id.split('-')[0]}-scoring-accordion-component",
     )
 
 
