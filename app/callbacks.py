@@ -1851,14 +1851,16 @@ def update_results_datatable(
                     if prefix == "gm":
                         result = {
                             # Mandatory fields
-                            "GCF ID": int(item_id),
+                            "GCF ID": int(item_id) if item_id is not None else float("nan"),
                             "# Links": len(item_links),
                             "Average Score": round(item_links[score_field].mean(), 2),
                             # Optional fields with None handling
-                            "Top Spectrum ID": int(top_item[item_field].get("id", float("nan"))),
-                            "Top Spectrum MF ID": int(
-                                top_item[item_field].get("mf_id", float("nan"))
-                            ),
+                            "Top Spectrum ID": int(top_item[item_field].get("id"))
+                            if top_item[item_field].get("id") is not None
+                            else float("nan"),
+                            "Top Spectrum MF ID": int(top_item[item_field].get("mf_id"))
+                            if top_item[item_field].get("mf_id") is not None
+                            else float("nan"),
                             "Top Spectrum Precursor m/z": round(
                                 top_item[item_field].get("precursor_mz", float("nan")), 4
                             )
@@ -1892,11 +1894,13 @@ def update_results_datatable(
                     else:  # MG
                         result = {
                             # Mandatory fields
-                            "MF ID": int(item_id),
+                            "MF ID": int(item_id) if item_id is not None else float("nan"),
                             "# Links": len(item_links),
                             "Average Score": round(item_links[score_field].mean(), 2),
                             # Optional fields
-                            "Top GCF ID": int(top_item[item_field].get("id", float("nan"))),
+                            "Top GCF ID": int(top_item[item_field].get("id"))
+                            if top_item[item_field].get("id") is not None
+                            else float("nan"),
                             "Top GCF # BGCs": top_item[item_field].get("# BGCs", 0),
                             "Top GCF BGC IDs": ", ".join(
                                 [str(s) for s in top_item[item_field]["BGC IDs"]]
