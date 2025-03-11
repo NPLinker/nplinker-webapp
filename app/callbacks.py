@@ -955,6 +955,7 @@ def gm_filter_apply(
     Output("gm-table-card-body", "style"),
     Output("gm-table", "selected_rows", allow_duplicate=True),
     Output("gm-table-select-all-checkbox", "value"),
+    Output("loading-spinner-container", "children", allow_duplicate=True),
     Input("processed-data-store", "data"),
     Input("gm-filter-apply-button", "n_clicks"),
     State({"type": "gm-filter-dropdown-menu", "index": ALL}, "value"),
@@ -970,7 +971,7 @@ def gm_table_update_datatable(
     text_inputs: list[str],
     bgc_class_dropdowns: list[list[str]],
     checkbox_value: list | None,
-) -> tuple[list[dict], list[dict], list[dict], dict, list, list]:
+) -> tuple[list[dict], list[dict], list[dict], dict, list, list, str | None]:
     """Update the DataTable based on processed data and applied filters when the button is clicked.
 
     Args:
@@ -985,13 +986,13 @@ def gm_table_update_datatable(
         Tuple containing table data, column definitions, tooltips data, style, empty selected rows, and updated checkbox value.
     """
     if processed_data is None:
-        return [], [], [], {"display": "none"}, [], []
+        return [], [], [], {"display": "none"}, [], [], None
 
     try:
         data = json.loads(processed_data)
         df = pd.DataFrame(data["gcf_data"])
     except (json.JSONDecodeError, KeyError, pd.errors.EmptyDataError):
-        return [], [], [], {"display": "none"}, [], []
+        return [], [], [], {"display": "none"}, [], [], None
 
     if ctx.triggered_id == "gm-filter-apply-button":
         # Apply filters only when the button is clicked
@@ -1047,6 +1048,7 @@ def gm_table_update_datatable(
         {"display": "block"},
         [],
         new_checkbox_value,
+        None,
     )
 
 
@@ -1163,6 +1165,7 @@ def mg_filter_apply(
     Output("mg-table-card-body", "style"),
     Output("mg-table", "selected_rows", allow_duplicate=True),
     Output("mg-table-select-all-checkbox", "value"),
+    Output("loading-spinner-container", "children", allow_duplicate=True),
     Input("processed-data-store", "data"),
     Input("mg-filter-apply-button", "n_clicks"),
     State({"type": "mg-filter-dropdown-menu", "index": ALL}, "value"),
@@ -1178,7 +1181,7 @@ def mg_table_update_datatable(
     mf_text_inputs: list[str],
     spec_text_inputs: list[str],
     checkbox_value: list | None,
-) -> tuple[list[dict], list[dict], list[dict], dict, list, list]:
+) -> tuple[list[dict], list[dict], list[dict], dict, list, list, str | None]:
     """Update the DataTable based on processed data and applied filters when the button is clicked.
 
     Args:
@@ -1193,13 +1196,13 @@ def mg_table_update_datatable(
         Tuple containing table data, column definitions, tooltips data, style, empty selected rows, and updated checkbox value.
     """
     if processed_data is None:
-        return [], [], [], {"display": "none"}, [], []
+        return [], [], [], {"display": "none"}, [], [], None
 
     try:
         data = json.loads(processed_data)
         df = pd.DataFrame(data["mf_data"])
     except (json.JSONDecodeError, KeyError, pd.errors.EmptyDataError):
-        return [], [], [], {"display": "none"}, [], []
+        return [], [], [], {"display": "none"}, [], [], None
 
     if ctx.triggered_id == "mg-filter-apply-button":
         # Apply filters only when the button is clicked
@@ -1284,6 +1287,7 @@ def mg_table_update_datatable(
         {"display": "block"},
         [],
         new_checkbox_value,
+        None,
     )
 
 
@@ -1750,15 +1754,15 @@ def update_results_datatable(
         item_type: Type of item being processed ('GCF' or 'MF').
 
     Returns:
-        Tuple containing alert message, visibility state, table data and settings, and header style.
+        Tuple containing alert message, visibility state, table data and settings, header style, and spinner state.
     """
     triggered_id = ctx.triggered_id
 
     if triggered_id in [f"{prefix}-table-select-all-checkbox", f"{prefix}-table"]:
-        return "", False, [], [], {"display": "none"}, {"color": "#888888"}, True
+        return "", False, [], [], {"display": "none"}, {"color": "#888888"}, True, None
 
     if n_clicks is None:
-        return "", False, [], [], {"display": "none"}, {"color": "#888888"}, True
+        return "", False, [], [], {"display": "none"}, {"color": "#888888"}, True, None
 
     if not selected_rows:
         return (
@@ -1769,10 +1773,20 @@ def update_results_datatable(
             {"display": "none"},
             {"color": "#888888"},
             True,
+            None,
         )
 
     if not virtual_data:
-        return "No data available.", True, [], [], {"display": "none"}, {"color": "#888888"}, True
+        return (
+            "No data available.",
+            True,
+            [],
+            [],
+            {"display": "none"},
+            {"color": "#888888"},
+            True,
+            None,
+        )
 
     try:
         links_data = json.loads(processed_links)
@@ -1785,6 +1799,7 @@ def update_results_datatable(
                 {"display": "none"},
                 {"color": "#888888"},
                 True,
+                None,
             )
 
         links_data = links_data[f"{prefix}_data"]
@@ -1954,6 +1969,7 @@ def update_results_datatable(
                 {"display": "none"},
                 {"color": "#888888"},
                 True,
+                None,
             )
 
         # Prepare tooltip data
@@ -2008,15 +2024,7 @@ def update_results_datatable(
             }
             tooltip_data.append(row_tooltip)
 
-        return (
-            "",
-            False,
-            results,
-            tooltip_data,
-            {"display": "block"},
-            {},
-            False,
-        )
+        return ("", False, results, tooltip_data, {"display": "block"}, {}, False, None)
 
     except Exception as e:
         return (
@@ -2027,6 +2035,7 @@ def update_results_datatable(
             {"display": "none"},
             {"color": "#888888"},
             True,
+            None,
         )
 
 
@@ -2111,10 +2120,10 @@ def generate_excel(n_clicks, table_data, tab_prefix):
         tab_prefix: Tab prefix ('gm' or 'mg').
 
     Returns:
-        Tuple containing the download component, alert visibility, and alert message.
+        Tuple containing the download component, alert visibility, alert message, and spinner state.
     """
     if not ctx.triggered or not table_data:
-        return None, False, ""
+        return None, False, "", None
 
     try:
         output = io.BytesIO()
@@ -2261,9 +2270,9 @@ def generate_excel(n_clicks, table_data, tab_prefix):
 
         # Prepare the file for download
         excel_data = output.getvalue()
-        return dcc.send_bytes(excel_data, filename), False, ""
+        return dcc.send_bytes(excel_data, filename), False, "", None
     except Exception as e:
-        return None, True, f"Error generating Excel file: {str(e)}"
+        return None, True, f"Error generating Excel file: {str(e)}", None
 
 
 # ------------------ GM Results table functions ------------------ #
@@ -2322,6 +2331,7 @@ def gm_update_columns(selected_columns: list[str] | None, n_clicks: int | None) 
     Output("gm-results-table-card-body", "style"),
     Output("gm-results-table-card-header", "style"),
     Output("gm-results-table-column-settings-button", "disabled"),
+    Output("loading-spinner-container", "children", allow_duplicate=True),
     Input("gm-results-button", "n_clicks"),
     Input("gm-table", "derived_virtual_data"),
     Input("gm-table", "derived_virtual_selected_rows"),
@@ -2329,6 +2339,7 @@ def gm_update_columns(selected_columns: list[str] | None, n_clicks: int | None) 
     State({"type": "gm-scoring-dropdown-menu", "index": ALL}, "value"),
     State({"type": "gm-scoring-radio-items", "index": ALL}, "value"),
     State({"type": "gm-scoring-dropdown-ids-cutoff-met", "index": ALL}, "value"),
+    prevent_initial_call=True,
 )
 def gm_update_results_datatable(
     n_clicks,
@@ -2373,6 +2384,7 @@ def gm_toggle_download_button(table_data):
         Output("gm-download-excel", "data"),
         Output("gm-download-alert", "is_open", allow_duplicate=True),
         Output("gm-download-alert", "children", allow_duplicate=True),
+        Output("loading-spinner-container", "children", allow_duplicate=True),
     ],
     Input("gm-download-button", "n_clicks"),
     [
@@ -2441,6 +2453,7 @@ def mg_update_columns(selected_columns: list[str] | None, n_clicks: int | None) 
     Output("mg-results-table-card-body", "style"),
     Output("mg-results-table-card-header", "style"),
     Output("mg-results-table-column-settings-button", "disabled"),
+    Output("loading-spinner-container", "children", allow_duplicate=True),
     Input("mg-results-button", "n_clicks"),
     Input("mg-table", "derived_virtual_data"),
     Input("mg-table", "derived_virtual_selected_rows"),
@@ -2448,6 +2461,7 @@ def mg_update_columns(selected_columns: list[str] | None, n_clicks: int | None) 
     State({"type": "mg-scoring-dropdown-menu", "index": ALL}, "value"),
     State({"type": "mg-scoring-radio-items", "index": ALL}, "value"),
     State({"type": "mg-scoring-dropdown-ids-cutoff-met", "index": ALL}, "value"),
+    prevent_initial_call=True,
 )
 def mg_update_results_datatable(
     n_clicks,
@@ -2492,6 +2506,7 @@ def mg_toggle_download_button(table_data):
         Output("mg-download-excel", "data"),
         Output("mg-download-alert", "is_open", allow_duplicate=True),
         Output("mg-download-alert", "children", allow_duplicate=True),
+        Output("loading-spinner-container", "children", allow_duplicate=True),
     ],
     Input("mg-download-button", "n_clicks"),
     [
