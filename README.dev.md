@@ -100,7 +100,3 @@ Mypy configurations are set in [mypy.ini](mypy.ini) file.
 For more info about static typing and mypy, see:
 - [Static typing with Python](https://typing.readthedocs.io/en/latest/index.html#)
 - [Mypy doc](https://mypy.readthedocs.io/en/stable/)
-
-## Making a release
-
-TBD

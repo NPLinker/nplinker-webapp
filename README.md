@@ -1,31 +1,78 @@
 # NPLinker Web Application
 
-This is the [NPLinker](https://github.com/NPLinker/nplinker/tree/dev) web application, developed with [Plotly Dash](https://dash.plotly.com/), which enables you to visualize NPLinker predictions in an interactive way.
+This is the [NPLinker](https://nplinker.github.io/nplinker/latest/) web application, developed with [Plotly Dash](https://dash.plotly.com/), which enables you to visualize NPLinker predictions in an interactive way.
 
-## Installation
+<p align="center">
+  <img src="app/assets/dash1.png" width="500" alt="Dashboard Screenshot 1">
+</p>
+
+<p align="center">
+  <img src="app/assets/dash2.png" width="500" alt="Dashboard Screenshot 2">
+</p>
+
+<p align="center">
+  <img src="app/assets/dash3.png" width="500" alt="Dashboard Screenshot 3">
+</p>
+
+
+NPLinker is a Python framework for data mining microbial natural products by integrating genomics and metabolomics data.
+
+For a deep understanding of NPLinker, please refer to the [original paper](paper_link_here).
+
+## Workshop Installation Guide
+
+Follow these steps to set up the NPLinker dashboard on your local machine:
+
+### Prerequisites
+
+- Python 3.10 or higher
+- Git
+
+### Setup Instructions
    
 ```bash
 # Clone the repository
 git clone https://github.com/NPLinker/nplinker-webapp.git
+
 # Navigate to the project directory
 cd nplinker-webapp
+
 # Create and activate a virtual environment
 python -m venv venv
+## For Windows:
+venv\Scripts\activate
+
+## For macOS/Linux:
 source venv/bin/activate
+
 # Install the required packages
 pip install -r requirements.txt
 ```
 
-## Usage 
+### Running the Dashboard
 
-Run the application:
+After installation, start the application:
 
 ```bash
-python app/app.py
+# Make sure you're in the nplinker-webapp directory
+python app/main.py
 ```
 
 Open your web browser and go to `http://127.0.0.1:8050/`.
 
+## Troubleshooting
+
+Common issues and solutions:
+
+- **Port already in use**: If port 8050 is already in use, modify the port in `app/main.py` by changing `app.run_server(debug=True, port=8050)`
+- **Package installation errors**: Make sure you're using a compatible Python version and that your pip is up-to-date
+
+If you encounter other problems, please check the [Issues](https://github.com/NPLinker/nplinker-webapp/issues) page or create a new issue.
+
+## Docker Support (Coming Soon)
+
+A Docker container version will be available soon. Stay tuned for updates.
+
 ## Contributing
 
-If you want to contribute to the development of nplinker, have a look at the [contribution guidelines](CONTRIBUTING.md) and [README for developers](README.dev.md). 
+If you want to contribute to the development of NPLinker, have a look at the [contribution guidelines](CONTRIBUTING.md) and [README for developers](README.dev.md).
