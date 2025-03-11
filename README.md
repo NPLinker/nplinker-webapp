@@ -39,9 +39,9 @@ cd nplinker-webapp
 
 # Create and activate a virtual environment
 python -m venv venv
+
 ## For Windows:
 venv\Scripts\activate
-
 ## For macOS/Linux:
 source venv/bin/activate
 
