@@ -216,7 +216,9 @@ def create_filter_accordion(
                 value=f"{control_id.split('-')[0]}-filter-accordion",
             ),
         ],
+        value=[],
         className="mt-5 mb-3",
+        id=f"{control_id.split('-')[0]}-filter-accordion-component",
     )
 
 
@@ -258,7 +260,9 @@ def create_scoring_accordion(control_id, blocks_store_id, blocks_container_id):
                 value=f"{control_id.split('-')[0]}-scoring-accordion",
             ),
         ],
+        value=[],
         className="mt-5 mb-3",
+        id=f"{control_id.split('-')[0]}-scoring-accordion-component",
     )
 
 
@@ -577,6 +581,17 @@ uploader = html.Div(
     className="p-5 ml-5 mr-5",
 )
 
+loading_spinner = dbc.Spinner(
+    html.Div(id="loading-spinner-container"),
+    color="primary",
+    size="lg",
+    type="border",
+    fullscreen=True,
+    fullscreen_style={
+        "backgroundColor": "rgba(0, 0, 0, 0.3)",
+        "zIndex": "9999",
+    },
+)
 
 # ------------------ Tab Content Configuration ------------------ #
 # No-sort columns definitions
@@ -640,5 +655,5 @@ tabs = dbc.Row(
 # ------------------ Layout Function ------------------ #
 def create_layout():  # noqa: D103
     return dmc.MantineProvider(
-        [dbc.Container([navbar, uploader, tabs], fluid=True, className="p-0")]
+        [dbc.Container([navbar, uploader, loading_spinner, tabs], fluid=True, className="p-0")]
     )

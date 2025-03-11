@@ -14,9 +14,11 @@ import pandas as pd
 import plotly.graph_objects as go
 from config import GM_FILTER_DROPDOWN_BGC_CLASS_OPTIONS
 from config import GM_FILTER_DROPDOWN_MENU_OPTIONS
+from config import GM_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS
 from config import GM_RESULTS_TABLE_MANDATORY_COLUMNS
 from config import GM_RESULTS_TABLE_OPTIONAL_COLUMNS
 from config import MG_FILTER_DROPDOWN_MENU_OPTIONS
+from config import MG_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS
 from config import MG_RESULTS_TABLE_MANDATORY_COLUMNS
 from config import MG_RESULTS_TABLE_OPTIONAL_COLUMNS
 from config import SCORING_DROPDOWN_MENU_OPTIONS
@@ -58,9 +60,13 @@ clientside_callback(
 # ------------------ Upload and Process Data ------------------ #
 @du.callback(
     id="dash-uploader",
-    output=[Output("dash-uploader-output", "children"), Output("file-store", "data")],
+    output=[
+        Output("dash-uploader-output", "children"),
+        Output("file-store", "data"),
+        Output("loading-spinner-container", "children", allow_duplicate=True),
+    ],
 )
-def upload_data(status: du.UploadStatus) -> tuple[str, str | None]:
+def upload_data(status: du.UploadStatus) -> tuple[str, str | None, None]:
     """Handle file upload and validate pickle files.
 
     Args:
@@ -77,22 +83,26 @@ def upload_data(status: du.UploadStatus) -> tuple[str, str | None]:
             return (
                 f"Successfully uploaded: {os.path.basename(latest_file)} [{round(status.uploaded_size_mb, 2)} MB]",
                 str(latest_file),
+                None,
             )
         except (pickle.UnpicklingError, EOFError, AttributeError):
-            return f"Error: {os.path.basename(latest_file)} is not a valid pickle file.", None
+            return f"Error: {os.path.basename(latest_file)} is not a valid pickle file.", None, None
         except Exception as e:
             # Handle any other unexpected errors
-            return f"Error uploading file: {str(e)}", None
-    return "No file uploaded", None
+            return f"Error uploading file: {str(e)}", None, None
+    return "No file uploaded", None, None
 
 
 @app.callback(
     Output("processed-data-store", "data"),
     Output("processed-links-store", "data"),
+    Output("loading-spinner-container", "children", allow_duplicate=True),
     Input("file-store", "data"),
     prevent_initial_call=True,
 )
-def process_uploaded_data(file_path: Path | str | None) -> tuple[str | None, str | None]:
+def process_uploaded_data(
+    file_path: Path | str | None,
+) -> tuple[str | None, str | None, str | None]:
     """Process the uploaded pickle file and store the processed data.
 
     Args:
@@ -102,7 +112,7 @@ def process_uploaded_data(file_path: Path | str | None) -> tuple[str | None, str
         JSON string of processed data or None if processing fails.
     """
     if file_path is None:
-        return None, None
+        return None, None, None
 
     try:
         with open(file_path, "rb") as f:
@@ -230,10 +240,10 @@ def process_uploaded_data(file_path: Path | str | None) -> tuple[str | None, str
         else:
             processed_links = {}
 
-        return json.dumps(processed_data), json.dumps(processed_links)
+        return json.dumps(processed_data), json.dumps(processed_links), None
     except Exception as e:
         print(f"Error processing file: {str(e)}")
-        return None, None
+        return None, None, None
 
 
 @app.callback(
@@ -249,6 +259,11 @@ def process_uploaded_data(file_path: Path | str | None) -> tuple[str | None, str
         Output("gm-scoring-blocks-id", "data", allow_duplicate=True),
         Output("gm-scoring-blocks-container", "children", allow_duplicate=True),
         Output("gm-results-button", "disabled"),
+        Output("gm-table", "selected_rows", allow_duplicate=True),
+        Output("gm-table-select-all-checkbox", "value", allow_duplicate=True),
+        Output("gm-filter-accordion-component", "value", allow_duplicate=True),
+        Output("gm-scoring-accordion-component", "value", allow_duplicate=True),
+        Output("gm-results-table-column-toggle", "value", allow_duplicate=True),
         # MG tab outputs
         Output("mg-tab", "disabled"),
         Output("mg-filter-accordion-control", "disabled"),
@@ -260,6 +275,11 @@ def process_uploaded_data(file_path: Path | str | None) -> tuple[str | None, str
         Output("mg-scoring-blocks-id", "data", allow_duplicate=True),
         Output("mg-scoring-blocks-container", "children", allow_duplicate=True),
         Output("mg-results-button", "disabled"),
+        Output("mg-table", "selected_rows", allow_duplicate=True),
+        Output("mg-table-select-all-checkbox", "value", allow_duplicate=True),
+        Output("mg-filter-accordion-component", "value", allow_duplicate=True),
+        Output("mg-scoring-accordion-component", "value", allow_duplicate=True),
+        Output("mg-results-table-column-toggle", "value", allow_duplicate=True),
     ],
     [Input("file-store", "data")],
     prevent_initial_call=True,
@@ -275,6 +295,16 @@ def disable_tabs_and_reset_blocks(
     Returns:
         Tuple containing boolean values for disabling tabs, styles, and new block data.
     """
+    default_gm_column_value = (
+        [GM_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS[0]]
+        if GM_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS
+        else []
+    )
+    default_mg_column_value = (
+        [MG_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS[0]]
+        if MG_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS
+        else []
+    )
     if file_path is None:
         # Disable all tabs and controls when no file is uploaded
         return (
@@ -289,6 +319,11 @@ def disable_tabs_and_reset_blocks(
             [],
             [],
             True,
+            [],
+            [],
+            [],
+            [],
+            default_gm_column_value,
             # MG tab - disabled
             True,
             True,
@@ -300,6 +335,11 @@ def disable_tabs_and_reset_blocks(
             [],
             [],
             True,
+            [],
+            [],
+            [],
+            [],
+            default_mg_column_value,
         )
 
     # Enable the tabs and reset blocks
@@ -327,6 +367,11 @@ def disable_tabs_and_reset_blocks(
         gm_scoring_initial_block_id,
         gm_scoring_new_blocks,
         False,
+        [],
+        [],
+        [],
+        [],
+        default_gm_column_value,
         # MG tab - enabled with initial blocks
         False,
         False,
@@ -338,6 +383,11 @@ def disable_tabs_and_reset_blocks(
         mg_scoring_initial_block_id,
         mg_scoring_new_blocks,
         False,
+        [],
+        [],
+        [],
+        [],
+        default_mg_column_value,
     )
 
 
