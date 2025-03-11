@@ -490,8 +490,8 @@ def test_gm_table_update_datatable(sample_processed_data):
             None,  # checkbox_value
         )
 
-        assert len(result) == 6
-        data, columns, tooltip_data, style, selected_rows, checkbox_value = result
+        assert len(result) == 7
+        data, columns, tooltip_data, style, selected_rows, checkbox_value, _ = result
 
         # Check data
         assert len(data) == 2
@@ -516,7 +516,7 @@ def test_gm_table_update_datatable(sample_processed_data):
 
         # Test with None input
         result = gm_table_update_datatable(None, None, [], [], [], None)
-        assert result == ([], [], [], {"display": "none"}, [], [])
+        assert result == ([], [], [], {"display": "none"}, [], [], None)
 
         # Test with apply-filters-button triggered
         mock_ctx.triggered_id = "gm-filter-apply-button"
@@ -529,7 +529,7 @@ def test_gm_table_update_datatable(sample_processed_data):
             ["disabled"],  # checkbox_value
         )
 
-        data, columns, tooltip_data, style, selected_rows, checkbox_value = result
+        data, columns, tooltip_data, style, selected_rows, checkbox_value, _ = result
         assert len(data) == 1
         assert data[0]["GCF ID"] == "GCF_1"
         assert checkbox_value == []
@@ -660,8 +660,8 @@ def test_mg_table_update_datatable(sample_processed_data):
             None,  # checkbox_value
         )
 
-        assert len(result) == 6
-        data, columns, tooltip_data, style, selected_rows, checkbox_value = result
+        assert len(result) == 7
+        data, columns, tooltip_data, style, selected_rows, checkbox_value, _ = result
 
         # Check data
         assert len(data) == 2
@@ -685,7 +685,7 @@ def test_mg_table_update_datatable(sample_processed_data):
 
         # Test with None input
         result = mg_table_update_datatable(None, None, [], [], [], None)
-        assert result == ([], [], [], {"display": "none"}, [], [])
+        assert result == ([], [], [], {"display": "none"}, [], [], None)
 
         # Test with apply-filters-button triggered
         mock_ctx.triggered_id = "mg-filter-apply-button"
@@ -698,7 +698,7 @@ def test_mg_table_update_datatable(sample_processed_data):
             ["disabled"],  # checkbox_value
         )
 
-        data, columns, tooltip_data, style, selected_rows, checkbox_value = result
+        data, columns, tooltip_data, style, selected_rows, checkbox_value, _ = result
         assert len(data) == 1
         assert data[0]["MF ID"] == "MF_1"
         assert checkbox_value == []
