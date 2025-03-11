@@ -581,6 +581,17 @@ uploader = html.Div(
     className="p-5 ml-5 mr-5",
 )
 
+loading_spinner = dbc.Spinner(
+    html.Div(id="loading-spinner-container"),
+    color="primary",
+    size="lg",
+    type="border",
+    fullscreen=True,
+    fullscreen_style={
+        "backgroundColor": "rgba(0, 0, 0, 0.3)",
+        "zIndex": "9999",
+    },
+)
 
 # ------------------ Tab Content Configuration ------------------ #
 # No-sort columns definitions
@@ -644,5 +655,5 @@ tabs = dbc.Row(
 # ------------------ Layout Function ------------------ #
 def create_layout():  # noqa: D103
     return dmc.MantineProvider(
-        [dbc.Container([navbar, uploader, tabs], fluid=True, className="p-0")]
+        [dbc.Container([navbar, uploader, loading_spinner, tabs], fluid=True, className="p-0")]
     )

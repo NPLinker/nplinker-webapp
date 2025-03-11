@@ -60,9 +60,13 @@ clientside_callback(
 # ------------------ Upload and Process Data ------------------ #
 @du.callback(
     id="dash-uploader",
-    output=[Output("dash-uploader-output", "children"), Output("file-store", "data")],
+    output=[
+        Output("dash-uploader-output", "children"),
+        Output("file-store", "data"),
+        Output("loading-spinner-container", "children", allow_duplicate=True),
+    ],
 )
-def upload_data(status: du.UploadStatus) -> tuple[str, str | None]:
+def upload_data(status: du.UploadStatus) -> tuple[str, str | None, None]:
     """Handle file upload and validate pickle files.
 
     Args:
@@ -79,22 +83,26 @@ def upload_data(status: du.UploadStatus) -> tuple[str, str | None]:
             return (
                 f"Successfully uploaded: {os.path.basename(latest_file)} [{round(status.uploaded_size_mb, 2)} MB]",
                 str(latest_file),
+                None,
             )
         except (pickle.UnpicklingError, EOFError, AttributeError):
-            return f"Error: {os.path.basename(latest_file)} is not a valid pickle file.", None
+            return f"Error: {os.path.basename(latest_file)} is not a valid pickle file.", None, None
         except Exception as e:
             # Handle any other unexpected errors
-            return f"Error uploading file: {str(e)}", None
-    return "No file uploaded", None
+            return f"Error uploading file: {str(e)}", None, None
+    return "No file uploaded", None, None
 
 
 @app.callback(
     Output("processed-data-store", "data"),
     Output("processed-links-store", "data"),
+    Output("loading-spinner-container", "children", allow_duplicate=True),
     Input("file-store", "data"),
     prevent_initial_call=True,
 )
-def process_uploaded_data(file_path: Path | str | None) -> tuple[str | None, str | None]:
+def process_uploaded_data(
+    file_path: Path | str | None,
+) -> tuple[str | None, str | None, str | None]:
     """Process the uploaded pickle file and store the processed data.
 
     Args:
@@ -104,7 +112,7 @@ def process_uploaded_data(file_path: Path | str | None) -> tuple[str | None, str
         JSON string of processed data or None if processing fails.
     """
     if file_path is None:
-        return None, None
+        return None, None, None
 
     try:
         with open(file_path, "rb") as f:
@@ -232,10 +240,10 @@ def process_uploaded_data(file_path: Path | str | None) -> tuple[str | None, str
         else:
             processed_links = {}
 
-        return json.dumps(processed_data), json.dumps(processed_links)
+        return json.dumps(processed_data), json.dumps(processed_links), None
     except Exception as e:
         print(f"Error processing file: {str(e)}")
-        return None, None
+        return None, None, None
 
 
 @app.callback(
