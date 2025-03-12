@@ -668,9 +668,10 @@ def gm_filter_display_blocks(
     Input({"type": "gm-filter-dropdown-menu", "index": MATCH}, "value"),
     Input("mibig-version-selector", "value"),
     State({"type": "gm-filter-dropdown-bgc-class-dropdown", "index": MATCH}, "value"),
+    State({"type": "gm-filter-dropdown-ids-text-input", "index": MATCH}, "value"),
 )
 def gm_filter_update_placeholder(
-    selected_value: str, mibig_version: str, current_bgc_value: list
+    selected_value: str, mibig_version: str, current_bgc_value: list, current_text_value: str
 ) -> tuple[dict[str, str], dict[str, str], str, str, str, list[Any], list[dict]]:
     """Update the placeholder text, style, and options of input fields based on the dropdown selection and MIBiG version.
 
@@ -678,6 +679,7 @@ def gm_filter_update_placeholder(
         selected_value: The value selected in the dropdown menu.
         mibig_version: The selected MIBiG version.
         current_bgc_value: Currently selected BGC class values.
+        current_text_value: Currently entered text in the text input.
 
     Returns:
         A tuple containing style, placeholder, value, and options updates for the input fields.
@@ -698,6 +700,9 @@ def gm_filter_update_placeholder(
         # Otherwise keep the current selection
         new_bgc_value = current_bgc_value
 
+    # Keep the current text input value regardless of what triggered the callback
+    text_value = current_text_value if current_text_value else ""
+
     # Update the styles and placeholders based on the dropdown selection
     if selected_value == "GCF_ID":
         return (
@@ -705,7 +710,7 @@ def gm_filter_update_placeholder(
             {"display": "none"},
             "1, 2, 3, ...",
             "",
-            "",
+            text_value,
             new_bgc_value,
             bgc_options,
         )
@@ -715,13 +720,21 @@ def gm_filter_update_placeholder(
             {"display": "block"},
             "",
             "Select one or more BGC classes",
-            "",
+            text_value,
             new_bgc_value,
             bgc_options,
         )
     else:
         # This case should never occur due to the Literal type, but it satisfies mypy
-        return {"display": "none"}, {"display": "none"}, "", "", "", new_bgc_value, bgc_options
+        return (
+            {"display": "none"},
+            {"display": "none"},
+            "",
+            "",
+            text_value,
+            new_bgc_value,
+            bgc_options,
+        )
 
 
 # ------------------ MG Filter functions ------------------ #
