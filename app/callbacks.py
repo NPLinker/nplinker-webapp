@@ -12,7 +12,8 @@ import dash_mantine_components as dmc
 import dash_uploader as du
 import pandas as pd
 import plotly.graph_objects as go
-from config import GM_FILTER_DROPDOWN_BGC_CLASS_OPTIONS
+from config import GM_FILTER_DROPDOWN_BGC_CLASS_OPTIONS_PRE_V4
+from config import GM_FILTER_DROPDOWN_BGC_CLASS_OPTIONS_V4
 from config import GM_FILTER_DROPDOWN_MENU_OPTIONS
 from config import GM_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS
 from config import GM_RESULTS_TABLE_MANDATORY_COLUMNS
@@ -528,7 +529,7 @@ def gm_filter_create_initial_block(block_id: str) -> dmc.Grid:
                     ),
                     dcc.Dropdown(
                         id={"type": "gm-filter-dropdown-bgc-class-dropdown", "index": block_id},
-                        options=GM_FILTER_DROPDOWN_BGC_CLASS_OPTIONS,
+                        options=GM_FILTER_DROPDOWN_BGC_CLASS_OPTIONS_PRE_V4,
                         multi=True,
                         style={"display": "none"},
                     ),
@@ -631,7 +632,7 @@ def gm_filter_display_blocks(
                                 "type": "gm-filter-dropdown-bgc-class-dropdown",
                                 "index": new_block_id,
                             },
-                            options=GM_FILTER_DROPDOWN_BGC_CLASS_OPTIONS,
+                            options=GM_FILTER_DROPDOWN_BGC_CLASS_OPTIONS_PRE_V4,
                             multi=True,
                             style={"display": "none"},
                         ),
@@ -663,36 +664,77 @@ def gm_filter_display_blocks(
     Output({"type": "gm-filter-dropdown-bgc-class-dropdown", "index": MATCH}, "placeholder"),
     Output({"type": "gm-filter-dropdown-ids-text-input", "index": MATCH}, "value"),
     Output({"type": "gm-filter-dropdown-bgc-class-dropdown", "index": MATCH}, "value"),
+    Output({"type": "gm-filter-dropdown-bgc-class-dropdown", "index": MATCH}, "options"),
     Input({"type": "gm-filter-dropdown-menu", "index": MATCH}, "value"),
+    Input("mibig-version-selector", "value"),
+    State({"type": "gm-filter-dropdown-bgc-class-dropdown", "index": MATCH}, "value"),
+    State({"type": "gm-filter-dropdown-ids-text-input", "index": MATCH}, "value"),
 )
 def gm_filter_update_placeholder(
-    selected_value: str,
-) -> tuple[dict[str, str], dict[str, str], str, str, str, list[Any]]:
-    """Update the placeholder text and style of input fields based on the dropdown selection.
+    selected_value: str, mibig_version: str, current_bgc_value: list, current_text_value: str
+) -> tuple[dict[str, str], dict[str, str], str, str, str, list[Any], list[dict]]:
+    """Update the placeholder text, style, and options of input fields based on the dropdown selection and MIBiG version.
 
     Args:
         selected_value: The value selected in the dropdown menu.
+        mibig_version: The selected MIBiG version.
+        current_bgc_value: Currently selected BGC class values.
+        current_text_value: Currently entered text in the text input.
 
     Returns:
-        A tuple containing style, placeholder, and value updates for the input fields.
+        A tuple containing style, placeholder, value, and options updates for the input fields.
     """
-    if not ctx.triggered:
-        # Callback was not triggered by user interaction, don't change anything
-        raise dash.exceptions.PreventUpdate
+    # Determine which option set to use based on MIBiG version
+    if mibig_version == "v4_plus":
+        bgc_options = GM_FILTER_DROPDOWN_BGC_CLASS_OPTIONS_V4
+    else:
+        bgc_options = GM_FILTER_DROPDOWN_BGC_CLASS_OPTIONS_PRE_V4
+
+    # Check what triggered the callback
+    triggered_id = ctx.triggered_id
+
+    # If MIBiG version changed, clear the BGC class selection
+    if triggered_id == "mibig-version-selector":
+        new_bgc_value = []
+    else:
+        # Otherwise keep the current selection
+        new_bgc_value = current_bgc_value
+
+    # Keep the current text input value regardless of what triggered the callback
+    text_value = current_text_value if current_text_value else ""
+
+    # Update the styles and placeholders based on the dropdown selection
     if selected_value == "GCF_ID":
-        return {"display": "block"}, {"display": "none"}, "1, 2, 3, ...", "", "", []
+        return (
+            {"display": "block"},
+            {"display": "none"},
+            "1, 2, 3, ...",
+            "",
+            text_value,
+            new_bgc_value,
+            bgc_options,
+        )
     elif selected_value == "BGC_CLASS":
         return (
             {"display": "none"},
             {"display": "block"},
             "",
             "Select one or more BGC classes",
-            "",
-            [],
+            text_value,
+            new_bgc_value,
+            bgc_options,
         )
     else:
         # This case should never occur due to the Literal type, but it satisfies mypy
-        return {"display": "none"}, {"display": "none"}, "", "", "", []
+        return (
+            {"display": "none"},
+            {"display": "none"},
+            "",
+            "",
+            text_value,
+            new_bgc_value,
+            bgc_options,
+        )
 
 
 # ------------------ MG Filter functions ------------------ #
@@ -955,6 +997,7 @@ def gm_filter_apply(
     Output("gm-table-card-body", "style"),
     Output("gm-table", "selected_rows", allow_duplicate=True),
     Output("gm-table-select-all-checkbox", "value"),
+    Output("loading-spinner-container", "children", allow_duplicate=True),
     Input("processed-data-store", "data"),
     Input("gm-filter-apply-button", "n_clicks"),
     State({"type": "gm-filter-dropdown-menu", "index": ALL}, "value"),
@@ -970,7 +1013,7 @@ def gm_table_update_datatable(
     text_inputs: list[str],
     bgc_class_dropdowns: list[list[str]],
     checkbox_value: list | None,
-) -> tuple[list[dict], list[dict], list[dict], dict, list, list]:
+) -> tuple[list[dict], list[dict], list[dict], dict, list, list, str | None]:
     """Update the DataTable based on processed data and applied filters when the button is clicked.
 
     Args:
@@ -985,13 +1028,13 @@ def gm_table_update_datatable(
         Tuple containing table data, column definitions, tooltips data, style, empty selected rows, and updated checkbox value.
     """
     if processed_data is None:
-        return [], [], [], {"display": "none"}, [], []
+        return [], [], [], {"display": "none"}, [], [], None
 
     try:
         data = json.loads(processed_data)
         df = pd.DataFrame(data["gcf_data"])
     except (json.JSONDecodeError, KeyError, pd.errors.EmptyDataError):
-        return [], [], [], {"display": "none"}, [], []
+        return [], [], [], {"display": "none"}, [], [], None
 
     if ctx.triggered_id == "gm-filter-apply-button":
         # Apply filters only when the button is clicked
@@ -1047,6 +1090,7 @@ def gm_table_update_datatable(
         {"display": "block"},
         [],
         new_checkbox_value,
+        None,
     )
 
 
@@ -1163,6 +1207,7 @@ def mg_filter_apply(
     Output("mg-table-card-body", "style"),
     Output("mg-table", "selected_rows", allow_duplicate=True),
     Output("mg-table-select-all-checkbox", "value"),
+    Output("loading-spinner-container", "children", allow_duplicate=True),
     Input("processed-data-store", "data"),
     Input("mg-filter-apply-button", "n_clicks"),
     State({"type": "mg-filter-dropdown-menu", "index": ALL}, "value"),
@@ -1178,7 +1223,7 @@ def mg_table_update_datatable(
     mf_text_inputs: list[str],
     spec_text_inputs: list[str],
     checkbox_value: list | None,
-) -> tuple[list[dict], list[dict], list[dict], dict, list, list]:
+) -> tuple[list[dict], list[dict], list[dict], dict, list, list, str | None]:
     """Update the DataTable based on processed data and applied filters when the button is clicked.
 
     Args:
@@ -1193,13 +1238,13 @@ def mg_table_update_datatable(
         Tuple containing table data, column definitions, tooltips data, style, empty selected rows, and updated checkbox value.
     """
     if processed_data is None:
-        return [], [], [], {"display": "none"}, [], []
+        return [], [], [], {"display": "none"}, [], [], None
 
     try:
         data = json.loads(processed_data)
         df = pd.DataFrame(data["mf_data"])
     except (json.JSONDecodeError, KeyError, pd.errors.EmptyDataError):
-        return [], [], [], {"display": "none"}, [], []
+        return [], [], [], {"display": "none"}, [], [], None
 
     if ctx.triggered_id == "mg-filter-apply-button":
         # Apply filters only when the button is clicked
@@ -1284,6 +1329,7 @@ def mg_table_update_datatable(
         {"display": "block"},
         [],
         new_checkbox_value,
+        None,
     )
 
 
@@ -1750,15 +1796,15 @@ def update_results_datatable(
         item_type: Type of item being processed ('GCF' or 'MF').
 
     Returns:
-        Tuple containing alert message, visibility state, table data and settings, and header style.
+        Tuple containing alert message, visibility state, table data and settings, header style, and spinner state.
     """
     triggered_id = ctx.triggered_id
 
     if triggered_id in [f"{prefix}-table-select-all-checkbox", f"{prefix}-table"]:
-        return "", False, [], [], {"display": "none"}, {"color": "#888888"}, True
+        return "", False, [], [], {"display": "none"}, {"color": "#888888"}, True, None
 
     if n_clicks is None:
-        return "", False, [], [], {"display": "none"}, {"color": "#888888"}, True
+        return "", False, [], [], {"display": "none"}, {"color": "#888888"}, True, None
 
     if not selected_rows:
         return (
@@ -1769,10 +1815,20 @@ def update_results_datatable(
             {"display": "none"},
             {"color": "#888888"},
             True,
+            None,
         )
 
     if not virtual_data:
-        return "No data available.", True, [], [], {"display": "none"}, {"color": "#888888"}, True
+        return (
+            "No data available.",
+            True,
+            [],
+            [],
+            {"display": "none"},
+            {"color": "#888888"},
+            True,
+            None,
+        )
 
     try:
         links_data = json.loads(processed_links)
@@ -1785,6 +1841,7 @@ def update_results_datatable(
                 {"display": "none"},
                 {"color": "#888888"},
                 True,
+                None,
             )
 
         links_data = links_data[f"{prefix}_data"]
@@ -1851,14 +1908,16 @@ def update_results_datatable(
                     if prefix == "gm":
                         result = {
                             # Mandatory fields
-                            "GCF ID": int(item_id),
+                            "GCF ID": int(item_id) if item_id is not None else float("nan"),
                             "# Links": len(item_links),
                             "Average Score": round(item_links[score_field].mean(), 2),
                             # Optional fields with None handling
-                            "Top Spectrum ID": int(top_item[item_field].get("id", float("nan"))),
-                            "Top Spectrum MF ID": int(
-                                top_item[item_field].get("mf_id", float("nan"))
-                            ),
+                            "Top Spectrum ID": int(top_item[item_field].get("id"))
+                            if top_item[item_field].get("id") is not None
+                            else float("nan"),
+                            "Top Spectrum MF ID": int(top_item[item_field].get("mf_id"))
+                            if top_item[item_field].get("mf_id") is not None
+                            else float("nan"),
                             "Top Spectrum Precursor m/z": round(
                                 top_item[item_field].get("precursor_mz", float("nan")), 4
                             )
@@ -1892,11 +1951,13 @@ def update_results_datatable(
                     else:  # MG
                         result = {
                             # Mandatory fields
-                            "MF ID": int(item_id),
+                            "MF ID": int(item_id) if item_id is not None else float("nan"),
                             "# Links": len(item_links),
                             "Average Score": round(item_links[score_field].mean(), 2),
                             # Optional fields
-                            "Top GCF ID": int(top_item[item_field].get("id", float("nan"))),
+                            "Top GCF ID": int(top_item[item_field].get("id"))
+                            if top_item[item_field].get("id") is not None
+                            else float("nan"),
                             "Top GCF # BGCs": top_item[item_field].get("# BGCs", 0),
                             "Top GCF BGC IDs": ", ".join(
                                 [str(s) for s in top_item[item_field]["BGC IDs"]]
@@ -1950,6 +2011,7 @@ def update_results_datatable(
                 {"display": "none"},
                 {"color": "#888888"},
                 True,
+                None,
             )
 
         # Prepare tooltip data
@@ -2004,15 +2066,7 @@ def update_results_datatable(
             }
             tooltip_data.append(row_tooltip)
 
-        return (
-            "",
-            False,
-            results,
-            tooltip_data,
-            {"display": "block"},
-            {},
-            False,
-        )
+        return ("", False, results, tooltip_data, {"display": "block"}, {}, False, None)
 
     except Exception as e:
         return (
@@ -2023,6 +2077,7 @@ def update_results_datatable(
             {"display": "none"},
             {"color": "#888888"},
             True,
+            None,
         )
 
 
@@ -2107,10 +2162,10 @@ def generate_excel(n_clicks, table_data, tab_prefix):
         tab_prefix: Tab prefix ('gm' or 'mg').
 
     Returns:
-        Tuple containing the download component, alert visibility, and alert message.
+        Tuple containing the download component, alert visibility, alert message, and spinner state.
     """
     if not ctx.triggered or not table_data:
-        return None, False, ""
+        return None, False, "", None
 
     try:
         output = io.BytesIO()
@@ -2257,9 +2312,9 @@ def generate_excel(n_clicks, table_data, tab_prefix):
 
         # Prepare the file for download
         excel_data = output.getvalue()
-        return dcc.send_bytes(excel_data, filename), False, ""
+        return dcc.send_bytes(excel_data, filename), False, "", None
     except Exception as e:
-        return None, True, f"Error generating Excel file: {str(e)}"
+        return None, True, f"Error generating Excel file: {str(e)}", None
 
 
 # ------------------ GM Results table functions ------------------ #
@@ -2318,6 +2373,7 @@ def gm_update_columns(selected_columns: list[str] | None, n_clicks: int | None) 
     Output("gm-results-table-card-body", "style"),
     Output("gm-results-table-card-header", "style"),
     Output("gm-results-table-column-settings-button", "disabled"),
+    Output("loading-spinner-container", "children", allow_duplicate=True),
     Input("gm-results-button", "n_clicks"),
     Input("gm-table", "derived_virtual_data"),
     Input("gm-table", "derived_virtual_selected_rows"),
@@ -2325,6 +2381,7 @@ def gm_update_columns(selected_columns: list[str] | None, n_clicks: int | None) 
     State({"type": "gm-scoring-dropdown-menu", "index": ALL}, "value"),
     State({"type": "gm-scoring-radio-items", "index": ALL}, "value"),
     State({"type": "gm-scoring-dropdown-ids-cutoff-met", "index": ALL}, "value"),
+    prevent_initial_call=True,
 )
 def gm_update_results_datatable(
     n_clicks,
@@ -2369,6 +2426,7 @@ def gm_toggle_download_button(table_data):
         Output("gm-download-excel", "data"),
         Output("gm-download-alert", "is_open", allow_duplicate=True),
         Output("gm-download-alert", "children", allow_duplicate=True),
+        Output("loading-spinner-container", "children", allow_duplicate=True),
     ],
     Input("gm-download-button", "n_clicks"),
     [
@@ -2437,6 +2495,7 @@ def mg_update_columns(selected_columns: list[str] | None, n_clicks: int | None) 
     Output("mg-results-table-card-body", "style"),
     Output("mg-results-table-card-header", "style"),
     Output("mg-results-table-column-settings-button", "disabled"),
+    Output("loading-spinner-container", "children", allow_duplicate=True),
     Input("mg-results-button", "n_clicks"),
     Input("mg-table", "derived_virtual_data"),
     Input("mg-table", "derived_virtual_selected_rows"),
@@ -2444,6 +2503,7 @@ def mg_update_columns(selected_columns: list[str] | None, n_clicks: int | None) 
     State({"type": "mg-scoring-dropdown-menu", "index": ALL}, "value"),
     State({"type": "mg-scoring-radio-items", "index": ALL}, "value"),
     State({"type": "mg-scoring-dropdown-ids-cutoff-met", "index": ALL}, "value"),
+    prevent_initial_call=True,
 )
 def mg_update_results_datatable(
     n_clicks,
@@ -2488,6 +2548,7 @@ def mg_toggle_download_button(table_data):
         Output("mg-download-excel", "data"),
         Output("mg-download-alert", "is_open", allow_duplicate=True),
         Output("mg-download-alert", "children", allow_duplicate=True),
+        Output("loading-spinner-container", "children", allow_duplicate=True),
     ],
     Input("mg-download-button", "n_clicks"),
     [

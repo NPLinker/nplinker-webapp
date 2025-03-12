@@ -4,6 +4,7 @@ import dash_mantine_components as dmc
 import dash_uploader as du
 from config import GM_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS
 from config import MG_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS
+from config import MIBIG_VERSIONS
 from dash import dash_table
 from dash import dcc
 from dash import html
@@ -166,7 +167,12 @@ def create_results_table(table_id, no_sort_columns):
 
 
 def create_filter_accordion(
-    title, control_id, blocks_store_id, blocks_container_id, apply_button_id
+    title,
+    control_id,
+    blocks_store_id,
+    blocks_container_id,
+    apply_button_id,
+    include_mibig_selector=False,
 ):
     """Create a common filter accordion component.
 
@@ -176,10 +182,69 @@ def create_filter_accordion(
         blocks_store_id: The ID for blocks storage.
         blocks_container_id: The ID for blocks container.
         apply_button_id: The ID for the apply button.
+        include_mibig_selector: Whether to include MIBiG version selector.
 
     Returns:
         A dmc.Accordion component.
     """
+    panel_content = []
+
+    # Add MIBiG version selector if needed
+    if include_mibig_selector:
+        panel_content.append(
+            dbc.Row(
+                dbc.Col(
+                    html.Div(
+                        [
+                            dbc.Label(
+                                "MIBiG Version:",
+                                className="me-2",
+                                style={"verticalAlign": "middle"},
+                            ),
+                            dcc.Dropdown(
+                                id="mibig-version-selector",
+                                options=MIBIG_VERSIONS,
+                                value="pre_v4",  # Default to pre v4.0 for backward compatibility
+                                clearable=False,
+                                style={
+                                    "width": "150px",
+                                    "verticalAlign": "middle",
+                                    "marginLeft": "5px",
+                                },
+                            ),
+                        ],
+                        className="d-flex align-items-center",
+                        style={"marginLeft": "0", "marginBottom": "70px"},
+                    ),
+                    width=12,
+                ),
+                className="mb-3",
+            )
+        )
+
+    panel_content.extend(
+        [
+            html.Div(
+                [
+                    dcc.Store(id=blocks_store_id, data=[]),
+                    html.Div(
+                        id=blocks_container_id,
+                        children=[],
+                    ),
+                ]
+            ),
+            html.Div(
+                dbc.Button(
+                    "Apply Filters",
+                    id=apply_button_id,
+                    color="primary",
+                    className="mt-3",
+                ),
+                className="d-flex justify-content-center",
+            ),
+        ]
+    )
+
     return dmc.Accordion(
         [
             dmc.AccordionItem(
@@ -190,28 +255,7 @@ def create_filter_accordion(
                         id=control_id,
                         className="mt-5 mb-3",
                     ),
-                    dmc.AccordionPanel(
-                        [
-                            html.Div(
-                                [
-                                    dcc.Store(id=blocks_store_id, data=[]),
-                                    html.Div(
-                                        id=blocks_container_id,
-                                        children=[],
-                                    ),
-                                ]
-                            ),
-                            html.Div(
-                                dbc.Button(
-                                    "Apply Filters",
-                                    id=apply_button_id,
-                                    color="primary",
-                                    className="mt-3",
-                                ),
-                                className="d-flex justify-content-center",
-                            ),
-                        ]
-                    ),
+                    dmc.AccordionPanel(panel_content),
                 ],
                 value=f"{control_id.split('-')[0]}-filter-accordion",
             ),
@@ -448,13 +492,14 @@ def create_tab_content(prefix, filter_title, checkl_options, no_sort_columns):
     Returns:
         A dbc.Row component with all tab content.
     """
-    # Create filter accordion
+    # Create filter accordion with MIBiG selector for GM tab
     filter_accordion = create_filter_accordion(
         filter_title,
         f"{prefix}-filter-accordion-control",
         f"{prefix}-filter-blocks-id",
         f"{prefix}-filter-blocks-container",
         f"{prefix}-filter-apply-button",
+        include_mibig_selector=(prefix == "gm"),
     )
 
     # Create data table
