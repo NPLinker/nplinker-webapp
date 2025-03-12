@@ -17,7 +17,7 @@ This is the [NPLinker](https://nplinker.github.io/nplinker/latest/) web applicat
 
 NPLinker is a Python framework for data mining microbial natural products by integrating genomics and metabolomics data.
 
-For a deep understanding of NPLinker, please refer to the [original paper](paper_link_here).
+For a deep understanding of NPLinker, please refer to the [original paper](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1008920).
 
 ## Workshop Installation Guide
 
