@@ -1,0 +1,55 @@
+name: Build and upload to ghcr.io
+on:
+  workflow_dispatch:
+  release:
+    types:
+      - published
+jobs:
+  prepare_metadata:
+    name: Prepare image metadata
+    runs-on: ubuntu-22.04
+    outputs:
+      repo_name: ${{ steps.repo_info.outputs.REPO_NAME }}
+      repo_lowercase: ${{ steps.repo_info.outputs.REPO_LOWERCASE }}
+      version: ${{ steps.version_info.outputs.VERSION }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Get repository info
+        id: repo_info
+        run: |
+          REPO_NAME=$(echo "${{ github.repository }}" | cut -d '/' -f 2)
+          REPO_LOWERCASE=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          echo "REPO_NAME=$REPO_NAME" >> $GITHUB_OUTPUT
+          echo "REPO_LOWERCASE=$REPO_LOWERCASE" >> $GITHUB_OUTPUT
+      
+      - name: Get version from latest release
+        id: version_info
+        run: |
+          if [[ "${{ github.event_name }}" == "release" ]]; then
+            # If triggered by a release, use that release's tag
+            VERSION="${{ github.event.release.tag_name }}"
+          else
+            # If manually triggered, get the latest release tag
+            VERSION=$(git describe --tags --abbrev=0 || echo "latest")
+            # Remove 'v' prefix if present
+            VERSION=${VERSION#v}
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Using version: $VERSION"
+
+  upload_docker_image:
+    needs: prepare_metadata
+    name: Upload Docker image to ghcr.io
+    uses: ./.github/workflows/_ghcr.yml
+    with:
+      ghcr_user: ${{github.actor}}
+      base_image_name: ghcr.io/${{ needs.prepare_metadata.outputs.repo_lowercase }}
+      image_tag: ${{ needs.prepare_metadata.outputs.version }}
+      dockerfile: ./Dockerfile
+      docker_context: .
+    secrets:
+      token: ${{secrets.GITHUB_TOKEN}}
