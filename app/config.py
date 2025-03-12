@@ -4,12 +4,28 @@ GM_FILTER_DROPDOWN_MENU_OPTIONS = [
     {"label": "BGC Class", "value": "BGC_CLASS"},
 ]
 
-GM_FILTER_DROPDOWN_BGC_CLASS_OPTIONS = [
+# BGC class options for different MIBiG versions
+MIBIG_VERSIONS = [
+    {"label": "MIBiG < 4.0", "value": "pre_v4"},
+    {"label": "MIBiG ≥ 4.0", "value": "v4_plus"},
+]
+
+GM_FILTER_DROPDOWN_BGC_CLASS_OPTIONS_PRE_V4 = [
     {"label": "Alkaloid", "value": "ALKALOID"},
     {"label": "NRP", "value": "NRP"},
     {"label": "Polyketide", "value": "POLYKETIDE"},
     {"label": "RiPP", "value": "RIPP"},
-    {"label": "Saccharide", "value": "SAACCHARIDE"},
+    {"label": "Saccharide", "value": "SACCHARIDE"},
+    {"label": "Terpene", "value": "TERPENE"},
+    {"label": "Other", "value": "OTHER"},
+    {"label": "Unknown", "value": "UNKNOWN"},
+]
+
+GM_FILTER_DROPDOWN_BGC_CLASS_OPTIONS_V4 = [
+    {"label": "NRPS", "value": "NRPS"},
+    {"label": "PKS", "value": "PKS"},
+    {"label": "Ribosomal", "value": "RIBOSOMAL"},
+    {"label": "Saccharide", "value": "SACCHARIDE"},
     {"label": "Terpene", "value": "TERPENE"},
     {"label": "Other", "value": "OTHER"},
     {"label": "Unknown", "value": "UNKNOWN"},

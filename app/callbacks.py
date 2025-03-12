@@ -12,7 +12,8 @@ import dash_mantine_components as dmc
 import dash_uploader as du
 import pandas as pd
 import plotly.graph_objects as go
-from config import GM_FILTER_DROPDOWN_BGC_CLASS_OPTIONS
+from config import GM_FILTER_DROPDOWN_BGC_CLASS_OPTIONS_PRE_V4
+from config import GM_FILTER_DROPDOWN_BGC_CLASS_OPTIONS_V4
 from config import GM_FILTER_DROPDOWN_MENU_OPTIONS
 from config import GM_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS
 from config import GM_RESULTS_TABLE_MANDATORY_COLUMNS
@@ -528,7 +529,7 @@ def gm_filter_create_initial_block(block_id: str) -> dmc.Grid:
                     ),
                     dcc.Dropdown(
                         id={"type": "gm-filter-dropdown-bgc-class-dropdown", "index": block_id},
-                        options=GM_FILTER_DROPDOWN_BGC_CLASS_OPTIONS,
+                        options=GM_FILTER_DROPDOWN_BGC_CLASS_OPTIONS_PRE_V4,
                         multi=True,
                         style={"display": "none"},
                     ),
@@ -631,7 +632,7 @@ def gm_filter_display_blocks(
                                 "type": "gm-filter-dropdown-bgc-class-dropdown",
                                 "index": new_block_id,
                             },
-                            options=GM_FILTER_DROPDOWN_BGC_CLASS_OPTIONS,
+                            options=GM_FILTER_DROPDOWN_BGC_CLASS_OPTIONS_PRE_V4,
                             multi=True,
                             style={"display": "none"},
                         ),
@@ -663,24 +664,51 @@ def gm_filter_display_blocks(
     Output({"type": "gm-filter-dropdown-bgc-class-dropdown", "index": MATCH}, "placeholder"),
     Output({"type": "gm-filter-dropdown-ids-text-input", "index": MATCH}, "value"),
     Output({"type": "gm-filter-dropdown-bgc-class-dropdown", "index": MATCH}, "value"),
+    Output({"type": "gm-filter-dropdown-bgc-class-dropdown", "index": MATCH}, "options"),
     Input({"type": "gm-filter-dropdown-menu", "index": MATCH}, "value"),
+    Input("mibig-version-selector", "value"),
+    State({"type": "gm-filter-dropdown-bgc-class-dropdown", "index": MATCH}, "value"),
 )
 def gm_filter_update_placeholder(
-    selected_value: str,
-) -> tuple[dict[str, str], dict[str, str], str, str, str, list[Any]]:
-    """Update the placeholder text and style of input fields based on the dropdown selection.
+    selected_value: str, mibig_version: str, current_bgc_value: list
+) -> tuple[dict[str, str], dict[str, str], str, str, str, list[Any], list[dict]]:
+    """Update the placeholder text, style, and options of input fields based on the dropdown selection and MIBiG version.
 
     Args:
         selected_value: The value selected in the dropdown menu.
+        mibig_version: The selected MIBiG version.
+        current_bgc_value: Currently selected BGC class values.
 
     Returns:
-        A tuple containing style, placeholder, and value updates for the input fields.
+        A tuple containing style, placeholder, value, and options updates for the input fields.
     """
-    if not ctx.triggered:
-        # Callback was not triggered by user interaction, don't change anything
-        raise dash.exceptions.PreventUpdate
+    # Determine which option set to use based on MIBiG version
+    if mibig_version == "v4_plus":
+        bgc_options = GM_FILTER_DROPDOWN_BGC_CLASS_OPTIONS_V4
+    else:
+        bgc_options = GM_FILTER_DROPDOWN_BGC_CLASS_OPTIONS_PRE_V4
+
+    # Check what triggered the callback
+    triggered_id = ctx.triggered_id
+
+    # If MIBiG version changed, clear the BGC class selection
+    if triggered_id == "mibig-version-selector":
+        new_bgc_value = []
+    else:
+        # Otherwise keep the current selection
+        new_bgc_value = current_bgc_value
+
+    # Update the styles and placeholders based on the dropdown selection
     if selected_value == "GCF_ID":
-        return {"display": "block"}, {"display": "none"}, "1, 2, 3, ...", "", "", []
+        return (
+            {"display": "block"},
+            {"display": "none"},
+            "1, 2, 3, ...",
+            "",
+            "",
+            new_bgc_value,
+            bgc_options,
+        )
     elif selected_value == "BGC_CLASS":
         return (
             {"display": "none"},
@@ -688,11 +716,12 @@ def gm_filter_update_placeholder(
             "",
             "Select one or more BGC classes",
             "",
-            [],
+            new_bgc_value,
+            bgc_options,
         )
     else:
         # This case should never occur due to the Literal type, but it satisfies mypy
-        return {"display": "none"}, {"display": "none"}, "", "", "", []
+        return {"display": "none"}, {"display": "none"}, "", "", "", new_bgc_value, bgc_options
 
 
 # ------------------ MG Filter functions ------------------ #
