@@ -76,7 +76,7 @@ If you encounter other problems, please check the [Issues](https://github.com/NP
 
 ### Option 2: Docker Installation
 
-Using Docker is the quickest way to get started with NPLinker Web Application:
+Using Docker is the quickest way to get started with NPLinker Web Application. Make sure you have [Docker](https://www.docker.com/) installed on your system before proceeding:
 
 1. **Pull the Docker image**
    ```bash
