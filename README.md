@@ -14,53 +14,58 @@ This is the [NPLinker](https://nplinker.github.io/nplinker/latest/) web applicat
   <img src="app/assets/dash3.png" width="600" alt="Dashboard Screenshot 3">
 </p>
 
-
 NPLinker is a Python framework for data mining microbial natural products by integrating genomics and metabolomics data.
 
 For a deep understanding of NPLinker, please refer to the [original paper](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1008920).
 
-## Workshop Installation Guide
+## Prerequisites
 
-Follow these steps to set up the NPLinker dashboard on your local machine:
-
-### Prerequisites
+Before installing NPLinker Web Application, ensure you have:
 
 - [Python 3.10 or higher](https://www.python.org/downloads/)
 - [Git](https://git-scm.com/downloads)
 
-### Setup Instructions
+## Installation Options
+
+You can install and run the NPLinker dashboard in two ways: directly on your local machine or using Docker.
+
+### Option 1: Local Installation
+
+Follow these steps to install the application directly on your system:
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/NPLinker/nplinker-webapp.git
+   cd nplinker-webapp
+   ```
+
+2. **Set up a virtual environment**
+   ```bash
+   # Create a virtual environment
+   python -m venv venv
+
+   # Activate the virtual environment
+   # For Windows:
+   venv\Scripts\activate
+   # For macOS/Linux:
+   source venv/bin/activate
+   ```
+
+3. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Run the application**
+   ```bash
+   python app/main.py
+   ```
+
+5. **Access the dashboard**
    
-```bash
-# Clone the repository
-git clone https://github.com/NPLinker/nplinker-webapp.git
+   Open your web browser and navigate to `http://0.0.0.0:8050/`
 
-# Navigate to the project directory
-cd nplinker-webapp
-
-# Create and activate a virtual environment
-python -m venv venv
-
-## For Windows:
-venv\Scripts\activate
-## For macOS/Linux:
-source venv/bin/activate
-
-# Install the required packages
-pip install -r requirements.txt
-```
-
-### Running the Dashboard
-
-After installation, start the application:
-
-```bash
-# Make sure you're in the nplinker-webapp directory
-python app/main.py
-```
-
-Open your web browser and go to `http://127.0.0.1:8050/`.
-
-### Troubleshooting
+#### Troubleshooting Local Installation
 
 Common issues and solutions:
 
@@ -69,32 +74,37 @@ Common issues and solutions:
 
 If you encounter other problems, please check the [Issues](https://github.com/NPLinker/nplinker-webapp/issues) page or create a new issue.
 
-## Docker Support
+### Option 2: Docker Installation
 
-You can run NPLinker Web Application using Docker:
+Using Docker is the quickest way to get started with NPLinker Web Application:
 
-```bash
-# Pull the image from GitHub Packages
-docker pull ghcr.io/nplinker/nplinker-webapp:latest
+1. **Pull the Docker image**
+   ```bash
+   docker pull ghcr.io/nplinker/nplinker-webapp:latest
+   ```
 
-# Run the container
-docker run -p 8050:8050 ghcr.io/nplinker/nplinker-webapp:latest
-```
+2. **Run the container**
+   ```bash
+   docker run -p 8050:8050 ghcr.io/nplinker/nplinker-webapp:latest
+   ```
 
-Then open your web browser and go to `http://0.0.0.0:8050/` to access the application.
+3. **Access the dashboard**
+   
+   Open your web browser and navigate to `http://0.0.0.0:8050/`
 
-The web interface allows you to upload your NPLinker data directly through the browser. For testing purposes, you can use the sample dataset provided in the repository (`tests/data/mock_obj_data.pkl`).
+#### Docker Image Information
 
-> **Note**: The application running in Docker might be slower than running it directly on your machine, depending on your Docker resource allocation settings. If you experience performance issues, consider increasing Docker's CPU and memory limits in your Docker Desktop settings, or run the application directly as described in the [Setup Instructions](#setup-instructions) section.
+- **Available Tags**:
+  - `latest`: The most recent build
+  - Specific version tags based on GitHub releases
 
-### Available Tags
+- **Performance Note**: The application running in Docker might be slower than running it directly on your machine, depending on your Docker resource allocation settings. If you experience performance issues, consider increasing Docker's CPU and memory limits in your Docker Desktop settings, or use the local installation method.
 
-- `latest`: The most recent build
-- Specific version tags are also available based on GitHub releases
+- **More Details**: For additional information about the Docker image, see its [GitHub Container Registry page](https://github.com/NPLinker/nplinker-webapp/pkgs/container/nplinker-webapp).
 
-For more details about the Docker image, see its [GitHub Container Registry page](https://github.com/NPLinker/nplinker-webapp/pkgs/container/nplinker-webapp).
+## Using the Dashboard
 
-## Input Data
+### Input Data
 
 The dashboard accepts data generated by NPLinker and saved as described in the [NPLinker quickstart section](https://nplinker.github.io/nplinker/latest/quickstart/). For testing purposes, a small sample dataset is provided in [`tests/data/mock_obj_data.pkl`](https://github.com/NPLinker/nplinker-webapp/blob/main/tests/data/mock_obj_data.pkl) that can be used to try out the webapp.
 
