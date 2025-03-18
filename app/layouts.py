@@ -38,13 +38,27 @@ def create_data_table(table_id, select_all_id):
         page_action="native",
         page_current=0,
         page_size=10,
-        style_cell={"textAlign": "left", "padding": "5px"},
+        style_cell={
+            "textAlign": "left",
+            "padding": "5px",
+            "overflow": "hidden",
+            "textOverflow": "ellipsis",
+            "minWidth": "80px",
+            "width": "auto",
+            "maxWidth": "200px",
+        },
         style_header={
             "backgroundColor": "#FF6E42",
             "fontWeight": "bold",
             "color": "white",
+            "whiteSpace": "normal",
+            "height": "auto",
         },
-        style_data={"border": "1px solid #ddd"},
+        style_data={
+            "border": "1px solid #ddd",
+            "whiteSpace": "normal",
+            "height": "auto",
+        },
         style_data_conditional=[
             {
                 "if": {"state": "selected"},
