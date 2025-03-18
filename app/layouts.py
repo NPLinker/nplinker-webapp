@@ -105,16 +105,15 @@ def create_results_table(table_id, no_sort_columns):
         editable=False,
         filter_action="none",
         sort_action="native",
+        virtualization=True,
+        fixed_rows={"headers": True},  # Keep headers visible when scrolling
         sort_mode="single",
         sort_as_null=["None", ""],
         sort_by=[],
         page_action="native",
         page_current=0,
-        page_size=10,
-        style_table={
-            "width": "100%",
-            "overflowX": "auto",
-        },
+        page_size=50,
+        style_table={"width": "100%", "overflowX": "auto", "overflowY": "auto"},
         style_cell={
             "textAlign": "left",
             "padding": "5px",
