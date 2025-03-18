@@ -1906,45 +1906,51 @@ def update_results_datatable(
                 None,
             )
 
-        # Group by the selected item and calculate needed aggregations
+        # Prepare for results using vectorized operations
         results = []
 
-        # Group by the ID field and calculate aggregates
+        # Group by the ID field
         for item_id, group in filtered_df.groupby(id_field):
             # Sort by score in descending order
             group = group.sort_values(score_field, ascending=False)
 
-            # Calculate average score and count once per group
+            # Calculate aggregate values once per group
             avg_score = round(group[score_field].mean(), 2)
             n_links = len(group)
 
             # Get the highest score
             highest_score = group[score_field].max()
 
-            # Get all items with the highest score
+            # Get all items with the highest score - as a DataFrame
             top_items = group[group[score_field] == highest_score]
 
-            for _, top_item in top_items.iterrows():
-                if prefix == "gm":
+            # Process all top items at once using vectorized operations
+            if prefix == "gm":
+                # Convert to dictionary format for faster processing
+                top_items_dict = top_items.to_dict("records")
+
+                # Create results for each top item
+                for top_item in top_items_dict:
+                    spectrum_data = top_item[item_field]
                     result = {
                         # Mandatory fields
                         "GCF ID": int(item_id) if pd.notna(item_id) else float("nan"),  # type: ignore
                         "# Links": n_links,
                         "Average Score": avg_score,
-                        # Optional fields with None handling
-                        "Top Spectrum ID": int(top_item[item_field].get("id"))
-                        if top_item[item_field].get("id") is not None
+                        # Optional fields
+                        "Top Spectrum ID": int(spectrum_data.get("id", float("nan")))
+                        if spectrum_data.get("id") is not None
                         else float("nan"),
-                        "Top Spectrum MF ID": int(top_item[item_field].get("mf_id"))
-                        if top_item[item_field].get("mf_id") is not None
+                        "Top Spectrum MF ID": int(spectrum_data.get("mf_id", float("nan")))
+                        if spectrum_data.get("mf_id") is not None
                         else float("nan"),
                         "Top Spectrum Precursor m/z": round(
-                            top_item[item_field].get("precursor_mz", float("nan")), 4
+                            spectrum_data.get("precursor_mz", float("nan")), 4
                         )
-                        if top_item[item_field].get("precursor_mz") is not None
+                        if spectrum_data.get("precursor_mz") is not None
                         else float("nan"),
-                        "Top Spectrum GNPS ID": top_item[item_field].get("gnps_id", "None")
-                        if top_item[item_field].get("gnps_id") is not None
+                        "Top Spectrum GNPS ID": spectrum_data.get("gnps_id", "None")
+                        if spectrum_data.get("gnps_id") is not None
                         else "None",
                         "Top Spectrum Score": round(top_item.get(score_field, float("nan")), 4)
                         if top_item.get(score_field) is not None
@@ -1965,27 +1971,32 @@ def update_results_datatable(
                             [str(s.get("precursor_mz", "None")) for s in group[item_field]]
                         ),
                         "spectrum_gnps_id_str": "|".join(
-                            [str(s.get("gnps_id", "None")) for s in group[item_field]],
+                            [str(s.get("gnps_id", "None")) for s in group[item_field]]
                         ),
                     }
-                else:  # MG
+                    results.append(result)
+            else:  # MG
+                # Convert to dictionary format for faster processing
+                top_items_dict = top_items.to_dict("records")
+
+                # Create results for each top item
+                for top_item in top_items_dict:
+                    gcf_data = top_item[item_field]
                     result = {
                         # Mandatory fields
                         "MF ID": int(item_id) if pd.notna(item_id) else float("nan"),  # type: ignore
                         "# Links": n_links,
                         "Average Score": avg_score,
                         # Optional fields
-                        "Top GCF ID": int(top_item[item_field].get("id"))
-                        if top_item[item_field].get("id") is not None
+                        "Top GCF ID": int(gcf_data.get("id", float("nan")))
+                        if gcf_data.get("id") is not None
                         else float("nan"),
-                        "Top GCF # BGCs": top_item[item_field].get("# BGCs", 0),
-                        "Top GCF BGC IDs": ", ".join(
-                            [str(s) for s in top_item[item_field]["BGC IDs"]]
-                        ),
+                        "Top GCF # BGCs": gcf_data.get("# BGCs", 0),
+                        "Top GCF BGC IDs": ", ".join([str(s) for s in gcf_data.get("BGC IDs", [])]),
                         "Top GCF BGC Classes": ", ".join(
                             {
                                 item
-                                for sublist in top_item[item_field].get("BGC Classes", [])
+                                for sublist in gcf_data.get("BGC Classes", [])
                                 for item in sublist
                             }
                         ),
@@ -2019,8 +2030,7 @@ def update_results_datatable(
                             [str(gcf.get("# BGCs", 0)) for gcf in group[item_field]]
                         ),
                     }
-
-                results.append(result)
+                    results.append(result)
         # Prepare tooltip data
         tooltip_data = []
         for result in results:
