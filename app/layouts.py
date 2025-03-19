@@ -635,6 +635,8 @@ uploader = html.Div(
         dcc.Store(id="file-store"),  # Store to keep the file contents
         dcc.Store(id="processed-data-store"),  # Store to keep the processed data
         dcc.Store(id="processed-links-store"),  # Store to keep the processed links
+        dcc.Store(id="gm-detailed-data-store"),  # Store for GM detailed data
+        dcc.Store(id="mg-detailed-data-store"),  # Store for MG detailed data
     ],
     className="p-5 ml-5 mr-5",
 )
