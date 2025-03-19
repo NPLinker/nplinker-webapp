@@ -87,3 +87,5 @@ MG_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS = [
 
 # Scoring Configurations
 SCORING_DROPDOWN_MENU_OPTIONS = [{"label": "Metcalf", "value": "METCALF"}]
+
+MAX_TOOLTIP_ROWS = 500

@@ -18,6 +18,7 @@ from config import GM_FILTER_DROPDOWN_MENU_OPTIONS
 from config import GM_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS
 from config import GM_RESULTS_TABLE_MANDATORY_COLUMNS
 from config import GM_RESULTS_TABLE_OPTIONAL_COLUMNS
+from config import MAX_TOOLTIP_ROWS
 from config import MG_FILTER_DROPDOWN_MENU_OPTIONS
 from config import MG_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS
 from config import MG_RESULTS_TABLE_MANDATORY_COLUMNS
@@ -2033,55 +2034,70 @@ def update_results_datatable(
                     results.append(result)
         # Prepare tooltip data
         tooltip_data = []
-        for result in results:
-            ids = result[tooltip_field].split("|") if result[tooltip_field] else []
-            scores = (
-                [
-                    float(s)
-                    for s in result[f"{item_field if prefix == 'gm' else 'gcf'}_scores_str"].split(
-                        "|"
-                    )
-                ]
-                if result[f"{item_field if prefix == 'gm' else 'gcf'}_scores_str"]
-                else []
+        if len(results) > MAX_TOOLTIP_ROWS:
+            alert_message = f"Tooltips disabled for performance (showing {len(results)} rows)."
+            return (
+                alert_message,
+                True,
+                results,
+                tooltip_data,
+                {"display": "block"},
+                {},
+                False,
+                None,
             )
-
-            # Show only top 5 items in tooltip
-            max_tooltip_entries = 5
-            total_entries = len(ids)
-
-            if prefix == "gm":
-                # Get MF IDs for tooltips (only for GM tab)
-                mf_ids = (
-                    result.get("spectrum_mf_ids_str", "").split("|")
-                    if result.get("spectrum_mf_ids_str")
+        else:
+            for result in results:
+                ids = result[tooltip_field].split("|") if result[tooltip_field] else []
+                scores = (
+                    [
+                        float(s)
+                        for s in result[
+                            f"{item_field if prefix == 'gm' else 'gcf'}_scores_str"
+                        ].split("|")
+                    ]
+                    if result[f"{item_field if prefix == 'gm' else 'gcf'}_scores_str"]
                     else []
                 )
 
-                items_table = "| Spectrum ID | MF ID | Score |\n|--------|--------|--------|\n"
+                # Show only top 5 items in tooltip
+                max_tooltip_entries = 5
+                total_entries = len(ids)
 
-                # Add top entries for GM tab
-                for item_id, score, mf_id in zip(
-                    ids[:max_tooltip_entries],
-                    scores[:max_tooltip_entries],
-                    mf_ids[:max_tooltip_entries],
-                ):
-                    items_table += f"| {item_id} | {mf_id} | {round(float(score), 4)} |\n"
-            else:
-                items_table = "| GCF ID | Score |\n|--------|--------|\n"
-                # Add top entries for MG tab
-                for item_id, score in zip(ids[:max_tooltip_entries], scores[:max_tooltip_entries]):
-                    items_table += f"| {item_id} | {round(float(score), 4)} |\n"
+                if prefix == "gm":
+                    # Get MF IDs for tooltips (only for GM tab)
+                    mf_ids = (
+                        result.get("spectrum_mf_ids_str", "").split("|")
+                        if result.get("spectrum_mf_ids_str")
+                        else []
+                    )
 
-            # Add indication of more entries if applicable
-            if total_entries > max_tooltip_entries:
-                remaining = total_entries - max_tooltip_entries
-                items_table += f"\n... {remaining} more entries ..."
+                    items_table = "| Spectrum ID | MF ID | Score |\n|--------|--------|--------|\n"
 
-            row_tooltip = {
-                "# Links": {"value": items_table, "type": "markdown"},
-            }
-            tooltip_data.append(row_tooltip)
+                    # Add top entries for GM tab
+                    for item_id, score, mf_id in zip(
+                        ids[:max_tooltip_entries],
+                        scores[:max_tooltip_entries],
+                        mf_ids[:max_tooltip_entries],
+                    ):
+                        items_table += f"| {item_id} | {mf_id} | {round(float(score), 4)} |\n"
+                else:
+                    items_table = "| GCF ID | Score |\n|--------|--------|\n"
+                    # Add top entries for MG tab
+                    for item_id, score in zip(
+                        ids[:max_tooltip_entries], scores[:max_tooltip_entries]
+                    ):
+                        items_table += f"| {item_id} | {round(float(score), 4)} |\n"
+
+                # Add indication of more entries if applicable
+                if total_entries > max_tooltip_entries:
+                    remaining = total_entries - max_tooltip_entries
+                    items_table += f"\n... {remaining} more entries ..."
+
+                row_tooltip = {
+                    "# Links": {"value": items_table, "type": "markdown"},
+                }
+                tooltip_data.append(row_tooltip)
 
         return ("", False, results, tooltip_data, {"display": "block"}, {}, False, None)
 
