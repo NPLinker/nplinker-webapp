@@ -2209,8 +2209,8 @@ def generate_excel(n_clicks, table_data, detailed_data, tab_prefix):
     Args:
         n_clicks: Number of clicks on the download button.
         table_data: Data from the results table.
-        tab_prefix: Tab prefix ('gm' or 'mg').
         detailed_data: Detailed data for each row in the table.
+        tab_prefix: Tab prefix ('gm' or 'mg').
 
     Returns:
         Tuple containing the download component, alert visibility, alert message, and spinner state.
@@ -2228,9 +2228,15 @@ def generate_excel(n_clicks, table_data, detailed_data, tab_prefix):
             # Sheet 2: Detailed data
             detailed_data_list = []
 
-            for row in table_data:
+            # Get unique primary IDs to avoid redundant processing
+            if tab_prefix == "gm":
+                unique_primary_ids = {row["GCF ID"] for row in table_data}
+            else:  # MG
+                unique_primary_ids = {row["MF ID"] for row in table_data}
+
+            # Process each unique primary ID only once
+            for primary_id in unique_primary_ids:
                 if tab_prefix == "gm":
-                    primary_id = row["GCF ID"]
                     detail = detailed_data.get(str(primary_id), {})
 
                     if not detail:
@@ -2288,7 +2294,6 @@ def generate_excel(n_clicks, table_data, detailed_data, tab_prefix):
                         }
                         detailed_data_list.append(detail_row)
                 else:  # MG
-                    primary_id = row["MF ID"]
                     detail = detailed_data.get(str(primary_id), {})
 
                     if not detail:
