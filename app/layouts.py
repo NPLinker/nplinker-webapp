@@ -38,13 +38,27 @@ def create_data_table(table_id, select_all_id):
         page_action="native",
         page_current=0,
         page_size=10,
-        style_cell={"textAlign": "left", "padding": "5px"},
+        style_cell={
+            "textAlign": "left",
+            "padding": "5px",
+            "overflow": "hidden",
+            "textOverflow": "ellipsis",
+            "minWidth": "80px",
+            "width": "auto",
+            "maxWidth": "200px",
+        },
         style_header={
             "backgroundColor": "#FF6E42",
             "fontWeight": "bold",
             "color": "white",
+            "whiteSpace": "normal",
+            "height": "auto",
         },
-        style_data={"border": "1px solid #ddd"},
+        style_data={
+            "border": "1px solid #ddd",
+            "whiteSpace": "normal",
+            "height": "auto",
+        },
         style_data_conditional=[
             {
                 "if": {"state": "selected"},
@@ -91,16 +105,15 @@ def create_results_table(table_id, no_sort_columns):
         editable=False,
         filter_action="none",
         sort_action="native",
+        virtualization=True,
+        fixed_rows={"headers": True},  # Keep headers visible when scrolling
         sort_mode="single",
         sort_as_null=["None", ""],
         sort_by=[],
         page_action="native",
         page_current=0,
-        page_size=10,
-        style_table={
-            "width": "100%",
-            "overflowX": "auto",
-        },
+        page_size=50,
+        style_table={"width": "100%", "overflowX": "auto", "overflowY": "auto"},
         style_cell={
             "textAlign": "left",
             "padding": "5px",
@@ -622,6 +635,8 @@ uploader = html.Div(
         dcc.Store(id="file-store"),  # Store to keep the file contents
         dcc.Store(id="processed-data-store"),  # Store to keep the processed data
         dcc.Store(id="processed-links-store"),  # Store to keep the processed links
+        dcc.Store(id="gm-detailed-data-store"),  # Store for GM detailed data
+        dcc.Store(id="mg-detailed-data-store"),  # Store for MG detailed data
     ],
     className="p-5 ml-5 mr-5",
 )

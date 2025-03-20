@@ -587,6 +587,7 @@ def test_gm_toggle_download_button():
 def test_gm_generate_excel_error_handling():
     """Test the generate_excel function error handling."""
     table_data = [{"GCF ID": 1, "spectrum_ids_str": "123"}]
+    detailed_data = {"1": {"spectrum_ids": ["123"]}}
 
     with (
         patch("app.callbacks.ctx") as mock_ctx,
@@ -596,7 +597,7 @@ def test_gm_generate_excel_error_handling():
         # Simulate an error during Excel generation
         mock_writer.side_effect = Exception("Excel write error")
 
-        result = gm_generate_excel(1, table_data)
+        result = gm_generate_excel(1, table_data, detailed_data)
 
         # Should return an error message
         assert result[0] is None
@@ -744,6 +745,7 @@ def test_mg_table_select_rows(sample_processed_data):
 def test_mg_generate_excel_error_handling():
     """Test the mg_generate_excel function error handling."""
     table_data = [{"MF ID": 1, "gcf_ids_str": "123"}]
+    detailed_data = {"1": {"spectrum_ids": ["123"]}}
 
     with (
         patch("app.callbacks.ctx") as mock_ctx,
@@ -753,7 +755,7 @@ def test_mg_generate_excel_error_handling():
         # Simulate an error during Excel generation
         mock_writer.side_effect = Exception("Excel write error")
 
-        result = mg_generate_excel(1, table_data)
+        result = mg_generate_excel(1, table_data, detailed_data)
 
         # Should return an error message
         assert result[0] is None
