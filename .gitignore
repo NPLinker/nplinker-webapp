@@ -30,6 +30,12 @@ pytest.ini
 # Jupyter Notebook
 .ipynb_checkpoints
 
+# Log files
+nplinker_webapp.egg-info/
+nplinker_webapp/__pycache__/
+nplinker_webapp/__init__.pyc
+nplinker_webapp/__main__.pyc
+
 # virtual environments
 .env
 .venv
