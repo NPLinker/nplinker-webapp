@@ -9,7 +9,8 @@ jobs:
     name: Prepare image metadata
     runs-on: ubuntu-22.04
     permissions:
-      contents: write
+        contents: write
+        pull-requests: write
     outputs:
       repo_name: ${{ steps.repo_info.outputs.REPO_NAME }}
       repo_lowercase: ${{ steps.repo_info.outputs.REPO_LOWERCASE }}
@@ -29,6 +30,18 @@ jobs:
           REPO_LOWERCASE=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
           echo "REPO_NAME=$REPO_NAME" >> $GITHUB_OUTPUT
           echo "REPO_LOWERCASE=$REPO_LOWERCASE" >> $GITHUB_OUTPUT
+
+      - name: Check GitHub Token Validity
+        run: |
+            echo "-- Validating GitHub Token"
+            status_code=$(curl -o /dev/null -s -w "%{http_code}" -H "Authorization: token ${{ secrets.GH_RELEASE }}" https://api.github.com/user)
+            if [ "$status_code" -ne 200 ]; then
+              echo "Error: GitHub token is invalid or expired. Please update your token in secrets."
+              echo "Instructions can be found at: https://github.com/DeepRank/deeprank2/blob/main/README.dev.md#updating-the-token"
+              exit 1
+            else
+              echo "GitHub token is valid."
+            fi
       
       - name: Get version from latest release
         id: version_info
