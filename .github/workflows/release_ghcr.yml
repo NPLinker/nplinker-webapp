@@ -8,6 +8,8 @@ jobs:
   prepare_metadata:
     name: Prepare image metadata
     runs-on: ubuntu-22.04
+    permissions:
+      contents: write
     outputs:
       repo_name: ${{ steps.repo_info.outputs.REPO_NAME }}
       repo_lowercase: ${{ steps.repo_info.outputs.REPO_LOWERCASE }}
@@ -17,7 +19,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GH_RELEASE }}  # Personal access token with write permissions
+          token: ${{ secrets.GH_RELEASE }}
           ref: main
       
       - name: Get repository info
@@ -53,7 +55,6 @@ jobs:
           # Configure git
           git config user.email "actions@github.com"
           git config user.name "GitHub Actions"
-          git pull
           
           # Update CITATION.cff
           if [ -f CITATION.cff ]; then
@@ -67,7 +68,7 @@ jobs:
             echo "Updated version in pyproject.toml to $VERSION"
           fi
           
-          # Commit and push the changes
+          # Commit and push the changes (using the PAT to bypass branch protection)
           git add CITATION.cff pyproject.toml
           git commit -m "Update version to $VERSION" || echo "No changes to commit"
           git push origin main
