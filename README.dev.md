@@ -15,22 +15,21 @@ If you want to add more settings, you can update the workspace settings, see [th
 
 ## Setup
 
-We use Python 3.10 for development environment.
+We use Python 3.10 for development.
 
 ```shell
 # Create a virtual environment, e.g. with
-python3 -m venv venv
+python3.10 -m venv venv
 
 # activate virtual environment
-source venv/bin/activate
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # make sure to have a recent version of pip and setuptools
-python3 -m pip install --upgrade pip setuptools
+python -m pip install --upgrade pip setuptools
 
-# install webapp dependencies
-pip install -r requirements.dev.txt
+# install all dependencies (including development dependencies)
+pip install -e ".[dev]"
 
-#TBD
 ```
 
 ## Running the tests
@@ -88,10 +87,7 @@ By default, we use `from __future__ import annotations` at module level to stop 
 We use [Mypy](http://mypy-lang.org/) as static type checker:
 
 ```
-# install mypy
-pip install mypy
-
-# run mypy
+# run mypy (already installed as a dev dependency)
 mypy path-to-source-code
 ```
 
