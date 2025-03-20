@@ -32,6 +32,8 @@ jobs:
           if [[ "${{ github.event_name }}" == "release" ]]; then
             # If triggered by a release, use that release's tag
             VERSION="${{ github.event.release.tag_name }}"
+            # Remove 'v' prefix if present
+            VERSION=${VERSION#v}
           else
             # If manually triggered, get the latest release tag
             VERSION=$(git describe --tags --abbrev=0 || echo "latest")
@@ -40,6 +42,30 @@ jobs:
           fi
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "Using version: $VERSION"
+
+      - name: Update version in project files
+        if: github.event_name == 'release'
+        run: |
+          VERSION="${{ steps.version_info.outputs.VERSION }}"
+          
+          # Update CITATION.cff
+          if [ -f CITATION.cff ]; then
+            sed -i "s/^version: \".*\"/version: \"$VERSION\"/" CITATION.cff
+            echo "Updated version in CITATION.cff to $VERSION"
+          fi
+          
+          # Update pyproject.toml
+          if [ -f pyproject.toml ]; then
+            sed -i "s/^version = \".*\"/version = \"$VERSION\"/" pyproject.toml
+            echo "Updated version in pyproject.toml to $VERSION"
+          fi
+          
+          # Commit the changes
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add CITATION.cff pyproject.toml
+          git commit -m "Update version to $VERSION" || echo "No changes to commit"
+          git push
 
   upload_docker_image:
     needs: prepare_metadata
