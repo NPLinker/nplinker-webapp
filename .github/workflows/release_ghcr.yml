@@ -17,7 +17,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.event.release.tag_name && 'main' || 'main' }}
+          token: ${{ secrets.GH_RELEASE }}  # Personal access token with write permissions
+          ref: main
       
       - name: Get repository info
         id: repo_info
@@ -49,6 +50,11 @@ jobs:
         run: |
           VERSION="${{ steps.version_info.outputs.VERSION }}"
           
+          # Configure git
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+          git pull
+          
           # Update CITATION.cff
           if [ -f CITATION.cff ]; then
             sed -i "s/^version: \".*\"/version: \"$VERSION\"/" CITATION.cff
@@ -61,12 +67,10 @@ jobs:
             echo "Updated version in pyproject.toml to $VERSION"
           fi
           
-          # Commit the changes
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
+          # Commit and push the changes
           git add CITATION.cff pyproject.toml
           git commit -m "Update version to $VERSION" || echo "No changes to commit"
-          git push origin HEAD:main  # Push to main branch
+          git push origin main
 
   upload_docker_image:
     needs: prepare_metadata
