@@ -13,11 +13,11 @@ RUN groupadd -r npuser && useradd -r -g npuser npuser
 # Copy pyproject.toml for installation
 COPY pyproject.toml .
 
-# Install the package
-RUN pip install --no-cache-dir .
-
 # Copy application code
 COPY ./app ./app
+
+# Install the package
+RUN pip install --no-cache-dir .
 
 # Change ownership of the application files
 RUN chown -R npuser:npuser /app
