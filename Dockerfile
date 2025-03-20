@@ -10,9 +10,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Create a non-root user
 RUN groupadd -r npuser && useradd -r -g npuser npuser
 
-# Copy requirements first for better caching
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy pyproject.toml for installation
+COPY pyproject.toml .
+
+# Install the package
+RUN pip install --no-cache-dir .
 
 # Copy application code
 COPY ./app ./app
