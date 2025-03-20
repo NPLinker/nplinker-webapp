@@ -17,6 +17,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.event.release.tag_name && 'main' || 'main' }}
       
       - name: Get repository info
         id: repo_info
@@ -65,7 +66,7 @@ jobs:
           git config --local user.name "GitHub Action"
           git add CITATION.cff pyproject.toml
           git commit -m "Update version to $VERSION" || echo "No changes to commit"
-          git push
+          git push origin HEAD:main  # Push to main branch
 
   upload_docker_image:
     needs: prepare_metadata
