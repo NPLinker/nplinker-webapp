@@ -22,7 +22,7 @@ For a deep understanding of NPLinker, please refer to the [original paper](https
 
 Before installing NPLinker Web Application, ensure you have:
 
-- [Python 3.10 or higher](https://www.python.org/downloads/)
+- [Python 3.10](https://www.python.org/downloads/)
 - [Git](https://git-scm.com/downloads)
 
 ## Installation Options
@@ -42,7 +42,7 @@ Follow these steps to install the application directly on your system:
 2. **Set up a virtual environment**
    ```bash
    # Create a virtual environment
-   python -m venv venv
+   python3.10 -m venv venv
 
    # Activate the virtual environment
    # For Windows:
@@ -53,7 +53,7 @@ Follow these steps to install the application directly on your system:
 
 3. **Install dependencies**
    ```bash
-   pip install -r requirements.txt
+   pip install -e .
    ```
 
 4. **Run the application**
@@ -70,7 +70,7 @@ Follow these steps to install the application directly on your system:
 Common issues and solutions:
 
 - **Port already in use**: If port 8050 is already in use, modify the port in `app/main.py` by changing `app.run_server(debug=True, port=8050)`
-- **Package installation errors**: Make sure you're using a compatible Python version and that your pip is up-to-date
+- **Package installation errors**: Make sure you're using Python 3.10 and that your pip is up-to-date
 
 If you encounter other problems, please check the [Issues](https://github.com/NPLinker/nplinker-webapp/issues) page or create a new issue.
 

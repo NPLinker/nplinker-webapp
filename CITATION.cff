@@ -45,7 +45,7 @@ authors:
   -
     given-names:  Marnix
     family-names:  Medema
-version: "0.1.0"
+version: "1.0.1"
 repository-code: "https://github.com/NPLinker/nplinker-webapp"
 keywords:
   - Genome

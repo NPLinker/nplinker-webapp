@@ -1,24 +1,25 @@
 name: Test the dashboard
 
 on:
-    push:
-      branches:
-        - main
-      paths:
-        - src/**
-        - tests/**
-        - setup.py
-        - .github/workflows/test.yml
-    pull_request:
-      paths:
-        - app/**
-        - tests/**
-        - .github/workflows/test.yml
-      types:
-        - opened
-        - reopened
-        - synchronize
-        - ready_for_review
+  push:
+    branches:
+      - main
+    paths:
+      - app/**
+      - tests/**
+      - pyproject.toml
+      - .github/workflows/test.yml
+  pull_request:
+    paths:
+      - app/**
+      - tests/**
+      - pyproject.toml
+      - .github/workflows/test.yml
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
 
 jobs:
   build:
@@ -34,13 +35,12 @@ jobs:
 
     - name: Upgrade pip and install dependencies
       run: |
-        python -m pip install --upgrade pip
+        python -m pip install --upgrade pip setuptools
         python -m venv venv
         source venv/bin/activate
-        pip install -r requirements.txt
+        pip install -e ".[dev]"
 
     - name: Run tests
       run: |
         source venv/bin/activate
-        pip install pytest
         pytest tests
