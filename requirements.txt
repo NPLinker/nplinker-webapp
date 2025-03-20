@@ -1,9 +1,0 @@
-nplinker==2.0.0a7
-dash
-dash-bootstrap-components
-dash-mantine-components
-dash_bootstrap_templates
-numpy
-dash-uploader==0.7.0a1
-packaging==21.3.0
-XlsxWriter
