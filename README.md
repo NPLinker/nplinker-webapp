@@ -42,7 +42,7 @@ Follow these steps to install the application directly on your system:
 2. **Set up a virtual environment**
    ```bash
    # Create a virtual environment
-   python -m venv venv
+   python3.10 -m venv venv
 
    # Activate the virtual environment
    # For Windows:
