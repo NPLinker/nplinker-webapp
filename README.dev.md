@@ -114,9 +114,10 @@ During the development cycle, three main supporting branches are used:
 
 0. Make sure you have all required developers tools installed `pip install -e .'[dev]'`.
 1. Create a `release-` branch from `main` (if there has been an hotfix) or `dev` (regular new production release).
-2. Prepare the branch for release by ensuring all tests pass (`pytest -v`), and that linting (`ruff check`), formatting (`ruff format --check`) and static typing (`mypy app tests`) rules are adhered to. Make sure that the debug mode in the `app/main.py` file is set to `False`.
-3. Merge the release branch into both `main` and `dev`.
-4. On the [Releases page](https://github.com/neurogym/neurogym/releases):
+2. Prepare the branch for release by ensuring all tests pass (`pytest -v`), and that linting (`ruff check`), formatting (`ruff format --check`) and static typing (`mypy app tests`) rules are adhered to.
+3. Merge the release branch into `dev`.
+4. Make sure that the debug mode in the `app/main.py` file is set to `False`. Merge the release branch into `main` and delete the release branch.
+5. On the [Releases page](https://github.com/neurogym/neurogym/releases):
    1. Click "Draft a new release"
    2. By convention, use `v<version number>` as both the release title and as a tag for the release. Decide on the [version level increase](#versioning), following [semantic versioning conventions](https://semver.org/) (MAJOR.MINOR.PATCH).
    3. Click "Generate release notes" to automatically load release notes from merged PRs since the last release.
