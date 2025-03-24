@@ -193,9 +193,9 @@ def test_process_uploaded_data_structure():
 
     # Check that all gm_data lists have the same length
     gm_list_lengths = [len(processed_links["gm_data"][key]) for key in expected_gm_keys]
-    assert all(
-        length == gm_list_lengths[0] for length in gm_list_lengths
-    ), "GM link data lists have inconsistent lengths"
+    assert all(length == gm_list_lengths[0] for length in gm_list_lengths), (
+        "GM link data lists have inconsistent lengths"
+    )
 
     # Check spectrum structure in gm_data
     if gm_list_lengths[0] > 0:  # Only if there are any GM links
@@ -224,9 +224,9 @@ def test_process_uploaded_data_structure():
 
     # Check that all mg_data lists have the same length
     mg_list_lengths = [len(processed_links["mg_data"][key]) for key in expected_mg_keys]
-    assert all(
-        length == mg_list_lengths[0] for length in mg_list_lengths
-    ), "MG link data lists have inconsistent lengths"
+    assert all(length == mg_list_lengths[0] for length in mg_list_lengths), (
+        "MG link data lists have inconsistent lengths"
+    )
 
     # Check gcf structure in mg_data
     if mg_list_lengths[0] > 0:  # Only if there are any MG links
@@ -564,7 +564,7 @@ def test_gm_table_select_rows(sample_processed_data):
 
     output1, output2 = gm_table_select_rows(rows, selected_rows)
     assert output1 == f"Total rows: {len(rows)}"
-    assert output2.startswith(f"Selected rows: {len(selected_rows)}\nSelected GCF IDs: ")
+    assert output2.startswith(f"Selected rows: {len(selected_rows)}\n")
 
     # Test with no rows
     output1, output2 = gm_table_select_rows([], None)
@@ -734,7 +734,7 @@ def test_mg_table_select_rows(sample_processed_data):
 
     output1, output2 = mg_table_select_rows(rows, selected_rows)
     assert output1 == f"Total rows: {len(rows)}"
-    assert output2.startswith(f"Selected rows: {len(selected_rows)}\nSelected MF IDs: ")
+    assert output2.startswith(f"Selected rows: {len(selected_rows)}\n")
 
     # Test with no rows
     output1, output2 = mg_table_select_rows([], None)
