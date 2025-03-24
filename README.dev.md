@@ -112,7 +112,7 @@ During the development cycle, three main supporting branches are used:
 
 ## GitHub release
 
-0. Make sure you have all required developers tools installed `pip install -e .'[test]'`.
+0. Make sure you have all required developers tools installed `pip install -e .'[dev]'`.
 1. Create a `release-` branch from `main` (if there has been an hotfix) or `dev` (regular new production release).
 2. Prepare the branch for release by ensuring all tests pass (`pytest -v`), and that linting (`ruff check`), formatting (`ruff format --check`) and static typing (`mypy app tests`) rules are adhered to. Make sure that the debug mode in the `app/main.py` file is set to `False`.
 3. Merge the release branch into both `main` and `dev`.
