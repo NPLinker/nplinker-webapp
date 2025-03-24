@@ -96,3 +96,31 @@ Mypy configurations are set in [mypy.ini](mypy.ini) file.
 For more info about static typing and mypy, see:
 - [Static typing with Python](https://typing.readthedocs.io/en/latest/index.html#)
 - [Mypy doc](https://mypy.readthedocs.io/en/stable/)
+
+## Branching workflow
+
+We use a [Git Flow](https://nvie.com/posts/a-successful-git-branching-model/)-inspired branching workflow for development. This repository is based on two main branches with infinite lifetime:
+
+- `main` — this branch contains production (stable) code. All development code is merged into `main` in sometime.
+- `dev` — this branch contains pre-production code. When the features are finished then they are merged into `dev`.
+
+During the development cycle, three main supporting branches are used:
+
+- Feature branches - Branches that branch off from `dev` and must merge into `dev`: used to develop new features for the upcoming releases.
+- Hotfix branches - Branches that branch off from `main` and must merge into `main` and `dev`: necessary to act immediately upon an undesired status of `main`.
+- Release branches - Branches that branch off from `dev` and must merge into `main` and `dev`: support preparation of a new production release. They allow many minor bug to be fixed and preparation of meta-data for a release.
+
+## GitHub release
+
+0. Make sure you have all required developers tools installed `pip install -e .'[test]'`.
+1. Create a `release-` branch from `main` (if there has been an hotfix) or `dev` (regular new production release).
+2. Prepare the branch for release by ensuring all tests pass (`pytest -v`), and that linting (`ruff check`), formatting (`ruff format --check`) and static typing (`mypy app tests`) rules are adhered to. Make sure that the debug mode in the `app/main.py` file is set to `False`.
+3. Merge the release branch into both `main` and `dev`.
+4. On the [Releases page](https://github.com/neurogym/neurogym/releases):
+   1. Click "Draft a new release"
+   2. By convention, use `v<version number>` as both the release title and as a tag for the release. Decide on the [version level increase](#versioning), following [semantic versioning conventions](https://semver.org/) (MAJOR.MINOR.PATCH).
+   3. Click "Generate release notes" to automatically load release notes from merged PRs since the last release.
+   4. Adjust the notes as required.
+   5. Ensure that "Set as latest release" is checked and that both other boxes are unchecked.
+   6. Hit "Publish release".
+      - This will automatically trigger a [GitHub workflow](https://github.com/NPLinker/nplinker-webapp/blob/main/.github/workflows/release_ghcr.yml) that will take care of updating the version number in the relevant files and publishing the image of the dashboard to the GitHub Container Registry.
