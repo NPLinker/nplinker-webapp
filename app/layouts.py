@@ -573,7 +573,7 @@ def create_tab_content(prefix, filter_title, checkl_options, no_sort_columns):
                                         style={"width": "200px"},
                                     ),
                                 ],
-                                className="d-flex align-items-center mb-3",
+                                className="d-flex align-items-center",
                             ),
                             width=12,
                         )
@@ -586,7 +586,7 @@ def create_tab_content(prefix, filter_title, checkl_options, no_sort_columns):
 
         components = [
             dbc.Col(filter_accordion, width=10, className="mx-auto dbc"),
-            dbc.Col(graph_with_selector, width=10, className="mx-auto"),
+            dbc.Col(graph_with_selector, width=10, className="mx-auto dbc"),
             dbc.Col(data_table, width=10, className="mx-auto"),
             dbc.Col(scoring_accordion, width=10, className="mx-auto dbc"),
         ]
