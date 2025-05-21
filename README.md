@@ -114,10 +114,10 @@ You can try out the dashboard directly in your browser here:
 
 Please note the following limitations of the hosted demo:
 
-* **Cold Start Delay**: Free-tier apps on Render sleep after 15 minutes of inactivity and may take 20–30 seconds to wake up.
+* **Cold start delay**: Free-tier apps on Render sleep after 15 minutes of inactivity and may take 20–30 seconds to wake up.
 * **Performance**: This is a minimal deployment on a free tier and is not optimized for large datasets or concurrent users.
-* **File Size Limits**: Use the small sample data provided in [`tests/data/mock_obj_data.pkl`](https://github.com/NPLinker/nplinker-webapp/blob/main/tests/data/mock_obj_data.pkl) for testing. Uploading large datasets may lead to errors or timeouts.
-* **No Persistent Storage**: Uploaded files are not saved between sessions.
+* **File size limits**: Use the small sample data provided in [`tests/data/mock_obj_data.pkl`](https://github.com/NPLinker/nplinker-webapp/blob/main/tests/data/mock_obj_data.pkl) for testing. Uploading large datasets may lead to errors or timeouts.
+* **No persistent storage**: Uploaded files are not saved between sessions.
 
 This hosted version is intended only for lightweight demo purposes. For full functionality, including large-scale data processing and persistent storage, please install the application locally or via Docker as described above.
 
