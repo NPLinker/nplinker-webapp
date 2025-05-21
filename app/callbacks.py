@@ -408,9 +408,10 @@ def disable_tabs_and_reset_blocks(
 @app.callback(
     Output("gm-graph", "figure"),
     Output("gm-graph", "style"),
+    Output("gm-graph-selector-container", "style"),
     [Input("processed-data-store", "data"), Input("gm-graph-x-axis-selector", "value")],
 )
-def gm_plot(stored_data: str | None, x_axis_selection: str) -> tuple[dict | go.Figure, dict]:
+def gm_plot(stored_data: str | None, x_axis_selection: str) -> tuple[dict | go.Figure, dict, dict]:
     """Create a bar plot based on the processed data.
 
     Args:
@@ -418,10 +419,11 @@ def gm_plot(stored_data: str | None, x_axis_selection: str) -> tuple[dict | go.F
         x_axis_selection: Selected x-axis type ('n_bgcs' or 'class_bgcs').
 
     Returns:
-        Tuple containing the plot figure, style, and a status message.
+        Tuple containing the plot figure, style for graph, and style for selector.
     """
     if stored_data is None:
-        return {}, {"display": "none"}
+        return {}, {"display": "none"}, {"display": "none"}
+
     data = json.loads(stored_data)
 
     if x_axis_selection == "n_bgcs":
@@ -515,7 +517,7 @@ def gm_plot(stored_data: str | None, x_axis_selection: str) -> tuple[dict | go.F
             ),
         )
 
-    return fig, {"display": "block"}
+    return fig, {"display": "block"}, {"display": "block"}
 
 
 # ------------------ Common Filter and Table Functions ------------------ #

@@ -577,9 +577,10 @@ def create_tab_content(prefix, filter_title, checkl_options, no_sort_columns):
                             ),
                             width=12,
                         )
-                    ]
+                    ],
+                    id="gm-graph-selector-container",
                 ),
-                dcc.Graph(id="gm-graph", style={"display": "none"}),
+                dcc.Graph(id="gm-graph"),
             ],
             className="mt-5 mb-3",
         )
