@@ -168,6 +168,21 @@ def create_results_table(table_id, no_sort_columns):
                     "selector": ".dash-filter input::placeholder",
                     "rule": "opacity: 0;",
                 },
+                # Show placeholder on hover for all columns
+                {
+                    "selector": ".dash-filter input:hover::placeholder",
+                    "rule": "opacity: 1 !important;",
+                },
+                # Hide the filter type indicators completely
+                {
+                    "selector": ".dash-filter--case",
+                    "rule": "display: none !important;",
+                },
+                # Adjust padding to fill the space where indicators were
+                {
+                    "selector": ".dash-filter",
+                    "rule": "padding-left: 0 !important;",
+                },
                 # Make the filter input take full width
                 {
                     "selector": ".dash-filter input",
