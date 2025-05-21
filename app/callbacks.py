@@ -408,13 +408,14 @@ def disable_tabs_and_reset_blocks(
 @app.callback(
     Output("gm-graph", "figure"),
     Output("gm-graph", "style"),
-    [Input("processed-data-store", "data")],
+    [Input("processed-data-store", "data"), Input("gm-graph-x-axis-selector", "value")],
 )
-def gm_plot(stored_data: str | None) -> tuple[dict | go.Figure, dict]:
+def gm_plot(stored_data: str | None, x_axis_selection: str) -> tuple[dict | go.Figure, dict]:
     """Create a bar plot based on the processed data.
 
     Args:
         stored_data: JSON string of processed data or None.
+        x_axis_selection: Selected x-axis type ('n_bgcs' or 'class_bgcs').
 
     Returns:
         Tuple containing the plot figure, style, and a status message.
@@ -422,35 +423,98 @@ def gm_plot(stored_data: str | None) -> tuple[dict | go.Figure, dict]:
     if stored_data is None:
         return {}, {"display": "none"}
     data = json.loads(stored_data)
-    n_bgcs = data["n_bgcs"]
 
-    x_values = sorted(map(int, n_bgcs.keys()))
-    y_values = [len(n_bgcs[str(x)]) for x in x_values]
-    hover_texts = [
-        f"GCF IDs: {', '.join(str(gcf_id) for gcf_id in n_bgcs[str(x)])}" for x in x_values
-    ]
-
-    # Adjust bar width based on number of data points
-    bar_width = 0.4 if len(x_values) <= 5 else None
-    # Create the bar plot
-    fig = go.Figure(
-        data=[
-            go.Bar(
-                x=x_values,
-                y=y_values,
-                text=hover_texts,
-                hoverinfo="text",
-                textposition="none",
-                width=bar_width,
-            )
+    if x_axis_selection == "n_bgcs":
+        n_bgcs = data["n_bgcs"]
+        x_values = sorted(map(int, n_bgcs.keys()))
+        y_values = [len(n_bgcs[str(x)]) for x in x_values]
+        hover_texts = [
+            f"GCF IDs: {', '.join(str(gcf_id) for gcf_id in n_bgcs[str(x)])}" for x in x_values
         ]
-    )
-    # Update layout
-    fig.update_layout(
-        xaxis_title="# BGCs",
-        yaxis_title="# GCFs",
-        xaxis=dict(type="category"),
-    )
+
+        # Adjust bar width based on number of data points
+        bar_width = 0.4 if len(x_values) <= 5 else None
+        # Create the bar plot
+        fig = go.Figure(
+            data=[
+                go.Bar(
+                    x=x_values,
+                    y=y_values,
+                    text=hover_texts,
+                    hoverinfo="text",
+                    textposition="none",
+                    width=bar_width,
+                )
+            ]
+        )
+        # Update layout
+        fig.update_layout(
+            xaxis_title="# BGCs",
+            yaxis_title="# GCFs",
+            xaxis=dict(type="category"),
+        )
+
+    else:  # x_axis_selection == "class_bgcs"
+        class_bgcs = data["class_bgcs"]
+
+        # Count unique GCF IDs for each class
+        class_gcf_counts = {}
+        for bgc_class, gcf_ids in class_bgcs.items():
+            # Count unique GCF IDs
+            class_gcf_counts[bgc_class] = len(set(gcf_ids))
+
+        # Sort classes by count for better visualization
+        sorted_classes = sorted(class_gcf_counts.items(), key=lambda x: x[1], reverse=True)
+        x_values = [item[0] for item in sorted_classes]
+        y_values = [item[1] for item in sorted_classes]
+
+        # Generate hover texts with line breaks for better readability
+        hover_texts = []
+        for bgc_class in x_values:
+            # Get unique GCF IDs for this class
+            unique_gcf_ids = sorted(list(set(class_bgcs[bgc_class])))
+
+            # Format GCF IDs with line breaks every 10 items
+            formatted_gcf_ids = ""
+            for i, gcf_id in enumerate(unique_gcf_ids):
+                formatted_gcf_ids += gcf_id
+                # Add comma if not the last item
+                if i < len(unique_gcf_ids) - 1:
+                    formatted_gcf_ids += ", "
+                # Add line break after every 10 items (but not for the last group)
+                if (i + 1) % 10 == 0 and i < len(unique_gcf_ids) - 1:
+                    formatted_gcf_ids += "<br>"
+
+            hover_text = f"Class: {bgc_class}<br>GCF IDs: {formatted_gcf_ids}"
+            hover_texts.append(hover_text)
+
+        # Adjust bar width based on number of data points
+        bar_width = 0.4 if len(x_values) <= 5 else None
+        # Create the bar plot
+        fig = go.Figure(
+            data=[
+                go.Bar(
+                    x=x_values,
+                    y=y_values,
+                    text=hover_texts,
+                    hoverinfo="text",
+                    textposition="none",
+                    width=bar_width,
+                )
+            ]
+        )
+
+        # Update layout
+        fig.update_layout(
+            xaxis_title="BGC Classes",
+            yaxis_title="# GCFs",
+            xaxis=dict(
+                type="category",
+                # Add more space for longer class names
+                tickangle=-45 if len(x_values) > 5 else 0,
+            ),
+        )
+
     return fig, {"display": "block"}
 
 

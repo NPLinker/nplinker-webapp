@@ -553,10 +553,40 @@ def create_tab_content(prefix, filter_title, checkl_options, no_sort_columns):
     # Add graph component only for GM tab
     components = []
     if prefix == "gm":
-        graph = dcc.Graph(id="gm-graph", className="mt-5 mb-3", style={"display": "none"})
+        # Add x-axis selector dropdown above the graph
+        graph_with_selector = html.Div(
+            [
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            html.Div(
+                                [
+                                    html.Label("Select X-axis: ", className="me-2"),
+                                    dcc.Dropdown(
+                                        id="gm-graph-x-axis-selector",
+                                        options=[
+                                            {"label": "# BGCs", "value": "n_bgcs"},
+                                            {"label": "BGC Classes", "value": "class_bgcs"},
+                                        ],
+                                        value="n_bgcs",  # Default value
+                                        clearable=False,
+                                        style={"width": "200px"},
+                                    ),
+                                ],
+                                className="d-flex align-items-center mb-3",
+                            ),
+                            width=12,
+                        )
+                    ]
+                ),
+                dcc.Graph(id="gm-graph", style={"display": "none"}),
+            ],
+            className="mt-5 mb-3",
+        )
+
         components = [
             dbc.Col(filter_accordion, width=10, className="mx-auto dbc"),
-            dbc.Col(graph, width=10, className="mx-auto"),
+            dbc.Col(graph_with_selector, width=10, className="mx-auto"),
             dbc.Col(data_table, width=10, className="mx-auto"),
             dbc.Col(scoring_accordion, width=10, className="mx-auto dbc"),
         ]
