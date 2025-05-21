@@ -1,6 +1,6 @@
 # NPLinker Web Application
 
-This is the [NPLinker](https://nplinker.github.io/nplinker/latest/) web application, developed with [Plotly Dash](https://dash.plotly.com/), which enables you to visualize NPLinker predictions in an interactive way.
+This is the [NPLinker](https://nplinker.github.io/nplinker/latest/) web application (webapp), developed with [Plotly Dash](https://dash.plotly.com/). It enables interactive visualization of NPLinker predictions and is designed to be run locally or in a containerized environment. [A lightweight online demo](https://nplinker-webapp.onrender.com) is available for quick exploration.
 
 <p align="center">
   <img src="app/assets/dash1.png" width="600" alt="Dashboard Screenshot 1">
@@ -20,7 +20,7 @@ For a deep understanding of NPLinker, please refer to the [original paper](https
 
 ## Prerequisites
 
-Before installing NPLinker Web Application, ensure you have:
+Before installing NPLinker webapp, ensure you have:
 
 - [Python 3.10](https://www.python.org/downloads/)
 - [Git](https://git-scm.com/downloads)
@@ -76,7 +76,7 @@ If you encounter other problems, please check the [Issues](https://github.com/NP
 
 ### Option 2: Docker Installation
 
-Using Docker is the quickest way to get started with NPLinker Web Application. Make sure you have [Docker](https://www.docker.com/) installed on your system before proceeding:
+Using Docker is the quickest way to get started with NPLinker webapp. Make sure you have [Docker](https://www.docker.com/) installed on your system before proceeding:
 
 1. **Pull the Docker image**
    ```bash
@@ -104,7 +104,7 @@ Using Docker is the quickest way to get started with NPLinker Web Application. M
 
 ## Online Demo
 
-A live demo of the NPLinker web application is automatically deployed to [Render](https://render.com/) and updated every time the `main` branch is updated.
+A live demo of the NPLinker webapp is automatically deployed to [Render](https://render.com/) and updated every time the `main` branch is updated.
 
 You can try out the dashboard directly in your browser here:
 
