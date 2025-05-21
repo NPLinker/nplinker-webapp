@@ -12,18 +12,6 @@ import dash_mantine_components as dmc
 import dash_uploader as du
 import pandas as pd
 import plotly.graph_objects as go
-from config import GM_FILTER_DROPDOWN_BGC_CLASS_OPTIONS_PRE_V4
-from config import GM_FILTER_DROPDOWN_BGC_CLASS_OPTIONS_V4
-from config import GM_FILTER_DROPDOWN_MENU_OPTIONS
-from config import GM_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS
-from config import GM_RESULTS_TABLE_MANDATORY_COLUMNS
-from config import GM_RESULTS_TABLE_OPTIONAL_COLUMNS
-from config import MAX_TOOLTIP_ROWS
-from config import MG_FILTER_DROPDOWN_MENU_OPTIONS
-from config import MG_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS
-from config import MG_RESULTS_TABLE_MANDATORY_COLUMNS
-from config import MG_RESULTS_TABLE_OPTIONAL_COLUMNS
-from config import SCORING_DROPDOWN_MENU_OPTIONS
 from dash import ALL
 from dash import MATCH
 from dash import Dash
@@ -34,6 +22,18 @@ from dash import callback_context as ctx
 from dash import clientside_callback
 from dash import dcc
 from dash import html
+from app.config import GM_FILTER_DROPDOWN_BGC_CLASS_OPTIONS_PRE_V4
+from app.config import GM_FILTER_DROPDOWN_BGC_CLASS_OPTIONS_V4
+from app.config import GM_FILTER_DROPDOWN_MENU_OPTIONS
+from app.config import GM_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS
+from app.config import GM_RESULTS_TABLE_MANDATORY_COLUMNS
+from app.config import GM_RESULTS_TABLE_OPTIONAL_COLUMNS
+from app.config import MAX_TOOLTIP_ROWS
+from app.config import MG_FILTER_DROPDOWN_MENU_OPTIONS
+from app.config import MG_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS
+from app.config import MG_RESULTS_TABLE_MANDATORY_COLUMNS
+from app.config import MG_RESULTS_TABLE_OPTIONAL_COLUMNS
+from app.config import SCORING_DROPDOWN_MENU_OPTIONS
 from nplinker.metabolomics.molecular_family import MolecularFamily
 from nplinker.metabolomics.spectrum import Spectrum
 
