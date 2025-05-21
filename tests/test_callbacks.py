@@ -193,9 +193,9 @@ def test_process_uploaded_data_structure():
 
     # Check that all gm_data lists have the same length
     gm_list_lengths = [len(processed_links["gm_data"][key]) for key in expected_gm_keys]
-    assert all(
-        length == gm_list_lengths[0] for length in gm_list_lengths
-    ), "GM link data lists have inconsistent lengths"
+    assert all(length == gm_list_lengths[0] for length in gm_list_lengths), (
+        "GM link data lists have inconsistent lengths"
+    )
 
     # Check spectrum structure in gm_data
     if gm_list_lengths[0] > 0:  # Only if there are any GM links
@@ -224,9 +224,9 @@ def test_process_uploaded_data_structure():
 
     # Check that all mg_data lists have the same length
     mg_list_lengths = [len(processed_links["mg_data"][key]) for key in expected_mg_keys]
-    assert all(
-        length == mg_list_lengths[0] for length in mg_list_lengths
-    ), "MG link data lists have inconsistent lengths"
+    assert all(length == mg_list_lengths[0] for length in mg_list_lengths), (
+        "MG link data lists have inconsistent lengths"
+    )
 
     # Check gcf structure in mg_data
     if mg_list_lengths[0] > 0:  # Only if there are any MG links
@@ -273,6 +273,7 @@ def test_disable_tabs(mock_uuid):
         [],
         [],
         default_gm_column_value,
+        "n_bgcs",
         # MG tab - disabled
         True,
         True,
@@ -312,6 +313,7 @@ def test_disable_tabs(mock_uuid):
         gm_filter_accordion_value,
         gm_scoring_accordion_value,
         gm_results_table_column_toggle,
+        gm_graph_dropdown,
         # MG tab outputs
         mg_tab_disabled,
         mg_filter_accordion_disabled,
@@ -348,6 +350,7 @@ def test_disable_tabs(mock_uuid):
     assert gm_filter_accordion_value == []
     assert gm_scoring_accordion_value == []
     assert gm_results_table_column_toggle == default_gm_column_value
+    assert gm_graph_dropdown == "n_bgcs"
 
     # Assert MG tab outputs
     assert mg_tab_disabled is False
