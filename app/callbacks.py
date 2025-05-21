@@ -128,7 +128,12 @@ def process_uploaded_data(
                 return ["Unknown"]
             return list(bgc_class)  # Convert tuple to list
 
-        processed_data: dict[str, Any] = {"n_bgcs": {}, "gcf_data": [], "mf_data": []}
+        processed_data: dict[str, Any] = {
+            "gcf_data": [],
+            "n_bgcs": {},
+            "class_bgcs": {},
+            "mf_data": [],
+        }
 
         for gcf in gcfs:
             sorted_bgcs = sorted(gcf.bgcs, key=lambda bgc: bgc.id)
@@ -148,6 +153,12 @@ def process_uploaded_data(
             if len(gcf.bgcs) not in processed_data["n_bgcs"]:
                 processed_data["n_bgcs"][len(gcf.bgcs)] = []
             processed_data["n_bgcs"][len(gcf.bgcs)].append(gcf.id)
+
+            for bgc_class_list in bgc_classes:
+                for bgc_class in bgc_class_list:
+                    if bgc_class not in processed_data["class_bgcs"]:
+                        processed_data["class_bgcs"][bgc_class] = []
+                    processed_data["class_bgcs"][bgc_class].append(gcf.id)
 
         for mf in mfs:
             sorted_spectra = sorted(mf.spectra, key=lambda spectrum: spectrum.id)
