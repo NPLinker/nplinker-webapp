@@ -277,7 +277,7 @@ def process_uploaded_data(
         Output("gm-filter-accordion-component", "value", allow_duplicate=True),
         Output("gm-scoring-accordion-component", "value", allow_duplicate=True),
         Output("gm-results-table-column-toggle", "value", allow_duplicate=True),
-        # MG tab outputs
+        Output("gm-graph-x-axis-selector", "value"),
         Output("mg-tab", "disabled"),
         Output("mg-filter-accordion-control", "disabled"),
         Output("mg-filter-blocks-id", "data", allow_duplicate=True),
@@ -337,6 +337,7 @@ def disable_tabs_and_reset_blocks(
             [],
             [],
             default_gm_column_value,
+            "n_bgcs",
             # MG tab - disabled
             True,
             True,
@@ -385,6 +386,7 @@ def disable_tabs_and_reset_blocks(
         [],
         [],
         default_gm_column_value,
+        "n_bgcs",
         # MG tab - enabled with initial blocks
         False,
         False,
