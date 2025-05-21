@@ -102,6 +102,25 @@ Using Docker is the quickest way to get started with NPLinker Web Application. M
 
 - **More Details**: For additional information about the Docker image, see its [GitHub Container Registry page](https://github.com/NPLinker/nplinker-webapp/pkgs/container/nplinker-webapp).
 
+## Online Demo
+
+A live demo of the NPLinker web application is automatically deployed to [Render](https://render.com/) and updated every time the `main` branch is updated.
+
+You can try out the dashboard directly in your browser here:
+
+👉 **[Live Demo](https://nplinker-webapp.onrender.com)**
+
+### ⚠️ Demo Limitations
+
+Please note the following limitations of the hosted demo:
+
+* **Cold Start Delay**: Free-tier apps on Render sleep after 15 minutes of inactivity and may take 20–30 seconds to wake up.
+* **Performance**: This is a minimal deployment on a free tier and is not optimized for large datasets or concurrent users.
+* **File Size Limits**: Use the small sample data provided in [`tests/data/mock_obj_data.pkl`](https://github.com/NPLinker/nplinker-webapp/blob/main/tests/data/mock_obj_data.pkl) for testing. Uploading large datasets may lead to errors or timeouts.
+* **No Persistent Storage**: Uploaded files are not saved between sessions.
+
+This hosted version is intended only for lightweight demo purposes. For full functionality, including large-scale data processing and persistent storage, please install the application locally or via Docker as described above.
+
 ## Using the Dashboard
 
 ### Input Data

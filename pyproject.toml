@@ -8,6 +8,7 @@ version = "1.0.4"
 description = "NPLinker Web Application"
 requires-python = ">=3.10"
 dependencies = [
+    "gunicorn",
     "nplinker==2.0.0a8",
     "dash>=2.18.0,<3.0.0",
     "dash-bootstrap-components>=1.7.1,<2.0.0",
