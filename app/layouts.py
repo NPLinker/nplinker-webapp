@@ -110,7 +110,7 @@ def create_results_table(table_id, no_sort_columns):
         },
         sort_action="native",
         virtualization=True,
-        fixed_rows={"headers": True},  # Keep headers visible when scrolling
+        fixed_rows={"headers": True},
         sort_mode="single",
         sort_as_null=["None", ""],
         sort_by=[],
@@ -163,10 +163,15 @@ def create_results_table(table_id, no_sort_columns):
                         box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
                     """,
                 },
-                # Hide placeholder in first column (make it consistent with others)
+                # Hide placeholder in all filter cells
                 {
                     "selector": ".dash-filter input::placeholder",
                     "rule": "opacity: 0;",
+                },
+                # Make the filter input take full width
+                {
+                    "selector": ".dash-filter input",
+                    "rule": "width: 100% !important;",
                 },
             ]
             + [
