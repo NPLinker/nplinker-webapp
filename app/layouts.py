@@ -104,7 +104,7 @@ def create_results_table(table_id, no_sort_columns):
         data=[],
         editable=False,
         filter_action="native",
-        filter_options={"placeholder_text": "filter data..."},
+        filter_options={"placeholder_text": " filter data..."},
         style_filter={
             "backgroundColor": "#f8f9fa",
         },
@@ -163,15 +163,13 @@ def create_results_table(table_id, no_sort_columns):
                         box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
                     """,
                 },
-                # Hide placeholder in all filter cells
                 {
                     "selector": ".dash-filter input::placeholder",
-                    "rule": "opacity: 0;",
+                    "rule": "opacity: 1 !important; text-align: left !important;",
                 },
-                # Show placeholder on hover for all columns
                 {
-                    "selector": ".dash-filter input:hover::placeholder",
-                    "rule": "opacity: 1 !important;",
+                    "selector": ".dash-filter input",
+                    "rule": "text-align: left !important; width: 100% !important;",
                 },
                 # Hide the filter type indicators completely
                 {
@@ -182,11 +180,6 @@ def create_results_table(table_id, no_sort_columns):
                 {
                     "selector": ".dash-filter",
                     "rule": "padding-left: 0 !important;",
-                },
-                # Make the filter input take full width
-                {
-                    "selector": ".dash-filter input",
-                    "rule": "width: 100% !important;",
                 },
             ]
             + [
