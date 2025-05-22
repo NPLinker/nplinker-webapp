@@ -1,28 +1,15 @@
 # NPLinker Web Application
 
+👉 **[Webapp Live Demo](https://nplinker-webapp.onrender.com)**
+
 This is the [NPLinker](https://nplinker.github.io/nplinker/latest/) web application (webapp), developed with [Plotly Dash](https://dash.plotly.com/), which enables you to visualize NPLinker predictions in an interactive way.
 
-<p align="center">
-  <img src="app/assets/dash1.png" width="600" alt="Webapp Screenshot 1">
-</p>
-
-<p align="center">
-  <img src="app/assets/dash2.png" width="600" alt="Webapp Screenshot 2">
-</p>
-
-<p align="center">
-  <img src="app/assets/dash3.png" width="600" alt="Webapp Screenshot 3">
-</p>
-
-NPLinker is a Python framework for data mining microbial natural products by integrating genomics and metabolomics data.
-
-For a deep understanding of NPLinker, please refer to the [original paper](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1008920).
+NPLinker is a Python framework for data mining microbial natural products by integrating genomics and metabolomics data. For a deep understanding of NPLinker, please refer to the [original paper](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1008920).
 
 ## Online Demo
 
 A live demo of the NPLinker webapp is automatically deployed to [Render](https://render.com/) and updated every time the `main` branch is updated.
-You can try out the webapp directly in your browser here:
-👉 **[Live Demo](https://nplinker-webapp.onrender.com)**
+You can try out the webapp directly in your browser [here](https://nplinker-webapp.onrender.com).
 
 ### Getting Started with Demo Data
 
@@ -32,14 +19,17 @@ The webapp includes a convenient **"Load Demo Data"** button that automatically 
 3. The app will automatically download and process the sample dataset from [`tests/data/mock_obj_data.pkl`](https://github.com/NPLinker/nplinker-webapp/blob/main/tests/data/mock_obj_data.pkl)
 4. Start exploring the genomics-metabolomics linking features!
 
-### ⚠️ Demo Limitations
+This hosted version is intended only for lightweight demo purposes. For full functionality, including large-scale data processing and persistent storage, please install the application locally or via Docker as described below.
+
+<details>
+<summary>⚠️ Demo Limitations</summary>
 Please note the following limitations of the hosted demo:
+
 * **Cold start delay**: Free-tier apps on Render sleep after 15 minutes of inactivity and may take 20–30 seconds to wake up.
 * **Performance**: This is a minimal deployment on a free tier and is not optimized for large datasets or concurrent users.
 * **File size limits**: The demo data button loads a small sample dataset suitable for testing. Uploading large datasets via the file uploader may lead to errors or timeouts.
 * **No persistent storage**: Uploaded files are not saved between sessions.
-
-This hosted version is intended only for lightweight demo purposes. For full functionality, including large-scale data processing and persistent storage, please install the application locally or via Docker as described above.
+</details>
 
 ## Using the webapp
 
