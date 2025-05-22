@@ -1585,7 +1585,7 @@ def scoring_create_initial_block(block_id: str, tab_prefix: str = "gm") -> dmc.G
                         },
                         label="Cutoff",
                         placeholder="Insert cutoff value as a number",
-                        value="0.05",
+                        value="0",
                         className="custom-textinput",
                     )
                 ],
@@ -1705,7 +1705,7 @@ def scoring_display_blocks(
                             },
                             label="Cutoff",
                             placeholder="Insert cutoff value as a number",
-                            value="0.05",
+                            value="0",
                             className="custom-textinput",
                         ),
                     ],
@@ -1747,7 +1747,7 @@ def scoring_update_placeholder(
         # Callback was not triggered by user interaction, don't change anything
         raise dash.exceptions.PreventUpdate
     if selected_value == "METCALF":
-        return ({"display": "block"}, "Cutoff", "0.05")
+        return ({"display": "block"}, "Cutoff", "0")
     else:
         # This case should never occur due to the Literal type, but it satisfies mypy
         return ({"display": "none"}, "", "")
