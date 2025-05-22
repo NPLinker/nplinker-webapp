@@ -304,6 +304,7 @@ def test_disable_tabs(mock_uuid):
         [],
         [],
         default_gm_column_value,
+        "n_bgcs",
         # MG tab - disabled
         True,
         True,
@@ -343,6 +344,7 @@ def test_disable_tabs(mock_uuid):
         gm_filter_accordion_value,
         gm_scoring_accordion_value,
         gm_results_table_column_toggle,
+        gm_graph_dropdown,
         # MG tab outputs
         mg_tab_disabled,
         mg_filter_accordion_disabled,
@@ -379,6 +381,7 @@ def test_disable_tabs(mock_uuid):
     assert gm_filter_accordion_value == []
     assert gm_scoring_accordion_value == []
     assert gm_results_table_column_toggle == default_gm_column_value
+    assert gm_graph_dropdown == "n_bgcs"
 
     # Assert MG tab outputs
     assert mg_tab_disabled is False
