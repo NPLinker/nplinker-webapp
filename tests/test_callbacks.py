@@ -125,7 +125,7 @@ def test_load_demo_data():
     # If successful, should contain success message and valid file path
     if file_path is not None:
         assert "Successfully loaded demo data" in message
-        assert file_path.endswith("demo_data.pkl")
+        assert "demo_data_" in file_path
         # Verify the file actually exists and is valid
         with open(file_path, "rb") as f:
             data = pickle.load(f)

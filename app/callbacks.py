@@ -125,7 +125,7 @@ def load_demo_data(n_clicks):
         response.raise_for_status()
 
         # Save to temporary file
-        demo_file_path = os.path.join(TEMP_DIR, "demo_data.pkl")
+        demo_file_path = os.path.join(TEMP_DIR, f"demo_data_{uuid.uuid4()}.pkl")
         with open(demo_file_path, "wb") as f:
             f.write(response.content)
 
