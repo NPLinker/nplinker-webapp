@@ -31,7 +31,6 @@ from dash import Input
 from dash import Output
 from dash import State
 from dash import callback_context as ctx
-from dash import clientside_callback
 from dash import dcc
 from dash import html
 from nplinker.metabolomics.molecular_family import MolecularFamily
@@ -46,17 +45,6 @@ app = Dash(__name__, external_stylesheets=[dbc.themes.UNITED, dbc_css, dbc.icons
 # Configure the upload folder
 TEMP_DIR = tempfile.mkdtemp()
 du.configure_upload(app, TEMP_DIR)
-
-clientside_callback(
-    """
-    (switchOn) => {
-    document.documentElement.setAttribute('data-bs-theme', switchOn ? 'light' : 'dark');
-    return window.dash_clientside.no_update
-    }
-    """,
-    Output("color-mode-switch", "id"),
-    Input("color-mode-switch", "value"),
-)
 
 
 # ------------------ Upload and Process Data ------------------ #

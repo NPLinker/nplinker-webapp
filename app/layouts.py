@@ -575,19 +575,6 @@ def create_tab_content(prefix, filter_title, checkl_options, no_sort_columns):
 
 
 # ------------------ Nav Bar ------------------ #
-color_mode_switch = html.Span(
-    [
-        dbc.Label(className="fa fa-moon", html_for="color-mode-switch"),
-        dbc.Switch(
-            id="color-mode-switch",
-            value=False,
-            className="d-inline-block ms-1",
-            persistence=True,
-        ),
-        dbc.Label(className="fa fa-sun", html_for="color-mode-switch"),
-    ],
-    className="p-2",
-)
 navbar = dbc.Row(
     dbc.Col(
         dbc.NavbarSimple(
@@ -595,10 +582,6 @@ navbar = dbc.Row(
                 dbc.NavItem(dbc.NavLink("Doc", href="https://nplinker.github.io/nplinker/latest/")),
                 dbc.NavItem(
                     dbc.NavLink("About", href="https://github.com/NPLinker/nplinker-webapp"),
-                ),
-                dbc.NavItem(
-                    color_mode_switch,
-                    className="mt-1 p-1",
                 ),
             ],
             brand="NPLinker Webapp",
