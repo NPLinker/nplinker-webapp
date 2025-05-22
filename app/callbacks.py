@@ -145,12 +145,13 @@ def load_demo_data(n_clicks):
     prevent_initial_call=True,
 )
 def process_uploaded_data(
-    file_path: Path | str | None,
+    file_path: Path | str | None, cleanup: bool = True
 ) -> tuple[str | None, str | None, str | None]:
     """Process the uploaded pickle file and store the processed data.
 
     Args:
         file_path: Path to the uploaded pickle file.
+        cleanup: Flag to indicate whether to clean up the file after processing.
 
     Returns:
         JSON string of processed data or None if processing fails.
@@ -299,6 +300,12 @@ def process_uploaded_data(
     except Exception as e:
         print(f"Error processing file: {str(e)}")
         return None, None, None
+    finally:
+        try:
+            if cleanup and file_path and os.path.exists(file_path):
+                os.remove(file_path)
+        except Exception as e:
+            print(f"Cleanup failed for {file_path}: {e}")
 
 
 @app.callback(
