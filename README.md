@@ -122,7 +122,6 @@ For numeric columns like "Average Score" or "# Links":
 For text columns like "BGC Classes" or "MiBIG IDs":
 - `Polyketide` or `contains Polyketide` (contains text)
 - `= Polyketide` (exact match)
-- `starts with Poly` (starts with text)
 
 Multiple filters can be applied simultaneously across different columns to narrow down results.
 
