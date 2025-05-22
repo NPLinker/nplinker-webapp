@@ -632,6 +632,21 @@ uploader = html.Div(
                 className="d-flex justify-content-center",
             )
         ),
+        # Demo data button
+        dbc.Row(
+            dbc.Col(
+                html.Div(
+                    dbc.Button(
+                        "Load Demo Data",
+                        id="demo-data-button",
+                        color="primary",
+                        className="mt-3",
+                    ),
+                    className="d-flex justify-content-center",
+                ),
+                className="d-flex justify-content-center",
+            )
+        ),
         dcc.Store(id="file-store"),  # Store to keep the file contents
         dcc.Store(id="processed-data-store"),  # Store to keep the processed data
         dcc.Store(id="processed-links-store"),  # Store to keep the processed links

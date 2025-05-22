@@ -12,6 +12,7 @@ import dash_mantine_components as dmc
 import dash_uploader as du
 import pandas as pd
 import plotly.graph_objects as go
+import requests
 from config import GM_FILTER_DROPDOWN_BGC_CLASS_OPTIONS_PRE_V4
 from config import GM_FILTER_DROPDOWN_BGC_CLASS_OPTIONS_V4
 from config import GM_FILTER_DROPDOWN_MENU_OPTIONS
@@ -46,6 +47,10 @@ app = Dash(__name__, external_stylesheets=[dbc.themes.UNITED, dbc_css, dbc.icons
 # Configure the upload folder
 TEMP_DIR = tempfile.mkdtemp()
 du.configure_upload(app, TEMP_DIR)
+
+DEMO_DATA_URL = (
+    "https://github.com/NPLinker/nplinker-webapp/blob/main/tests/data/mock_obj_data.pkl?raw=true"
+)
 
 clientside_callback(
     """
@@ -93,6 +98,55 @@ def upload_data(status: du.UploadStatus) -> tuple[str, str | None, None]:
             # Handle any other unexpected errors
             return f"Error uploading file: {str(e)}", None, None
     return "No file uploaded", None, None
+
+
+@app.callback(
+    Output("dash-uploader-output", "children", allow_duplicate=True),
+    Output("file-store", "data", allow_duplicate=True),
+    Output("loading-spinner-container", "children", allow_duplicate=True),
+    Input("demo-data-button", "n_clicks"),
+    prevent_initial_call=True,
+)
+def load_demo_data(n_clicks):
+    """Load demo data from GitHub repository.
+
+    Args:
+        n_clicks: Number of times the demo data button has been clicked.
+
+    Returns:
+        A tuple containing a message string and the file path (if successful).
+    """
+    if n_clicks is None:
+        raise dash.exceptions.PreventUpdate
+
+    try:
+        # Download the demo data
+        response = requests.get(DEMO_DATA_URL, timeout=30)
+        response.raise_for_status()
+
+        # Save to temporary file
+        demo_file_path = os.path.join(TEMP_DIR, "demo_data.pkl")
+        with open(demo_file_path, "wb") as f:
+            f.write(response.content)
+
+        # Validate the pickle file
+        with open(demo_file_path, "rb") as f:
+            pickle.load(f)
+
+        file_size_mb = len(response.content) / (1024 * 1024)
+
+        return (
+            f"Successfully loaded demo data: demo_data.pkl [{round(file_size_mb, 2)} MB]",
+            str(demo_file_path),
+            None,
+        )
+
+    except requests.exceptions.RequestException as e:
+        return f"Error downloading demo data: Network error - {str(e)}", None, None
+    except (pickle.UnpicklingError, EOFError, AttributeError):
+        return "Error: Downloaded file is not a valid pickle file.", None, None
+    except Exception as e:
+        return f"Error loading demo data: {str(e)}", None, None
 
 
 @app.callback(
