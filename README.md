@@ -112,7 +112,7 @@ Please note that links between genomic and metabolomic data must currently be co
 
 ### Filtering Table Data
 
-The "Candidate Links" tables support data filtering to help you focus on relevant results. Hover over any column's filter cell and type your filter criteria.
+The "Candidate Links" tables support data filtering to help you focus on relevant results. You can enter filter criteria directly into each column’s filter cell by hovering over the cell.
 
 For numeric columns like "Average Score" or "# Links":
 - `34.6` or `= 34.6` (exact match)
@@ -124,6 +124,8 @@ For text columns like "BGC Classes" or "MiBIG IDs":
 - `= Polyketide` (exact match)
 
 Multiple filters can be applied simultaneously across different columns to narrow down results.
+
+For a full list of supported filter operators, see the [official Plotly documentation](https://dash.plotly.com/datatable/filtering#filtering-operators).
 
 ## Contributing
 
