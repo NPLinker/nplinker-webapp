@@ -1,4 +1,5 @@
 import json
+import pickle
 import uuid
 from pathlib import Path
 from unittest.mock import patch
@@ -15,6 +16,7 @@ from app.callbacks import gm_table_select_rows
 from app.callbacks import gm_table_toggle_selection
 from app.callbacks import gm_table_update_datatable
 from app.callbacks import gm_toggle_download_button
+from app.callbacks import load_demo_data
 from app.callbacks import mg_filter_add_block
 from app.callbacks import mg_filter_apply
 from app.callbacks import mg_generate_excel
@@ -102,6 +104,35 @@ def test_upload_data():
     # Check the result
     assert upload_string == f"Successfully uploaded: {MOCK_FILE_PATH.name} [5.39 MB]"
     assert path_string == str(MOCK_FILE_PATH)
+
+
+def test_load_demo_data():
+    """Test the load_demo_data callback function."""
+
+    # Test with no clicks - should prevent update
+    with pytest.raises(dash.exceptions.PreventUpdate):
+        load_demo_data(None)
+
+    # Test with actual click - should load demo data
+    result = load_demo_data(1)
+    message, file_path, spinner = result
+
+    # Check that the function returns expected format
+    assert isinstance(message, str)
+    assert isinstance(file_path, (str, type(None)))
+    assert spinner is None
+
+    # If successful, should contain success message and valid file path
+    if file_path is not None:
+        assert "Successfully loaded demo data" in message
+        assert file_path.endswith("demo_data.pkl")
+        # Verify the file actually exists and is valid
+        with open(file_path, "rb") as f:
+            data = pickle.load(f)
+        assert data is not None
+    else:
+        # If failed, should contain error message
+        assert "Error" in message
 
 
 @pytest.mark.parametrize("input_path", [None, Path("non_existent_file.pkl")])
@@ -193,9 +224,9 @@ def test_process_uploaded_data_structure():
 
     # Check that all gm_data lists have the same length
     gm_list_lengths = [len(processed_links["gm_data"][key]) for key in expected_gm_keys]
-    assert all(
-        length == gm_list_lengths[0] for length in gm_list_lengths
-    ), "GM link data lists have inconsistent lengths"
+    assert all(length == gm_list_lengths[0] for length in gm_list_lengths), (
+        "GM link data lists have inconsistent lengths"
+    )
 
     # Check spectrum structure in gm_data
     if gm_list_lengths[0] > 0:  # Only if there are any GM links
@@ -224,9 +255,9 @@ def test_process_uploaded_data_structure():
 
     # Check that all mg_data lists have the same length
     mg_list_lengths = [len(processed_links["mg_data"][key]) for key in expected_mg_keys]
-    assert all(
-        length == mg_list_lengths[0] for length in mg_list_lengths
-    ), "MG link data lists have inconsistent lengths"
+    assert all(length == mg_list_lengths[0] for length in mg_list_lengths), (
+        "MG link data lists have inconsistent lengths"
+    )
 
     # Check gcf structure in mg_data
     if mg_list_lengths[0] > 0:  # Only if there are any MG links
