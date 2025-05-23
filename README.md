@@ -13,7 +13,7 @@ You can try out the webapp directly in your browser [here](https://nplinker-weba
 
 ### Getting Started with Demo Data
 
-The webapp includes a convenient **"Load Demo Data"** button that automatically downloads and loads sample data for testing. Simply:
+The webapp includes a convenient **"Load Demo Data"** button that automatically loads some sample data for you to try. Simply:
 1. Open the live demo link above
 2. Click the **"Load Demo Data"** button below the file uploader
 3. The app will automatically download and process the sample dataset from [`tests/data/mock_obj_data.pkl`](https://github.com/NPLinker/nplinker-webapp/blob/main/tests/data/mock_obj_data.pkl)
