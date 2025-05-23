@@ -125,6 +125,23 @@ Using Docker is the quickest way to get started with NPLinker webapp. Make sure 
 
 </details>
 
+### Filtering Table Data
+
+The "Candidate Links" tables support data filtering to help you focus on relevant results. You can enter filter criteria directly into each column’s filter cell by hovering over the cell.
+
+For numeric columns like "Average Score" or "# Links":
+- `34.6` or `= 34.6` (exact match)
+- `> 30` (greater than)
+- `<= 50` (less than or equal to)
+
+For text columns like "BGC Classes" or "MiBIG IDs":
+- `Polyketide` or `contains Polyketide` (contains text)
+- `= Polyketide` (exact match)
+
+Multiple filters can be applied simultaneously across different columns to narrow down results.
+
+For a full list of supported filter operators, see the [official Plotly documentation](https://dash.plotly.com/datatable/filtering#filtering-operators).
+
 ## Contributing
 
 If you want to contribute to the development of NPLinker, have a look at the [contribution guidelines](CONTRIBUTING.md) and [README for developers](README.dev.md).

@@ -103,10 +103,14 @@ def create_results_table(table_id, no_sort_columns):
         columns=[],
         data=[],
         editable=False,
-        filter_action="none",
+        filter_action="native",
+        filter_options={"placeholder_text": " filter data..."},
+        style_filter={
+            "backgroundColor": "#f8f9fa",
+        },
         sort_action="native",
         virtualization=True,
-        fixed_rows={"headers": True},  # Keep headers visible when scrolling
+        fixed_rows={"headers": True},
         sort_mode="single",
         sort_as_null=["None", ""],
         sort_by=[],
@@ -158,7 +162,25 @@ def create_results_table(table_id, no_sort_columns):
                         border: 1px solid #FF6E42;
                         box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
                     """,
-                }
+                },
+                {
+                    "selector": ".dash-filter input::placeholder",
+                    "rule": "opacity: 1 !important; text-align: left !important;",
+                },
+                {
+                    "selector": ".dash-filter input",
+                    "rule": "text-align: left !important; width: 100% !important;",
+                },
+                # Hide the filter type indicators completely
+                {
+                    "selector": ".dash-filter--case",
+                    "rule": "display: none !important;",
+                },
+                # Adjust padding to fill the space where indicators were
+                {
+                    "selector": ".dash-filter",
+                    "rule": "padding-left: 0 !important;",
+                },
             ]
             + [
                 {
