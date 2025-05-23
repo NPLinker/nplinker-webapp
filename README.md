@@ -43,7 +43,7 @@ Please note that links between genomic and metabolomic data must currently be co
 
 Before installing NPLinker webapp, ensure you have:
 
-- [Python 3.10](https://www.python.org/downloads/)
+- [Python ≥3.10](https://www.python.org/downloads/)
 - [Git](https://git-scm.com/downloads)
 
 You can install and run the NPLinker webapp in two ways: directly on your local machine or using Docker.
