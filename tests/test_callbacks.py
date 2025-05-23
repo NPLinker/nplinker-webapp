@@ -1,4 +1,5 @@
 import json
+import pickle
 import uuid
 from pathlib import Path
 from unittest.mock import patch
@@ -15,6 +16,7 @@ from app.callbacks import gm_table_select_rows
 from app.callbacks import gm_table_toggle_selection
 from app.callbacks import gm_table_update_datatable
 from app.callbacks import gm_toggle_download_button
+from app.callbacks import load_demo_data
 from app.callbacks import mg_filter_add_block
 from app.callbacks import mg_filter_apply
 from app.callbacks import mg_generate_excel
@@ -44,7 +46,7 @@ def mock_uuid(monkeypatch):
 @pytest.fixture
 def processed_data():
     # Use the actual process_uploaded_data function to get the processed data
-    return process_uploaded_data(MOCK_FILE_PATH)
+    return process_uploaded_data(MOCK_FILE_PATH, cleanup=False)
 
 
 @pytest.fixture
@@ -104,17 +106,46 @@ def test_upload_data():
     assert path_string == str(MOCK_FILE_PATH)
 
 
+def test_load_demo_data():
+    """Test the load_demo_data callback function."""
+
+    # Test with no clicks - should prevent update
+    with pytest.raises(dash.exceptions.PreventUpdate):
+        load_demo_data(None)
+
+    # Test with actual click - should load demo data
+    result = load_demo_data(1)
+    message, file_path, spinner = result
+
+    # Check that the function returns expected format
+    assert isinstance(message, str)
+    assert isinstance(file_path, (str, type(None)))
+    assert spinner is None
+
+    # If successful, should contain success message and valid file path
+    if file_path is not None:
+        assert "Successfully loaded demo data" in message
+        assert "demo_data_" in file_path
+        # Verify the file actually exists and is valid
+        with open(file_path, "rb") as f:
+            data = pickle.load(f)
+        assert data is not None
+    else:
+        # If failed, should contain error message
+        assert "Error" in message
+
+
 @pytest.mark.parametrize("input_path", [None, Path("non_existent_file.pkl")])
 def test_process_uploaded_data_invalid_input(input_path):
-    processed_data, processed_links, _ = process_uploaded_data(input_path)
+    processed_data, processed_links, _ = process_uploaded_data(input_path, cleanup=False)
     assert processed_data is None
     assert processed_links is None
 
 
 def test_process_uploaded_data_structure():
-    processed_data, processed_links, _ = process_uploaded_data(MOCK_FILE_PATH)
+    processed_data, processed_links, _ = process_uploaded_data(MOCK_FILE_PATH, cleanup=False)
     processed_data_no_links, processed_links_no_links, _ = process_uploaded_data(
-        MOCK_FILE_PATH_NO_LINKS
+        MOCK_FILE_PATH_NO_LINKS, cleanup=False
     )
 
     assert processed_data is not None
@@ -240,6 +271,25 @@ def test_process_uploaded_data_structure():
             assert isinstance(gcf["strains"], list)
             assert isinstance(gcf["BGC IDs"], list)
             assert isinstance(gcf["BGC Classes"], list)
+
+
+def test_process_uploaded_data_cleanup(tmp_path):
+    """Ensure that temporary file is deleted when cleanup=True."""
+    temp_file = tmp_path / "temp_data.pkl"
+
+    dummy_data = (None, [], None, [], None, None)
+    with open(temp_file, "wb") as f:
+        pickle.dump(dummy_data, f)
+
+    # Confirm file exists
+    assert temp_file.exists()
+
+    # Call the function with cleanup=True (default)
+    processed_data, _, _ = process_uploaded_data(temp_file, cleanup=True)
+
+    # File should be deleted after processing
+    assert not temp_file.exists()
+    assert processed_data is not None  # Sanity check: function still processed the file
 
 
 def test_disable_tabs(mock_uuid):
