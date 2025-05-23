@@ -1,5 +1,7 @@
 # NPLinker Web Application
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6875502.svg)](https://doi.org/10.5281/zenodo.6875502)
+
 👉 **[Webapp Live Demo](https://nplinker-webapp.onrender.com)**
 
 This is the [NPLinker](https://nplinker.github.io/nplinker/latest/) web application (webapp), developed with [Plotly Dash](https://dash.plotly.com/), which enables you to visualize NPLinker predictions in an interactive way.
