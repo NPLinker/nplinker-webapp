@@ -13,18 +13,6 @@ import dash_uploader as du
 import pandas as pd
 import plotly.graph_objects as go
 import requests
-from config import GM_FILTER_DROPDOWN_BGC_CLASS_OPTIONS_PRE_V4
-from config import GM_FILTER_DROPDOWN_BGC_CLASS_OPTIONS_V4
-from config import GM_FILTER_DROPDOWN_MENU_OPTIONS
-from config import GM_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS
-from config import GM_RESULTS_TABLE_MANDATORY_COLUMNS
-from config import GM_RESULTS_TABLE_OPTIONAL_COLUMNS
-from config import MAX_TOOLTIP_ROWS
-from config import MG_FILTER_DROPDOWN_MENU_OPTIONS
-from config import MG_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS
-from config import MG_RESULTS_TABLE_MANDATORY_COLUMNS
-from config import MG_RESULTS_TABLE_OPTIONAL_COLUMNS
-from config import SCORING_DROPDOWN_MENU_OPTIONS
 from dash import ALL
 from dash import MATCH
 from dash import Dash
