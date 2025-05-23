@@ -8,7 +8,7 @@ NPLinker is a Python framework for data mining microbial natural products by int
 
 ## Online Demo
 
-A live demo of the NPLinker webapp is automatically deployed to [Render](https://render.com/) and updated every time the `main` branch is updated.
+A live demo of the NPLinker webapp is automatically deployed to [Render](https://render.com/) from `main` branch.
 You can try out the webapp directly in your browser [here](https://nplinker-webapp.onrender.com).
 
 ### Getting Started with Demo Data
