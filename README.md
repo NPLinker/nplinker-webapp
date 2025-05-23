@@ -82,14 +82,17 @@ Follow these steps to install the application directly on your system:
    
    Open your web browser and navigate to `http://0.0.0.0:8050/`
 
-#### Troubleshooting Local Installation
+<details>
+<summary>Troubleshooting Local Installation</summary>
 
-Common issues and solutions:
+#### Common issues and solutions
 
 - **Port already in use**: If port 8050 is already in use, modify the port in `app/main.py` by changing `app.run_server(debug=True, port=8050)`
 - **Package installation errors**: Make sure you're using Python 3.10 and that your pip is up-to-date
 
 If you encounter other problems, please check the [Issues](https://github.com/NPLinker/nplinker-webapp/issues) page or create a new issue.
+
+</details>
 
 ### Option 2: Docker Installation
 
@@ -109,7 +112,8 @@ Using Docker is the quickest way to get started with NPLinker webapp. Make sure 
    
    Open your web browser and navigate to `http://0.0.0.0:8050/`
 
-#### Docker Image Information
+<details>
+<summary>Docker Image Information</summary>
 
 - **Available Tags**:
   - `latest`: The most recent build
@@ -118,6 +122,8 @@ Using Docker is the quickest way to get started with NPLinker webapp. Make sure 
 - **Performance Note**: The application running in Docker might be slower than running it directly on your machine, depending on your Docker resource allocation settings. If you experience performance issues, consider increasing Docker's CPU and memory limits in your Docker Desktop settings, or use the local installation method.
 
 - **More Details**: For additional information about the Docker image, see its [GitHub Container Registry page](https://github.com/NPLinker/nplinker-webapp/pkgs/container/nplinker-webapp).
+
+</details>
 
 ## Contributing
 
