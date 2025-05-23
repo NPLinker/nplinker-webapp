@@ -34,6 +34,18 @@ from dash import State
 from dash import callback_context as ctx
 from dash import dcc
 from dash import html
+from app.config import GM_FILTER_DROPDOWN_BGC_CLASS_OPTIONS_PRE_V4
+from app.config import GM_FILTER_DROPDOWN_BGC_CLASS_OPTIONS_V4
+from app.config import GM_FILTER_DROPDOWN_MENU_OPTIONS
+from app.config import GM_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS
+from app.config import GM_RESULTS_TABLE_MANDATORY_COLUMNS
+from app.config import GM_RESULTS_TABLE_OPTIONAL_COLUMNS
+from app.config import MAX_TOOLTIP_ROWS
+from app.config import MG_FILTER_DROPDOWN_MENU_OPTIONS
+from app.config import MG_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS
+from app.config import MG_RESULTS_TABLE_MANDATORY_COLUMNS
+from app.config import MG_RESULTS_TABLE_OPTIONAL_COLUMNS
+from app.config import SCORING_DROPDOWN_MENU_OPTIONS
 from nplinker.metabolomics.molecular_family import MolecularFamily
 from nplinker.metabolomics.spectrum import Spectrum
 
@@ -1278,10 +1290,8 @@ def gm_table_select_rows(
     if selected_rows is None:
         selected_rows = []
 
-    selected_rows_data = df.iloc[selected_rows]
-
     output1 = f"Total rows: {len(df)}"
-    output2 = f"Selected rows: {len(selected_rows)}\nSelected GCF IDs: {', '.join(selected_rows_data['GCF ID'].astype(str))}"
+    output2 = f"Selected rows: {len(selected_rows)}\n"
 
     return output1, output2
 
@@ -1517,10 +1527,8 @@ def mg_table_select_rows(
     if selected_rows is None:
         selected_rows = []
 
-    selected_rows_data = df.iloc[selected_rows]
-
     output1 = f"Total rows: {len(df)}"
-    output2 = f"Selected rows: {len(selected_rows)}\nSelected MF IDs: {', '.join(selected_rows_data['MF ID'].astype(str))}"
+    output2 = f"Selected rows: {len(selected_rows)}\n"
 
     return output1, output2
 

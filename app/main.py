@@ -1,8 +1,9 @@
-from callbacks import app
-from layouts import create_layout
+from app import app
+from app import create_layout
 
 
 app.layout = create_layout()
+server = app.server
 
 if __name__ == "__main__":
-    app.run_server(debug=True, host="0.0.0.0")
+    app.run_server(debug=False, host="0.0.0.0")

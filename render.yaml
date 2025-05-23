@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: nplinker-webapp
+    runtime: python
+    buildCommand: pip install .
+    startCommand: gunicorn app.main:server
+    autoDeploy: true

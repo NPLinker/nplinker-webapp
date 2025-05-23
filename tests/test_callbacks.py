@@ -617,7 +617,7 @@ def test_gm_table_select_rows(sample_processed_data):
 
     output1, output2 = gm_table_select_rows(rows, selected_rows)
     assert output1 == f"Total rows: {len(rows)}"
-    assert output2.startswith(f"Selected rows: {len(selected_rows)}\nSelected GCF IDs: ")
+    assert output2.startswith(f"Selected rows: {len(selected_rows)}\n")
 
     # Test with no rows
     output1, output2 = gm_table_select_rows([], None)
@@ -787,7 +787,7 @@ def test_mg_table_select_rows(sample_processed_data):
 
     output1, output2 = mg_table_select_rows(rows, selected_rows)
     assert output1 == f"Total rows: {len(rows)}"
-    assert output2.startswith(f"Selected rows: {len(selected_rows)}\nSelected MF IDs: ")
+    assert output2.startswith(f"Selected rows: {len(selected_rows)}\n")
 
     # Test with no rows
     output1, output2 = mg_table_select_rows([], None)

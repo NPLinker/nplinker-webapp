@@ -2,12 +2,12 @@ import uuid
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
 import dash_uploader as du
-from config import GM_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS
-from config import MG_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS
-from config import MIBIG_VERSIONS
 from dash import dash_table
 from dash import dcc
 from dash import html
+from app.config import GM_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS
+from app.config import MG_RESULTS_TABLE_CHECKL_OPTIONAL_COLUMNS
+from app.config import MIBIG_VERSIONS
 
 
 # ------------------ Helper Functions ------------------ #
