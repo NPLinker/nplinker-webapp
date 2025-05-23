@@ -17,7 +17,7 @@ The webapp includes a convenient **"Load Demo Data"** button that automatically 
 1. Open the [live demo link](https://nplinker-webapp.onrender.com/)
 2. Click the **"Load Demo Data"** button below the file uploader
 3. The app will automatically download and process the sample dataset from [`tests/data/mock_obj_data.pkl`](https://github.com/NPLinker/nplinker-webapp/blob/main/tests/data/mock_obj_data.pkl)
-4. Start exploring the genomics-metabolomics linking features!
+4. Start exploring natural product linking features!
 
 This demo web server is intended only for lightweight demo purposes. For full functionality, including large-scale data processing and persistent storage, please install the application locally or via Docker as described below.
 
