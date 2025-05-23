@@ -22,7 +22,7 @@ The webapp includes a convenient **"Load Demo Data"** button that automatically 
 This demo web server is intended only for lightweight demo purposes. For full functionality, including large-scale data processing and persistent storage, please install the application locally or via Docker as described below.
 
 <details>
-<summary>⚠️ Demo Limitations</summary>
+<summary>⚠️ Demo Server Limitations</summary>
 Please note the following limitations of the hosted demo:
 
 * **Cold start delay**: Free-tier apps on Render sleep after 15 minutes of inactivity and may take 20–30 seconds to wake up.
