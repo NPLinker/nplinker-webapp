@@ -103,10 +103,14 @@ def create_results_table(table_id, no_sort_columns):
         columns=[],
         data=[],
         editable=False,
-        filter_action="none",
+        filter_action="native",
+        filter_options={"placeholder_text": " filter data..."},
+        style_filter={
+            "backgroundColor": "#f8f9fa",
+        },
         sort_action="native",
         virtualization=True,
-        fixed_rows={"headers": True},  # Keep headers visible when scrolling
+        fixed_rows={"headers": True},
         sort_mode="single",
         sort_as_null=["None", ""],
         sort_by=[],
@@ -158,7 +162,25 @@ def create_results_table(table_id, no_sort_columns):
                         border: 1px solid #FF6E42;
                         box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
                     """,
-                }
+                },
+                {
+                    "selector": ".dash-filter input::placeholder",
+                    "rule": "opacity: 1 !important; text-align: left !important;",
+                },
+                {
+                    "selector": ".dash-filter input",
+                    "rule": "text-align: left !important; width: 100% !important;",
+                },
+                # Hide the filter type indicators completely
+                {
+                    "selector": ".dash-filter--case",
+                    "rule": "display: none !important;",
+                },
+                # Adjust padding to fill the space where indicators were
+                {
+                    "selector": ".dash-filter",
+                    "rule": "padding-left: 0 !important;",
+                },
             ]
             + [
                 {
@@ -553,10 +575,41 @@ def create_tab_content(prefix, filter_title, checkl_options, no_sort_columns):
     # Add graph component only for GM tab
     components = []
     if prefix == "gm":
-        graph = dcc.Graph(id="gm-graph", className="mt-5 mb-3", style={"display": "none"})
+        # Add x-axis selector dropdown above the graph
+        graph_with_selector = html.Div(
+            [
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            html.Div(
+                                [
+                                    html.Label("Select X-axis: ", className="me-2"),
+                                    dcc.Dropdown(
+                                        id="gm-graph-x-axis-selector",
+                                        options=[
+                                            {"label": "# BGCs", "value": "n_bgcs"},
+                                            {"label": "BGC Classes", "value": "class_bgcs"},
+                                        ],
+                                        value="n_bgcs",  # Default value
+                                        clearable=False,
+                                        style={"width": "200px"},
+                                    ),
+                                ],
+                                className="d-flex align-items-center",
+                            ),
+                            width=12,
+                        )
+                    ],
+                    id="gm-graph-selector-container",
+                ),
+                dcc.Graph(id="gm-graph"),
+            ],
+            className="mt-5 mb-3",
+        )
+
         components = [
             dbc.Col(filter_accordion, width=10, className="mx-auto dbc"),
-            dbc.Col(graph, width=10, className="mx-auto"),
+            dbc.Col(graph_with_selector, width=10, className="mx-auto dbc"),
             dbc.Col(data_table, width=10, className="mx-auto"),
             dbc.Col(scoring_accordion, width=10, className="mx-auto dbc"),
         ]
@@ -575,19 +628,6 @@ def create_tab_content(prefix, filter_title, checkl_options, no_sort_columns):
 
 
 # ------------------ Nav Bar ------------------ #
-color_mode_switch = html.Span(
-    [
-        dbc.Label(className="fa fa-moon", html_for="color-mode-switch"),
-        dbc.Switch(
-            id="color-mode-switch",
-            value=False,
-            className="d-inline-block ms-1",
-            persistence=True,
-        ),
-        dbc.Label(className="fa fa-sun", html_for="color-mode-switch"),
-    ],
-    className="p-2",
-)
 navbar = dbc.Row(
     dbc.Col(
         dbc.NavbarSimple(
@@ -595,10 +635,6 @@ navbar = dbc.Row(
                 dbc.NavItem(dbc.NavLink("Doc", href="https://nplinker.github.io/nplinker/latest/")),
                 dbc.NavItem(
                     dbc.NavLink("About", href="https://github.com/NPLinker/nplinker-webapp"),
-                ),
-                dbc.NavItem(
-                    color_mode_switch,
-                    className="mt-1 p-1",
                 ),
             ],
             brand="NPLinker Webapp",
@@ -629,6 +665,21 @@ uploader = html.Div(
         dbc.Row(
             dbc.Col(
                 html.Div(children="No file uploaded", id="dash-uploader-output", className="p-4"),
+                className="d-flex justify-content-center",
+            )
+        ),
+        # Demo data button
+        dbc.Row(
+            dbc.Col(
+                html.Div(
+                    dbc.Button(
+                        "Load Demo Data",
+                        id="demo-data-button",
+                        color="primary",
+                        className="mt-3",
+                    ),
+                    className="d-flex justify-content-center",
+                ),
                 className="d-flex justify-content-center",
             )
         ),

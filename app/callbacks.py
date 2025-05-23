@@ -12,6 +12,7 @@ import dash_mantine_components as dmc
 import dash_uploader as du
 import pandas as pd
 import plotly.graph_objects as go
+import requests
 from dash import ALL
 from dash import MATCH
 from dash import Dash
@@ -19,7 +20,6 @@ from dash import Input
 from dash import Output
 from dash import State
 from dash import callback_context as ctx
-from dash import clientside_callback
 from dash import dcc
 from dash import html
 from app.config import GM_FILTER_DROPDOWN_BGC_CLASS_OPTIONS_PRE_V4
@@ -47,15 +47,8 @@ app = Dash(__name__, external_stylesheets=[dbc.themes.UNITED, dbc_css, dbc.icons
 TEMP_DIR = tempfile.mkdtemp()
 du.configure_upload(app, TEMP_DIR)
 
-clientside_callback(
-    """
-    (switchOn) => {
-    document.documentElement.setAttribute('data-bs-theme', switchOn ? 'light' : 'dark');
-    return window.dash_clientside.no_update
-    }
-    """,
-    Output("color-mode-switch", "id"),
-    Input("color-mode-switch", "value"),
+DEMO_DATA_URL = (
+    "https://github.com/NPLinker/nplinker-webapp/blob/main/tests/data/mock_obj_data.pkl?raw=true"
 )
 
 
@@ -96,6 +89,55 @@ def upload_data(status: du.UploadStatus) -> tuple[str, str | None, None]:
 
 
 @app.callback(
+    Output("dash-uploader-output", "children", allow_duplicate=True),
+    Output("file-store", "data", allow_duplicate=True),
+    Output("loading-spinner-container", "children", allow_duplicate=True),
+    Input("demo-data-button", "n_clicks"),
+    prevent_initial_call=True,
+)
+def load_demo_data(n_clicks):
+    """Load demo data from GitHub repository.
+
+    Args:
+        n_clicks: Number of times the demo data button has been clicked.
+
+    Returns:
+        A tuple containing a message string and the file path (if successful).
+    """
+    if n_clicks is None:
+        raise dash.exceptions.PreventUpdate
+
+    try:
+        # Download the demo data
+        response = requests.get(DEMO_DATA_URL, timeout=30)
+        response.raise_for_status()
+
+        # Save to temporary file
+        demo_file_path = os.path.join(TEMP_DIR, f"demo_data_{uuid.uuid4()}.pkl")
+        with open(demo_file_path, "wb") as f:
+            f.write(response.content)
+
+        # Validate the pickle file
+        with open(demo_file_path, "rb") as f:
+            pickle.load(f)
+
+        file_size_mb = len(response.content) / (1024 * 1024)
+
+        return (
+            f"Successfully loaded demo data: demo_data.pkl [{round(file_size_mb, 2)} MB]",
+            str(demo_file_path),
+            None,
+        )
+
+    except requests.exceptions.RequestException as e:
+        return f"Error downloading demo data: Network error - {str(e)}", None, None
+    except (pickle.UnpicklingError, EOFError, AttributeError):
+        return "Error: Downloaded file is not a valid pickle file.", None, None
+    except Exception as e:
+        return f"Error loading demo data: {str(e)}", None, None
+
+
+@app.callback(
     Output("processed-data-store", "data"),
     Output("processed-links-store", "data"),
     Output("loading-spinner-container", "children", allow_duplicate=True),
@@ -103,12 +145,13 @@ def upload_data(status: du.UploadStatus) -> tuple[str, str | None, None]:
     prevent_initial_call=True,
 )
 def process_uploaded_data(
-    file_path: Path | str | None,
+    file_path: Path | str | None, cleanup: bool = True
 ) -> tuple[str | None, str | None, str | None]:
     """Process the uploaded pickle file and store the processed data.
 
     Args:
         file_path: Path to the uploaded pickle file.
+        cleanup: Flag to indicate whether to clean up the file after processing.
 
     Returns:
         JSON string of processed data or None if processing fails.
@@ -128,7 +171,12 @@ def process_uploaded_data(
                 return ["Unknown"]
             return list(bgc_class)  # Convert tuple to list
 
-        processed_data: dict[str, Any] = {"n_bgcs": {}, "gcf_data": [], "mf_data": []}
+        processed_data: dict[str, Any] = {
+            "gcf_data": [],
+            "n_bgcs": {},
+            "class_bgcs": {},
+            "mf_data": [],
+        }
 
         for gcf in gcfs:
             sorted_bgcs = sorted(gcf.bgcs, key=lambda bgc: bgc.id)
@@ -148,6 +196,12 @@ def process_uploaded_data(
             if len(gcf.bgcs) not in processed_data["n_bgcs"]:
                 processed_data["n_bgcs"][len(gcf.bgcs)] = []
             processed_data["n_bgcs"][len(gcf.bgcs)].append(gcf.id)
+
+            for bgc_class_list in bgc_classes:
+                for bgc_class in bgc_class_list:
+                    if bgc_class not in processed_data["class_bgcs"]:
+                        processed_data["class_bgcs"][bgc_class] = []
+                    processed_data["class_bgcs"][bgc_class].append(gcf.id)
 
         for mf in mfs:
             sorted_spectra = sorted(mf.spectra, key=lambda spectrum: spectrum.id)
@@ -246,6 +300,12 @@ def process_uploaded_data(
     except Exception as e:
         print(f"Error processing file: {str(e)}")
         return None, None, None
+    finally:
+        try:
+            if cleanup and file_path and os.path.exists(file_path):
+                os.remove(file_path)
+        except Exception as e:
+            print(f"Cleanup failed for {file_path}: {e}")
 
 
 @app.callback(
@@ -266,7 +326,7 @@ def process_uploaded_data(
         Output("gm-filter-accordion-component", "value", allow_duplicate=True),
         Output("gm-scoring-accordion-component", "value", allow_duplicate=True),
         Output("gm-results-table-column-toggle", "value", allow_duplicate=True),
-        # MG tab outputs
+        Output("gm-graph-x-axis-selector", "value"),
         Output("mg-tab", "disabled"),
         Output("mg-filter-accordion-control", "disabled"),
         Output("mg-filter-blocks-id", "data", allow_duplicate=True),
@@ -326,6 +386,7 @@ def disable_tabs_and_reset_blocks(
             [],
             [],
             default_gm_column_value,
+            "n_bgcs",
             # MG tab - disabled
             True,
             True,
@@ -374,6 +435,7 @@ def disable_tabs_and_reset_blocks(
         [],
         [],
         default_gm_column_value,
+        "n_bgcs",
         # MG tab - enabled with initial blocks
         False,
         False,
@@ -397,50 +459,116 @@ def disable_tabs_and_reset_blocks(
 @app.callback(
     Output("gm-graph", "figure"),
     Output("gm-graph", "style"),
-    [Input("processed-data-store", "data")],
+    Output("gm-graph-selector-container", "style"),
+    [Input("processed-data-store", "data"), Input("gm-graph-x-axis-selector", "value")],
 )
-def gm_plot(stored_data: str | None) -> tuple[dict | go.Figure, dict]:
+def gm_plot(stored_data: str | None, x_axis_selection: str) -> tuple[dict | go.Figure, dict, dict]:
     """Create a bar plot based on the processed data.
 
     Args:
         stored_data: JSON string of processed data or None.
+        x_axis_selection: Selected x-axis type ('n_bgcs' or 'class_bgcs').
 
     Returns:
-        Tuple containing the plot figure, style, and a status message.
+        Tuple containing the plot figure, style for graph, and style for selector.
     """
     if stored_data is None:
-        return {}, {"display": "none"}
+        return {}, {"display": "none"}, {"display": "none"}
+
     data = json.loads(stored_data)
-    n_bgcs = data["n_bgcs"]
 
-    x_values = sorted(map(int, n_bgcs.keys()))
-    y_values = [len(n_bgcs[str(x)]) for x in x_values]
-    hover_texts = [
-        f"GCF IDs: {', '.join(str(gcf_id) for gcf_id in n_bgcs[str(x)])}" for x in x_values
-    ]
-
-    # Adjust bar width based on number of data points
-    bar_width = 0.4 if len(x_values) <= 5 else None
-    # Create the bar plot
-    fig = go.Figure(
-        data=[
-            go.Bar(
-                x=x_values,
-                y=y_values,
-                text=hover_texts,
-                hoverinfo="text",
-                textposition="none",
-                width=bar_width,
-            )
+    if x_axis_selection == "n_bgcs":
+        n_bgcs = data["n_bgcs"]
+        x_values = sorted(map(int, n_bgcs.keys()))
+        y_values = [len(n_bgcs[str(x)]) for x in x_values]
+        hover_texts = [
+            f"GCF IDs: {', '.join(str(gcf_id) for gcf_id in n_bgcs[str(x)])}" for x in x_values
         ]
-    )
-    # Update layout
-    fig.update_layout(
-        xaxis_title="# BGCs",
-        yaxis_title="# GCFs",
-        xaxis=dict(type="category"),
-    )
-    return fig, {"display": "block"}
+
+        # Adjust bar width based on number of data points
+        bar_width = 0.4 if len(x_values) <= 5 else None
+        # Create the bar plot
+        fig = go.Figure(
+            data=[
+                go.Bar(
+                    x=x_values,
+                    y=y_values,
+                    text=hover_texts,
+                    hoverinfo="text",
+                    textposition="none",
+                    width=bar_width,
+                )
+            ]
+        )
+        # Update layout
+        fig.update_layout(
+            xaxis_title="# BGCs",
+            yaxis_title="# GCFs",
+            xaxis=dict(type="category"),
+        )
+
+    else:  # x_axis_selection == "class_bgcs"
+        class_bgcs = data["class_bgcs"]
+
+        # Count unique GCF IDs for each class
+        class_gcf_counts = {}
+        for bgc_class, gcf_ids in class_bgcs.items():
+            # Count unique GCF IDs
+            class_gcf_counts[bgc_class] = len(set(gcf_ids))
+
+        # Sort classes by count for better visualization
+        sorted_classes = sorted(class_gcf_counts.items(), key=lambda x: x[1], reverse=True)
+        x_values = [item[0] for item in sorted_classes]
+        y_values = [item[1] for item in sorted_classes]
+
+        # Generate hover texts with line breaks for better readability
+        hover_texts = []
+        for bgc_class in x_values:
+            # Get unique GCF IDs for this class
+            unique_gcf_ids = sorted(list(set(class_bgcs[bgc_class])))
+
+            # Format GCF IDs with line breaks every 10 items
+            formatted_gcf_ids = ""
+            for i, gcf_id in enumerate(unique_gcf_ids):
+                formatted_gcf_ids += gcf_id
+                # Add comma if not the last item
+                if i < len(unique_gcf_ids) - 1:
+                    formatted_gcf_ids += ", "
+                # Add line break after every 10 items (but not for the last group)
+                if (i + 1) % 10 == 0 and i < len(unique_gcf_ids) - 1:
+                    formatted_gcf_ids += "<br>"
+
+            hover_text = f"Class: {bgc_class}<br>GCF IDs: {formatted_gcf_ids}"
+            hover_texts.append(hover_text)
+
+        # Adjust bar width based on number of data points
+        bar_width = 0.4 if len(x_values) <= 5 else None
+        # Create the bar plot
+        fig = go.Figure(
+            data=[
+                go.Bar(
+                    x=x_values,
+                    y=y_values,
+                    text=hover_texts,
+                    hoverinfo="text",
+                    textposition="none",
+                    width=bar_width,
+                )
+            ]
+        )
+
+        # Update layout
+        fig.update_layout(
+            xaxis_title="BGC Classes",
+            yaxis_title="# GCFs",
+            xaxis=dict(
+                type="category",
+                # Add more space for longer class names
+                tickangle=-45 if len(x_values) > 5 else 0,
+            ),
+        )
+
+    return fig, {"display": "block"}, {"display": "block"}
 
 
 # ------------------ Common Filter and Table Functions ------------------ #
@@ -1451,9 +1579,9 @@ def scoring_create_initial_block(block_id: str, tab_prefix: str = "gm") -> dmc.G
                             "type": f"{tab_prefix}-scoring-dropdown-ids-cutoff-met",
                             "index": block_id,
                         },
-                        label="Cutoff",
-                        placeholder="Insert cutoff value as a number",
-                        value="0.05",
+                        label="Scoring method's cutoff (>=)",
+                        placeholder="Insert the minimum cutoff value to be considered",
+                        value="0",
                         className="custom-textinput",
                     )
                 ],
@@ -1571,9 +1699,9 @@ def scoring_display_blocks(
                                 "type": f"{tab_prefix}-scoring-dropdown-ids-cutoff-met",
                                 "index": new_block_id,
                             },
-                            label="Cutoff",
-                            placeholder="Insert cutoff value as a number",
-                            value="0.05",
+                            label="Scoring method's cutoff (>=)",
+                            placeholder="Insert the minimum cutoff value to be considered",
+                            value="0",
                             className="custom-textinput",
                         ),
                     ],
@@ -1615,7 +1743,7 @@ def scoring_update_placeholder(
         # Callback was not triggered by user interaction, don't change anything
         raise dash.exceptions.PreventUpdate
     if selected_value == "METCALF":
-        return ({"display": "block"}, "Cutoff", "0.05")
+        return ({"display": "block"}, "Cutoff", "0")
     else:
         # This case should never occur due to the Literal type, but it satisfies mypy
         return ({"display": "none"}, "", "")
