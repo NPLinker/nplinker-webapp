@@ -45,10 +45,11 @@ Before installing NPLinker webapp, ensure you have:
 
 - [Python ≥3.10](https://www.python.org/downloads/)
 - [Git](https://git-scm.com/downloads)
+- [Conda](https://docs.conda.io/en/latest/miniconda.html)
 
 You can install and run the NPLinker webapp in two ways: directly on your local machine or using Docker.
 
-### Option 1: Local Installation
+### Option 1: Local Installation (using Conda)
 
 Follow these steps to install the application directly on your system:
 
@@ -58,16 +59,13 @@ Follow these steps to install the application directly on your system:
    cd nplinker-webapp
    ```
 
-2. **Set up a virtual environment**
+2. **Set up a conda environment**
    ```bash
-   # Create a virtual environment
-   python3.10 -m venv venv
+    # Create a new conda environment with Python 3.10
+    conda create -n nplinker-webapp python=3.10
 
-   # Activate the virtual environment
-   # For Windows:
-   venv\Scripts\activate
-   # For macOS/Linux:
-   source venv/bin/activate
+    # Activate the environment
+    conda activate nplinker-webapp
    ```
 
 3. **Install dependencies**
